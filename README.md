@@ -41,7 +41,7 @@ An AI-powered Korean language learning app where your teacher is Seo Moon-jo (ì„
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/nunchi.git
+git clone https://github.com/braphoggg/nunchi.git
 cd nunchi
 
 # 2. Install dependencies
