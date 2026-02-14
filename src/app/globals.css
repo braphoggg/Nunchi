@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+@theme {
+  --color-goshiwon-bg: #0c0a0d;
+  --color-goshiwon-surface: #1a1720;
+  --color-goshiwon-surface-hover: #231f2b;
+  --color-goshiwon-border: #2a2533;
+  --color-goshiwon-accent: #8b1a1a;
+  --color-goshiwon-accent-light: #a83232;
+  --color-goshiwon-yellow: #d4a843;
+  --color-goshiwon-text: #e8e4ec;
+  --color-goshiwon-text-secondary: #7a7285;
+  --color-goshiwon-text-muted: #4d4559;
+  --color-goshiwon-input: #13101a;
+  --color-goshiwon-user-bubble: #1e1b28;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2533;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3543;
+}
+
+/* Message fade-in animation */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message-in {
+  animation: message-in 0.3s ease-out;
+}
+
+/* Pulsing online indicator */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Crossfade transitions for WelcomeScreen -> Messages */
+.fade-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 0.3s ease-in;
+}
+
+/* Textarea auto-grow */
+.auto-grow-textarea {
+  field-sizing: content;
+  min-height: 44px;
+  max-height: 120px;
+  resize: none;
+  overflow-y: auto;
+}
+
+/* Read receipt delayed fade-in */
+@keyframes read-receipt-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-read-receipt {
+  animation: read-receipt-in 0.5s ease-out 0.8s forwards;
+  opacity: 0;
+}
+
+/* Farewell overlay */
+@keyframes farewell-fade {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-farewell {
+  animation: farewell-fade 2s ease-in-out forwards;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
