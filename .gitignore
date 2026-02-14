@@ -39,3 +39,6 @@ coverage/
 
 # misc
 *.pem
+
+#claude config
+.claude
