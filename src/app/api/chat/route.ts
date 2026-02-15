@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     const modelMessages = await convertToModelMessages(cleanedMessages);
 
     const result = streamText({
-      model: ollama("qwen2.5:7b"),
+      model: ollama("exaone3.5:7.8b"),
       system: MOONJO_SYSTEM_PROMPT,
       messages: modelMessages,
       temperature: 0.85,

@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     const result = await generateText({
-      model: ollama("qwen2.5:7b"),
+      model: ollama("exaone3.5:7.8b"),
       system:
         "You are a translator. Translate the following Korean teaching message into English. " +
         "Keep any romanization as-is. Translate Korean words and sentences to English. " +

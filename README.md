@@ -26,7 +26,7 @@ An AI-powered Korean language learning app where your teacher is Seo Moon-jo (�
 |-------|------------|
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript 5.9 |
-| AI | Vercel AI SDK v6 + Ollama (`qwen2.5:7b`) |
+| AI | Vercel AI SDK v6 + Ollama (`exaone3.5:7.8b`) |
 | Styling | Tailwind CSS v4 with custom theme |
 | Audio | Web Audio API (ambient sounds) + Web Speech API (TTS) |
 | Testing | Vitest + React Testing Library |
@@ -47,8 +47,8 @@ cd nunchi
 # 2. Install dependencies
 npm install
 
-# 3. Pull the LLM model (one-time, ~4.7 GB)
-ollama pull qwen2.5:7b
+# 3. Pull the LLM model (one-time, ~4.8 GB)
+ollama pull exaone3.5:7.8b
 
 # 4. Start Ollama (if not already running)
 ollama serve
@@ -104,7 +104,7 @@ src/
 
 ## How It Works
 
-1. **Chat** — User sends a message → `/api/chat` streams it to Ollama (`qwen2.5:7b`) with Moon-jo's system prompt → response streams back as `UIMessage` parts
+1. **Chat** — User sends a message → `/api/chat` streams it to Ollama (`exaone3.5:7.8b`) with Moon-jo's system prompt → response streams back as `UIMessage` parts
 2. **Translate** — Click the globe icon on any assistant message → `/api/translate` sends the text to Ollama with a translation prompt → English translation replaces Korean text (cached, toggleable)
 3. **TTS** — Click the speaker icon → browser's `SpeechSynthesisUtterance` reads the Korean text aloud at 0.9x speed
 4. **Character** — A ~2KB system prompt defines Moon-jo's speech patterns (soft 존댓말, forced intimacy with 우리, goshiwon references, dentist metaphors) and teaching methodology (Hangul first, romanization, contextual examples)
