@@ -65,6 +65,61 @@ describe("parseVocabulary", () => {
     expect(result[0].english).toBe("please be quiet");
   });
 
+  // Format variations from real LLM output
+
+  it("parses format with dash separator: **word** (rom) — meaning", () => {
+    const content = "**복도** (bokdo) — hallway";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([
+      { korean: "복도", romanization: "bokdo", english: "hallway" },
+    ]);
+  });
+
+  it("parses format with en-dash: **word** (rom) – meaning", () => {
+    const content = "**벽** (byeok) – wall";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([
+      { korean: "벽", romanization: "byeok", english: "wall" },
+    ]);
+  });
+
+  it("parses format with colon: **word** (rom): meaning", () => {
+    const content = "**방** (bang): room";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([
+      { korean: "방", romanization: "bang", english: "room" },
+    ]);
+  });
+
+  it("parses format with comma inside parens: **word** (rom, meaning)", () => {
+    const content = "**문** (mun, door)";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([
+      { korean: "문", romanization: "mun", english: "door" },
+    ]);
+  });
+
+  it("deduplicates words within same message", () => {
+    const content =
+      "**안녕** (annyeong) hello\nRemember **안녕** (annyeong) hello is important";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+  });
+
+  it("skips entries where English meaning contains Hangul", () => {
+    const content = "**문** (mun) 문을 열어요";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([]);
+  });
+
+  it("parses hyphen separator: **word** (rom) - meaning", () => {
+    const content = "**옥상** (oksang) - rooftop";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([
+      { korean: "옥상", romanization: "oksang", english: "rooftop" },
+    ]);
+  });
+
   // Security tests
 
   it("handles excessively long input without crashing", () => {

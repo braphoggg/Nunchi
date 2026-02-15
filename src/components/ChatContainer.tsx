@@ -27,6 +27,7 @@ export default function ChatContainer() {
   const {
     words,
     wordCount,
+    unseenCount,
     panelOpen,
     addWords,
     removeWord,
@@ -105,7 +106,7 @@ export default function ChatContainer() {
         onToggleMute={toggleMute}
         isMuted={muted}
         onToggleVocabulary={togglePanel}
-        vocabularyCount={wordCount}
+        vocabularyCount={unseenCount}
       />
 
       {panelOpen && (

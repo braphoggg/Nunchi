@@ -59,6 +59,7 @@ function saveToStorage(items: VocabularyItem[]): void {
 export function useVocabulary() {
   const [words, setWords] = useState<VocabularyItem[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [unseenCount, setUnseenCount] = useState(0);
   const initialized = useRef(false);
 
   // Load from localStorage on mount
@@ -94,6 +95,10 @@ export function useVocabulary() {
           }));
 
         if (toAdd.length === 0) return prev;
+
+        // Track unseen new words for badge
+        setUnseenCount((c) => c + toAdd.length);
+
         return [...prev, ...toAdd];
       });
     },
@@ -109,7 +114,14 @@ export function useVocabulary() {
     [words]
   );
 
-  const togglePanel = useCallback(() => setPanelOpen((o) => !o), []);
+  // Clear unseen count when opening the panel
+  const togglePanel = useCallback(() => {
+    setPanelOpen((o) => {
+      if (!o) setUnseenCount(0); // opening → clear badge
+      return !o;
+    });
+  }, []);
+
   const closePanel = useCallback(() => setPanelOpen(false), []);
 
   const wordCount = words.length;
@@ -117,6 +129,7 @@ export function useVocabulary() {
   return {
     words,
     wordCount,
+    unseenCount,
     panelOpen,
     addWords,
     removeWord,

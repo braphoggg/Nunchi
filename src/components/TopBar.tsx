@@ -35,6 +35,7 @@ export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabul
         {onToggleVocabulary && (
           <button
             onClick={onToggleVocabulary}
+            title="My Vocabulary"
             aria-label="Open vocabulary list"
             className="relative p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
           >
@@ -62,6 +63,7 @@ export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabul
         {onToggleMute && (
           <button
             onClick={onToggleMute}
+            title={isMuted ? "Unmute" : "Mute"}
             aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
             className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
           >

@@ -32,15 +32,23 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Check if all vocabulary in this message is already saved
+  const allWordsSaved = useMemo(() => {
+    if (!isWordSaved || !isAssistant || !hasVocabulary(content)) return false;
+    const vocabItems = parseVocabulary(content);
+    if (vocabItems.length === 0) return false;
+    return vocabItems.every((w) => isWordSaved(w.korean));
+  }, [isWordSaved, isAssistant, content]);
+
   const handleSaveWords = useCallback(() => {
-    if (!onSaveWords) return;
+    if (!onSaveWords || saved || allWordsSaved) return;
     const vocabItems = parseVocabulary(content);
     if (vocabItems.length > 0) {
       onSaveWords(vocabItems);
       setSaved(true);
       setTimeout(() => setSaved(false), 1500);
     }
-  }, [content, onSaveWords]);
+  }, [content, onSaveWords, saved, allWordsSaved]);
 
   // Cancel speech on unmount
   useEffect(() => {
@@ -185,6 +193,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
             {/* Translate */}
             <button
               onClick={handleTranslate}
+              title="Translate"
               aria-label="Translate message"
               aria-pressed={showTranslation}
               className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
@@ -207,6 +216,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
             {/* TTS */}
             <button
               onClick={handleSpeak}
+              title={isSpeaking ? "Stop" : "Listen"}
               aria-label={isSpeaking ? "Stop reading" : "Read message aloud"}
               className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
             >
@@ -238,6 +248,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
             {/* Copy */}
             <button
               onClick={handleCopy}
+              title="Copy"
               aria-label="Copy message"
               className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
             >
@@ -265,13 +276,31 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
             {onSaveWords && hasVocabulary(content) && (
               <button
                 onClick={handleSaveWords}
-                aria-label="Save vocabulary"
-                className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
+                title={allWordsSaved ? "Already saved" : "Save words"}
+                aria-label={allWordsSaved ? "Words already saved" : "Save vocabulary"}
+                disabled={allWordsSaved || saved}
+                className={`p-1.5 transition-colors rounded ${
+                  allWordsSaved
+                    ? "text-goshiwon-yellow/60 cursor-default"
+                    : "text-goshiwon-text-muted hover:text-goshiwon-text"
+                }`}
               >
                 {saved ? (
                   <span className="text-[10px] text-goshiwon-yellow font-medium">
                     Saved!
                   </span>
+                ) : allWordsSaved ? (
+                  <svg
+                    className="w-3.5 h-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 ) : (
                   <svg
                     className="w-3.5 h-3.5"
@@ -295,6 +324,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
             {/* Copy only for user messages */}
             <button
               onClick={handleCopy}
+              title="Copy"
               aria-label="Copy message"
               className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
             >
