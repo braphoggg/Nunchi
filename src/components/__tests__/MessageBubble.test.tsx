@@ -406,7 +406,7 @@ describe("MessageBubble", () => {
     expect(screen.queryByLabelText("Save vocabulary")).not.toBeInTheDocument();
   });
 
-  it("calls onSaveWords with parsed vocabulary when save button is clicked", () => {
+  it("calls onSaveWords with parsed vocabulary when save button is clicked (legacy format with English)", async () => {
     const onSaveWords = vi.fn();
     const message = createMessage({
       role: "assistant",
@@ -416,9 +416,57 @@ describe("MessageBubble", () => {
 
     fireEvent.click(screen.getByLabelText("Save vocabulary"));
 
-    expect(onSaveWords).toHaveBeenCalledWith([
-      { korean: "문", romanization: "mun", english: "door" },
-    ]);
+    await waitFor(() => {
+      expect(onSaveWords).toHaveBeenCalledWith([
+        { korean: "문", romanization: "mun", english: "door" },
+      ]);
+    });
+  });
+
+  it("fetches English translations for Korean-only vocabulary before saving", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ translations: { "문": "door" } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const onSaveWords = vi.fn();
+    const message = createMessage({
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "**문** (mun)" }],
+    });
+    render(<MessageBubble message={message} onSaveWords={onSaveWords} isWordSaved={vi.fn().mockReturnValue(false)} />);
+
+    fireEvent.click(screen.getByLabelText("Save vocabulary"));
+
+    // Should show "Saving..." while fetching
+    expect(screen.getByText("Saving...")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(onSaveWords).toHaveBeenCalledWith([
+        { korean: "문", romanization: "mun", english: "door" },
+      ]);
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith("/api/vocabulary-translate", expect.any(Object));
+  });
+
+  it("saves vocabulary with empty English if translation API fails", async () => {
+    vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("Network error"));
+    const onSaveWords = vi.fn();
+    const message = createMessage({
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "**문** (mun)" }],
+    });
+    render(<MessageBubble message={message} onSaveWords={onSaveWords} isWordSaved={vi.fn().mockReturnValue(false)} />);
+
+    fireEvent.click(screen.getByLabelText("Save vocabulary"));
+
+    await waitFor(() => {
+      expect(onSaveWords).toHaveBeenCalledWith([
+        { korean: "문", romanization: "mun", english: "" },
+      ]);
+    });
   });
 
   it("does not render save button when onSaveWords is not provided", () => {

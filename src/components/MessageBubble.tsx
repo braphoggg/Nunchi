@@ -31,6 +31,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Check if all vocabulary in this message is already saved
   const allWordsSaved = useMemo(() => {
@@ -40,15 +41,45 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
     return vocabItems.every((w) => isWordSaved(w.korean));
   }, [isWordSaved, isAssistant, content]);
 
-  const handleSaveWords = useCallback(() => {
-    if (!onSaveWords || saved || allWordsSaved) return;
+  const handleSaveWords = useCallback(async () => {
+    if (!onSaveWords || saved || saving || allWordsSaved) return;
     const vocabItems = parseVocabulary(content);
-    if (vocabItems.length > 0) {
-      onSaveWords(vocabItems);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+    if (vocabItems.length === 0) return;
+
+    // Find words that need English translation
+    const needsTranslation = vocabItems.filter((w) => !w.english);
+
+    if (needsTranslation.length > 0) {
+      setSaving(true);
+      try {
+        const res = await fetch("/api/vocabulary-translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            words: needsTranslation.map((w) => w.korean),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const translations: Record<string, string> = data.translations ?? {};
+          // Merge translations into vocab items
+          for (const item of vocabItems) {
+            if (!item.english && translations[item.korean]) {
+              item.english = translations[item.korean];
+            }
+          }
+        }
+      } catch {
+        // Translation failed — save with empty English (better than not saving)
+      } finally {
+        setSaving(false);
+      }
     }
-  }, [content, onSaveWords, saved, allWordsSaved]);
+
+    onSaveWords(vocabItems);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }, [content, onSaveWords, saved, saving, allWordsSaved]);
 
   // Cancel speech on unmount
   useEffect(() => {
@@ -276,16 +307,20 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
             {onSaveWords && hasVocabulary(content) && (
               <button
                 onClick={handleSaveWords}
-                title={allWordsSaved ? "Already saved" : "Save words"}
-                aria-label={allWordsSaved ? "Words already saved" : "Save vocabulary"}
-                disabled={allWordsSaved || saved}
+                title={saving ? "Saving..." : allWordsSaved ? "Already saved" : "Save words"}
+                aria-label={saving ? "Saving vocabulary" : allWordsSaved ? "Words already saved" : "Save vocabulary"}
+                disabled={allWordsSaved || saved || saving}
                 className={`p-1.5 transition-colors rounded ${
                   allWordsSaved
                     ? "text-goshiwon-yellow/60 cursor-default"
                     : "text-goshiwon-text-muted hover:text-goshiwon-text"
                 }`}
               >
-                {saved ? (
+                {saving ? (
+                  <span className="text-[10px] text-goshiwon-text-muted font-medium">
+                    Saving...
+                  </span>
+                ) : saved ? (
                   <span className="text-[10px] text-goshiwon-yellow font-medium">
                     Saved!
                   </span>

@@ -75,9 +75,15 @@ export default function VocabularyPanel({
                     ({word.romanization})
                   </span>
                 </div>
-                <p className="text-goshiwon-text-secondary text-xs mt-0.5">
-                  {word.english}
-                </p>
+                {word.english ? (
+                  <p className="text-goshiwon-text-secondary text-xs mt-0.5">
+                    {word.english}
+                  </p>
+                ) : (
+                  <p className="text-goshiwon-text-muted text-xs mt-0.5 italic">
+                    translation unavailable
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => onRemoveWord(word.id)}

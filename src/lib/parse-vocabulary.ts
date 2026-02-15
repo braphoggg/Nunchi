@@ -4,7 +4,6 @@ import type { VocabularyItem } from "@/types";
 const MAX_INPUT_LENGTH = 10_000;
 const MAX_KOREAN_LENGTH = 100;
 const MAX_ROMANIZATION_LENGTH = 200;
-const MAX_ENGLISH_LENGTH = 500;
 const MAX_ITEMS = 50;
 
 /** Strip HTML tags from a string to prevent XSS. */
@@ -20,11 +19,16 @@ function containsHangul(text: string): boolean {
 /**
  * Extracts vocabulary items from Moon-jo's message text.
  *
- * Handles multiple real LLM output formats:
- *   Format A: **한글** (romanization) English meaning
- *   Format B: **한글** (romanization) — English meaning
- *   Format C: **한글** (romanization, English meaning)
- *   Format D: **한글** (romanization): English meaning
+ * Primary format (Korean-only teaching):
+ *   **한글** (romanization)
+ *
+ * Also handles legacy formats where English may follow:
+ *   **한글** (romanization) English meaning
+ *   **한글** (romanization) — English meaning
+ *   **한글** (romanization, English meaning)
+ *
+ * English is now optional — items are valid with just korean + romanization.
+ * English will be looked up separately via the translate API.
  *
  * Deduplicates by Korean text within a single parse.
  */
@@ -63,18 +67,15 @@ export function parseVocabulary(
     let english = "";
 
     // Try to split parenthesized content — could be "romanization, english" or just "romanization"
-    // Check if paren content has a comma separating romanization from meaning
     const commaIdx = parenContent.indexOf(",");
     if (commaIdx > 0) {
       const beforeComma = parenContent.slice(0, commaIdx).trim();
       const afterComma = parenContent.slice(commaIdx + 1).trim();
 
-      // If the part after comma contains Hangul, it's not an English meaning
       if (afterComma && !containsHangul(afterComma) && !containsHangul(beforeComma)) {
         romanization = beforeComma;
         english = afterComma;
       } else if (!containsHangul(beforeComma)) {
-        // Comma exists but after-comma is Korean — just use whole paren as romanization
         romanization = beforeComma;
       } else {
         romanization = parenContent;
@@ -86,11 +87,10 @@ export function parseVocabulary(
       }
     }
 
-    // If we don't have English yet, look for it after the parentheses
+    // If we don't have English yet, look for it after the parentheses (legacy format)
     if (!english) {
       const afterParen = afterDash || afterSpace;
       if (afterParen) {
-        // Clean up the text after parentheses
         const cleaned = afterParen
           .replace(/[.!?,;:]+$/, "")
           .trim();
@@ -104,19 +104,18 @@ export function parseVocabulary(
     // Clean trailing punctuation from english
     english = english.replace(/[.!?,;:]+$/, "").trim();
 
-    // Skip if missing required fields or exceeds length limits
+    // Skip if missing korean or romanization, or exceeds length limits
     if (
       !korean ||
       !romanization ||
-      !english ||
       korean.length > MAX_KOREAN_LENGTH ||
-      romanization.length > MAX_ROMANIZATION_LENGTH ||
-      english.length > MAX_ENGLISH_LENGTH
+      romanization.length > MAX_ROMANIZATION_LENGTH
     ) {
       continue;
     }
 
     seenKorean.add(korean);
+    // English is optional — will be looked up via translate API if empty
     results.push({ korean, romanization, english });
   }
 

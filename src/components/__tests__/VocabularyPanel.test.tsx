@@ -121,6 +121,28 @@ describe("VocabularyPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows 'translation unavailable' for words with empty English", () => {
+    const wordWithoutEnglish: VocabularyItem[] = [
+      {
+        id: "3",
+        korean: "문",
+        romanization: "mun",
+        english: "",
+        savedAt: "2024-01-03T00:00:00.000Z",
+      },
+    ];
+    render(
+      <VocabularyPanel
+        words={wordWithoutEnglish}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    expect(screen.getByText("문")).toBeInTheDocument();
+    expect(screen.getByText("(mun)")).toBeInTheDocument();
+    expect(screen.getByText("translation unavailable")).toBeInTheDocument();
+  });
+
   it("delete buttons have accessible aria-labels containing Korean word", () => {
     render(
       <VocabularyPanel
