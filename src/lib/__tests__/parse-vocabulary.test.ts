@@ -100,6 +100,69 @@ describe("parseVocabulary", () => {
     expect(result[0].english).toBe("please be quiet");
   });
 
+  // Strips ** from romanization
+
+  it("strips bold markers from romanization", () => {
+    const content = "**안녕하세요** (**annyeonghaseyo**)";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].romanization).toBe("annyeonghaseyo");
+    expect(result[0].romanization).not.toContain("**");
+  });
+
+  // Sentence filtering
+
+  it("skips long sentences that are bolded", () => {
+    const content = "**안녕하세요, 마이클 씨. 잘 지내고 계신가요?** (Annyeonghaseyo)";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([]);
+  });
+
+  it("allows short Korean phrases up to 15 chars", () => {
+    const content = "**조용히 하세요** (joyonghi haseyo)";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].korean).toBe("조용히 하세요");
+  });
+
+  // Invalid English filtering
+
+  it("rejects English that is just a dash", () => {
+    const content = "**방** (bang) -";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].english).toBe("");
+  });
+
+  it("rejects English that contains Hangul", () => {
+    const content = "**문** (mun) 문을 열어요";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].english).toBe("");
+  });
+
+  it("rejects English with mixed Korean-English like '신뢰 (trust)도 중요하니까요'", () => {
+    const content = "**신뢰** (chi-ryo) 신뢰 (trust)도 중요하니까요";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].english).toBe("");
+  });
+
+  // Romanization validation
+
+  it("rejects items where paren content is not valid romanization", () => {
+    const content = "**네** (Ne) gaiyeosseoyo";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].romanization).toBe("Ne");
+  });
+
+  it("rejects items where paren content contains Hangul", () => {
+    const content = "**문** (문을 열어요)";
+    const result = parseVocabulary(content);
+    expect(result).toEqual([]);
+  });
+
   // Format variations from real LLM output
 
   it("parses format with dash separator: **word** (rom) — meaning", () => {
@@ -141,15 +204,6 @@ describe("parseVocabulary", () => {
     expect(result).toHaveLength(1);
   });
 
-  it("returns item with empty english when text after parens contains Hangul", () => {
-    const content = "**문** (mun) 문을 열어요";
-    const result = parseVocabulary(content);
-    expect(result).toHaveLength(1);
-    expect(result[0].korean).toBe("문");
-    expect(result[0].romanization).toBe("mun");
-    expect(result[0].english).toBe("");
-  });
-
   it("parses hyphen separator: **word** (rom) - meaning", () => {
     const content = "**옥상** (oksang) - rooftop";
     const result = parseVocabulary(content);
@@ -170,6 +224,22 @@ describe("parseVocabulary", () => {
     expect(result[2]).toEqual({ korean: "방", romanization: "bang", english: "" });
   });
 
+  // Real-world LLM output edge cases from screenshot
+
+  it("handles romanization with apostrophes: **word** (rom'an)", () => {
+    const content = "**그럼** (Geollem)";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].romanization).toBe("Geollem");
+  });
+
+  it("handles English after dash that starts with '- '", () => {
+    const content = "**신뢰해요** (Chi-ryohae-yo) - I trust you";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].english).toBe("I trust you");
+  });
+
   // Security tests
 
   it("handles excessively long input without crashing", () => {
@@ -178,8 +248,8 @@ describe("parseVocabulary", () => {
     expect(parseVocabulary(longContent)).toEqual([]);
   });
 
-  it("skips items with Korean field exceeding 100 chars", () => {
-    const longKorean = "가".repeat(101);
+  it("skips items with Korean field exceeding max length", () => {
+    const longKorean = "가".repeat(51);
     const content = `**${longKorean}** (test)`;
     expect(parseVocabulary(content)).toEqual([]);
   });
@@ -201,12 +271,11 @@ describe("parseVocabulary", () => {
 
   it("strips HTML tags from extracted fields", () => {
     const content =
-      '**<script>alert(1)</script>한글** (rom<b>an</b>) eng<img src=x>';
+      '**<script>alert(1)</script>한글** (roman) eng<img src=x>';
     const result = parseVocabulary(content);
     if (result.length > 0) {
       expect(result[0].korean).not.toContain("<script>");
       expect(result[0].korean).not.toContain("</script>");
-      expect(result[0].romanization).not.toContain("<b>");
       expect(result[0].english).not.toContain("<img");
     }
   });

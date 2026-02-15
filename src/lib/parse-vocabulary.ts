@@ -2,18 +2,60 @@ import type { VocabularyItem } from "@/types";
 
 /** Security limits */
 const MAX_INPUT_LENGTH = 10_000;
-const MAX_KOREAN_LENGTH = 100;
+const MAX_KOREAN_LENGTH = 50;
 const MAX_ROMANIZATION_LENGTH = 200;
 const MAX_ITEMS = 50;
+
+/**
+ * Maximum Korean characters for a vocabulary item.
+ * Filters out full sentences that happen to be bolded.
+ * Allows short phrases (e.g. "조용히 하세요" = 7 chars) but rejects
+ * long sentences (e.g. "안녕하세요, 마이클 씨. 잘 지내고 계신가요?" = 20+ chars).
+ */
+const MAX_KOREAN_WORD_LENGTH = 15;
 
 /** Strip HTML tags from a string to prevent XSS. */
 function stripHtml(text: string): string {
   return text.replace(/<[^>]*>/g, "");
 }
 
+/** Strip markdown bold markers (**) from a string. */
+function stripBoldMarkers(text: string): string {
+  return text.replace(/\*\*/g, "");
+}
+
 /** Returns true if the string contains at least one Hangul character. */
 function containsHangul(text: string): boolean {
   return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text);
+}
+
+/**
+ * Returns true if the string looks like valid romanization.
+ * Must be only Latin letters, hyphens, spaces, and apostrophes.
+ * Must contain at least one Latin letter.
+ */
+function isValidRomanization(text: string): boolean {
+  if (!text) return false;
+  // Must have at least one letter
+  if (!/[a-zA-Z]/.test(text)) return false;
+  // Must only contain letters, hyphens, spaces, apostrophes, periods
+  if (!/^[a-zA-Z\s\-''.]+$/.test(text)) return false;
+  return true;
+}
+
+/**
+ * Returns true if the string is a valid English meaning.
+ * Must not contain Hangul, must not be just punctuation/dashes,
+ * must contain at least one Latin letter.
+ */
+function isValidEnglish(text: string): boolean {
+  if (!text) return false;
+  if (containsHangul(text)) return false;
+  // Must contain at least one Latin letter
+  if (!/[a-zA-Z]/.test(text)) return false;
+  // Reject strings that are just dashes, punctuation, or whitespace
+  if (/^[\s\-—–:.,;!?'"()]+$/.test(text)) return false;
+  return true;
 }
 
 /**
@@ -56,10 +98,14 @@ export function parseVocabulary(
     // Skip if no Hangul in the bold text
     if (!containsHangul(korean)) continue;
 
+    // Skip long sentences — only save vocabulary words/short phrases
+    if (korean.length > MAX_KOREAN_WORD_LENGTH) continue;
+
     // Skip duplicates within same message
     if (seenKorean.has(korean)) continue;
 
-    const parenContent = stripHtml(match[2].trim());
+    // Clean parenthesized content: strip HTML, bold markers, trim
+    const rawParen = stripBoldMarkers(stripHtml(match[2].trim()));
     const afterDash = match[3] ? stripHtml(match[3].trim()) : "";
     const afterSpace = match[4] ? stripHtml(match[4].trim()) : "";
 
@@ -67,23 +113,23 @@ export function parseVocabulary(
     let english = "";
 
     // Try to split parenthesized content — could be "romanization, english" or just "romanization"
-    const commaIdx = parenContent.indexOf(",");
+    const commaIdx = rawParen.indexOf(",");
     if (commaIdx > 0) {
-      const beforeComma = parenContent.slice(0, commaIdx).trim();
-      const afterComma = parenContent.slice(commaIdx + 1).trim();
+      const beforeComma = rawParen.slice(0, commaIdx).trim();
+      const afterComma = rawParen.slice(commaIdx + 1).trim();
 
-      if (afterComma && !containsHangul(afterComma) && !containsHangul(beforeComma)) {
+      if (isValidRomanization(beforeComma) && isValidEnglish(afterComma)) {
         romanization = beforeComma;
         english = afterComma;
-      } else if (!containsHangul(beforeComma)) {
+      } else if (isValidRomanization(beforeComma)) {
         romanization = beforeComma;
-      } else {
-        romanization = parenContent;
+      } else if (isValidRomanization(rawParen)) {
+        romanization = rawParen;
       }
     } else {
-      // No comma — entire paren content is romanization (if it's not Hangul)
-      if (!containsHangul(parenContent)) {
-        romanization = parenContent;
+      // No comma — entire paren content is romanization
+      if (isValidRomanization(rawParen)) {
+        romanization = rawParen;
       }
     }
 
@@ -92,10 +138,10 @@ export function parseVocabulary(
       const afterParen = afterDash || afterSpace;
       if (afterParen) {
         const cleaned = afterParen
-          .replace(/[.!?,;:]+$/, "")
+          .replace(/^[\s\-—–:]+/, "") // strip leading dashes/colons
+          .replace(/[.!?,;:]+$/, "")  // strip trailing punctuation
           .trim();
-        // Only use as English if it doesn't contain Hangul
-        if (cleaned && !containsHangul(cleaned)) {
+        if (isValidEnglish(cleaned)) {
           english = cleaned;
         }
       }
