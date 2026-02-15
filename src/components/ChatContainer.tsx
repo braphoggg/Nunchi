@@ -9,9 +9,12 @@ import TypingIndicator from "./TypingIndicator";
 import WelcomeScreen from "./WelcomeScreen";
 import VocabularyPanel from "./VocabularyPanel";
 import FlashcardMode from "./FlashcardMode";
+import GoshiwonEventBubble from "./GoshiwonEventBubble";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
+import { useGoshiwonEvents } from "@/hooks/useGoshiwonEvents";
+import { useNightProgression } from "@/hooks/useNightProgression";
 import { resetTimestampCounter } from "@/lib/timestamps";
 
 export default function ChatContainer() {
@@ -45,6 +48,13 @@ export default function ChatContainer() {
     isActive: flashcardActive,
     studyableCount,
   } = useFlashcards(words);
+
+  // Goshiwon atmospheric events
+  const assistantMsgCount = messages.filter((m) => m.role === "assistant").length;
+  const { activeEvent, dismissEvent } = useGoshiwonEvents(assistantMsgCount);
+
+  // Night mode progression
+  const { styleOverrides } = useNightProgression(messages.length);
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -111,7 +121,7 @@ export default function ChatContainer() {
   };
 
   return (
-    <div className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border">
+    <div style={styleOverrides} className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border night-transition">
       <TopBar
         onReset={messages.length > 0 ? handleReset : undefined}
         onToggleMute={toggleMute}
@@ -162,6 +172,12 @@ export default function ChatContainer() {
                 />
               </div>
             ))}
+            {activeEvent && (
+              <GoshiwonEventBubble
+                event={activeEvent}
+                onDismiss={dismissEvent}
+              />
+            )}
             {isLoading &&
               messages[messages.length - 1]?.role === "user" && (
                 <TypingIndicator />

@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, convertToModelMessages, UIMessage } from "ai";
 import { MOONJO_SYSTEM_PROMPT } from "@/lib/system-prompt";
 import { validateMessages, checkRateLimit } from "@/lib/security";
+import { generateMoodSystemAddendum } from "@/lib/mood-engine";
 
 const ollama = createOpenAI({
   baseURL: "http://localhost:11434/v1",
@@ -59,12 +60,22 @@ export async function POST(req: Request) {
       };
     });
 
+    // Compute mood based on Korean usage in user messages
+    const simpleMessages = cleanedMessages.map((msg) => ({
+      role: msg.role,
+      content: msg.parts
+        .filter((p: { type: string }) => p.type === "text")
+        .map((p: { type: string; text?: string }) => p.text ?? "")
+        .join(""),
+    }));
+    const moodAddendum = generateMoodSystemAddendum(simpleMessages);
+
     // Convert UIMessages to ModelMessages (critical for AI SDK v6 compatibility)
     const modelMessages = await convertToModelMessages(cleanedMessages);
 
     const result = streamText({
       model: ollama("exaone3.5:7.8b"),
-      system: MOONJO_SYSTEM_PROMPT,
+      system: MOONJO_SYSTEM_PROMPT + moodAddendum,
       messages: modelMessages,
       temperature: 0.85,
       maxOutputTokens: 1000,

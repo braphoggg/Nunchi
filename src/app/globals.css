@@ -219,6 +219,15 @@ body {
   animation: summary-in 0.4s ease-out;
 }
 
+/* Night mode progression — smooth color transitions */
+.night-transition {
+  transition: background-color 2s ease, border-color 2s ease, color 2s ease;
+}
+
+.night-transition * {
+  transition: background-color 2s ease, border-color 2s ease, color 2s ease;
+}
+
 /* Mobile touch improvements */
 @media (max-width: 640px) {
   ::-webkit-scrollbar {
