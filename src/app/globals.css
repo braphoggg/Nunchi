@@ -172,7 +172,7 @@ body {
   min-height: 200px;
 }
 
-.flashcard-flipped .flashcard-inner {
+.flashcard-inner.flashcard-flipped {
   transform: rotateY(180deg);
 }
 
