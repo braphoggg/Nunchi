@@ -11,6 +11,7 @@ interface MessageBubbleProps {
   message: UIMessage;
   onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
   isWordSaved?: (korean: string) => boolean;
+  onTranslateUsed?: () => void;
 }
 
 function getTextContent(message: UIMessage): string {
@@ -20,7 +21,7 @@ function getTextContent(message: UIMessage): string {
     .join("");
 }
 
-export default function MessageBubble({ message, onSaveWords, isWordSaved }: MessageBubbleProps) {
+export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: MessageBubbleProps) {
   const isAssistant = message.role === "assistant";
   const content = getTextContent(message);
 
@@ -101,6 +102,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
     // Fetch translation
     setTranslating(true);
     setTranslateError(false);
+    onTranslateUsed?.();
     try {
       const res = await fetch("/api/translate", {
         method: "POST",

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { VocabularyItem } from "@/types";
-import { useFlashcards } from "@/hooks/useFlashcards";
+import { useFlashcards, type FlashcardSummary } from "@/hooks/useFlashcards";
 
 interface FlashcardModeProps {
   words: VocabularyItem[];
   onClose: () => void;
+  onSessionComplete?: (summary: FlashcardSummary) => void;
 }
 
 /** Moon-jo feedback quotes based on performance */
@@ -29,7 +30,7 @@ function getMoonjoFeedback(goodAndEasyPct: number): { korean: string; english: s
   };
 }
 
-export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
+export default function FlashcardMode({ words, onClose, onSessionComplete }: FlashcardModeProps) {
   const {
     startSession,
     endSession,
@@ -52,6 +53,18 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
   useEffect(() => {
     setAnimKey((k) => k + 1);
   }, [currentIndex]);
+
+  // Fire onSessionComplete once when session finishes
+  const sessionReported = useRef(false);
+  useEffect(() => {
+    if (isComplete && !sessionReported.current) {
+      sessionReported.current = true;
+      onSessionComplete?.(summary);
+    }
+    if (!isComplete) {
+      sessionReported.current = false;
+    }
+  }, [isComplete, summary, onSessionComplete]);
 
   // TTS state
   const [isSpeaking, setIsSpeaking] = useState(false);

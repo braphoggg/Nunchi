@@ -4,9 +4,10 @@ interface TopBarProps {
   isMuted?: boolean;
   onToggleVocabulary?: () => void;
   vocabularyCount?: number;
+  rankKorean?: string;
 }
 
-export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, vocabularyCount }: TopBarProps) {
+export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, vocabularyCount, rankKorean }: TopBarProps) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
       {/* Avatar — silhouette */}
@@ -26,7 +27,7 @@ export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabul
           서문조 (Seo Moon-jo)
         </h1>
         <p className="text-xs text-goshiwon-text-muted leading-tight">
-          Room 203 · Eden Goshiwon
+          Room 203{rankKorean ? ` · ${rankKorean}` : " · Eden Goshiwon"}
         </p>
       </div>
 

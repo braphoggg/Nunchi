@@ -10,12 +10,38 @@ import WelcomeScreen from "./WelcomeScreen";
 import VocabularyPanel from "./VocabularyPanel";
 import FlashcardMode from "./FlashcardMode";
 import GoshiwonEventBubble from "./GoshiwonEventBubble";
+import StatsBar from "./StatsBar";
+import StatsPanel from "./StatsPanel";
+import XPToast from "./XPToast";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
 import { useGoshiwonEvents } from "@/hooks/useGoshiwonEvents";
 import { useNightProgression } from "@/hooks/useNightProgression";
+import { useGamification } from "@/hooks/useGamification";
 import { resetTimestampCounter } from "@/lib/timestamps";
+import type { ResidentRank } from "@/types";
+
+/** Rank-up atmospheric messages from Moon-jo */
+const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string } | null> = {
+  new_resident: null,
+  quiet_tenant: {
+    korean: "조용한 세입자... 이제 당신을 기억하겠군요.",
+    english: "Quiet Tenant... I'll remember you now.",
+  },
+  regular: {
+    korean: "단골이 됐군요. 어느 계단이 삐걱거리는지 알겠죠?",
+    english: "You've become a regular. You know which stairs creak, don't you?",
+  },
+  trusted_neighbor: {
+    korean: "믿을 만한 이웃... 이제 비밀을 나눌 수 있겠군요.",
+    english: "A trustworthy neighbor... Now I can share secrets with you.",
+  },
+  floor_senior: {
+    korean: "층 선배님... 여기가 집이에요. 문조가 웃습니다.",
+    english: "Floor Senior... This is home. Moon-jo smiles.",
+  },
+};
 
 export default function ChatContainer() {
   const { messages, sendMessage, status, error, setMessages } = useChat();
@@ -55,6 +81,43 @@ export default function ChatContainer() {
 
   // Night mode progression
   const { styleOverrides } = useNightProgression(messages.length);
+
+  // Gamification
+  const {
+    totalXP,
+    recentXPGain,
+    currentStreak,
+    longestStreak,
+    rank,
+    rankProgress,
+    nextRank,
+    stats,
+    recordMessage,
+    recordTranslation,
+    recordFlashcardComplete,
+    recordWordSaved,
+  } = useGamification(wordCount);
+
+  // Stats panel
+  const [statsOpen, setStatsOpen] = useState(false);
+  const toggleStats = useCallback(() => setStatsOpen((o) => !o), []);
+  const closeStats = useCallback(() => setStatsOpen(false), []);
+
+  // Rank-up notification
+  const prevRankRef = useRef<ResidentRank>(rank.id);
+  const [rankUpMessage, setRankUpMessage] = useState<{ korean: string; english: string } | null>(null);
+
+  useEffect(() => {
+    if (prevRankRef.current !== rank.id && prevRankRef.current !== undefined) {
+      const msg = RANK_UP_MESSAGES[rank.id];
+      if (msg) {
+        setRankUpMessage(msg);
+        const timer = setTimeout(() => setRankUpMessage(null), 5000);
+        return () => clearTimeout(timer);
+      }
+    }
+    prevRankRef.current = rank.id;
+  }, [rank.id]);
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -98,6 +161,7 @@ export default function ChatContainer() {
   const handleReset = useCallback(() => {
     endFlashcards();
     closePanel();
+    closeStats();
     setShowFarewell(true);
     setTimeout(() => {
       setMessages([]);
@@ -106,9 +170,10 @@ export default function ChatContainer() {
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
-  }, [setMessages, closePanel, endFlashcards]);
+  }, [setMessages, closePanel, endFlashcards, closeStats]);
 
   const handleTopicSelect = (message: string) => {
+    recordMessage(message);
     sendMessage({ text: message });
   };
 
@@ -117,8 +182,18 @@ export default function ChatContainer() {
     const text = input.trim();
     if (!text || isLoading) return;
     setInput("");
+    recordMessage(text);
     sendMessage({ text });
   };
+
+  // Wrap addWords to also record XP for saved words
+  const handleSaveWords = useCallback(
+    (newWords: Parameters<typeof addWords>[0]) => {
+      addWords(newWords);
+      recordWordSaved(newWords.length);
+    },
+    [addWords, recordWordSaved]
+  );
 
   return (
     <div style={styleOverrides} className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border night-transition">
@@ -128,7 +203,30 @@ export default function ChatContainer() {
         isMuted={muted}
         onToggleVocabulary={togglePanel}
         vocabularyCount={unseenCount}
+        rankKorean={rank.korean}
       />
+
+      <StatsBar
+        streak={currentStreak}
+        totalXP={totalXP}
+        rank={rank}
+        rankProgress={rankProgress}
+        onToggleStats={toggleStats}
+      />
+
+      {/* Stats panel overlay */}
+      {statsOpen && (
+        <StatsPanel
+          rank={rank}
+          rankProgress={rankProgress}
+          nextRank={nextRank}
+          totalXP={totalXP}
+          currentStreak={currentStreak}
+          longestStreak={longestStreak}
+          stats={stats}
+          onClose={closeStats}
+        />
+      )}
 
       {panelOpen && !flashcardActive && (
         <VocabularyPanel
@@ -144,6 +242,7 @@ export default function ChatContainer() {
         <FlashcardMode
           words={words}
           onClose={endFlashcards}
+          onSessionComplete={recordFlashcardComplete}
         />
       )}
 
@@ -167,8 +266,9 @@ export default function ChatContainer() {
               <div key={m.id} className="mb-3">
                 <MessageBubble
                   message={m}
-                  onSaveWords={addWords}
+                  onSaveWords={handleSaveWords}
                   isWordSaved={isWordSaved}
+                  onTranslateUsed={recordTranslation}
                 />
               </div>
             ))}
@@ -177,6 +277,22 @@ export default function ChatContainer() {
                 event={activeEvent}
                 onDismiss={dismissEvent}
               />
+            )}
+            {/* Rank-up notification */}
+            {rankUpMessage && (
+              <div className="my-3 text-center animate-rank-up">
+                <div className="inline-block bg-goshiwon-surface border border-goshiwon-yellow/30 rounded-lg px-5 py-3">
+                  <p className="text-xs text-goshiwon-text-muted italic mb-1">
+                    Moon-jo nods slowly.
+                  </p>
+                  <p className="text-sm text-goshiwon-yellow italic">
+                    &ldquo;{rankUpMessage.korean}&rdquo;
+                  </p>
+                  <p className="text-xs text-goshiwon-text-secondary mt-1">
+                    {rankUpMessage.english}
+                  </p>
+                </div>
+              </div>
             )}
             {isLoading &&
               messages[messages.length - 1]?.role === "user" && (
@@ -208,6 +324,11 @@ export default function ChatContainer() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* XP Toast */}
+      {recentXPGain && (
+        <XPToast amount={recentXPGain.amount} action={recentXPGain.action} />
+      )}
 
       <ChatInput
         input={input}

@@ -219,6 +219,57 @@ body {
   animation: summary-in 0.4s ease-out;
 }
 
+/* XP Toast animation — fade-in-up, hold, fade-out */
+@keyframes xp-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.animate-xp-toast {
+  animation: xp-toast 2s ease-out forwards;
+}
+
+/* Rank-up glow animation */
+@keyframes rank-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(212, 168, 67, 0);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 20px 4px rgba(212, 168, 67, 0.3);
+  }
+  70% {
+    opacity: 1;
+    box-shadow: 0 0 10px 2px rgba(212, 168, 67, 0.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(212, 168, 67, 0);
+  }
+}
+
+.animate-rank-up {
+  animation: rank-glow 1.5s ease-out forwards;
+}
+
 /* Night mode progression — smooth color transitions */
 .night-transition {
   transition: background-color 2s ease, border-color 2s ease, color 2s ease;
