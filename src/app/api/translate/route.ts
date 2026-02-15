@@ -46,10 +46,11 @@ export async function POST(req: Request) {
     const result = await generateText({
       model: ollama("exaone3.5:7.8b"),
       system:
-        "You are a translator. Translate the following Korean teaching message into English. " +
-        "Keep any romanization as-is. Translate Korean words and sentences to English. " +
-        "Preserve the structure and formatting (including ** markers for bold). " +
-        "Only output the translation, nothing else.",
+        "You are a translator for a Korean language lesson. Convert this teaching message into plain English. " +
+        "Replace all Korean text (Hangul) with its English meaning. " +
+        "Remove romanization in parentheses. " +
+        "Keep the message structure readable. Preserve ** markers for bold. " +
+        "Output only the English version, nothing else.",
       prompt: text,
       temperature: 0.3,
       maxOutputTokens: 1000,
