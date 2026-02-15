@@ -29,7 +29,6 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
   const [translating, setTranslating] = useState(false);
   const [translateError, setTranslateError] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -80,31 +79,6 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   }, [content, onSaveWords, saved, saving, allWordsSaved]);
-
-  // Cancel speech on unmount
-  useEffect(() => {
-    return () => {
-      if (typeof speechSynthesis !== "undefined") {
-        speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
-  const handleSpeak = useCallback(() => {
-    if (isSpeaking) {
-      speechSynthesis.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-    const utterance = new SpeechSynthesisUtterance(content);
-    utterance.lang = "ko-KR";
-    utterance.rate = 0.9;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
-    setIsSpeaking(true);
-  }, [isSpeaking, content]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const timestamp = useMemo(() => getAtmosphericTimestamp(), []);
@@ -242,38 +216,6 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved }: Mes
                 <line x1="2" y1="12" x2="22" y2="12" />
                 <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
               </svg>
-            </button>
-
-            {/* TTS */}
-            <button
-              onClick={handleSpeak}
-              title={isSpeaking ? "Stop" : "Listen"}
-              aria-label={isSpeaking ? "Stop reading" : "Read message aloud"}
-              className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
-            >
-              {isSpeaking ? (
-                <svg
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <rect x="6" y="6" width="12" height="12" rx="1" />
-                </svg>
-              ) : (
-                <svg
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                  <path d="M15.54 8.46a5 5 0 010 7.07" />
-                  <path d="M19.07 4.93a10 10 0 010 14.14" />
-                </svg>
-              )}
             </button>
 
             {/* Copy */}

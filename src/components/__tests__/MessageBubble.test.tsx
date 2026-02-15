@@ -18,29 +18,6 @@ Object.assign(navigator, {
   clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
 });
 
-// Mock speechSynthesis
-const mockSpeak = vi.fn();
-const mockCancel = vi.fn();
-Object.defineProperty(global, "speechSynthesis", {
-  value: { speak: mockSpeak, cancel: mockCancel, speaking: false },
-  writable: true,
-});
-
-class MockSpeechSynthesisUtterance {
-  text: string;
-  lang = "";
-  rate = 1;
-  onend: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  constructor(text: string) {
-    this.text = text;
-  }
-}
-Object.defineProperty(global, "SpeechSynthesisUtterance", {
-  value: MockSpeechSynthesisUtterance,
-  writable: true,
-});
-
 describe("MessageBubble", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -323,60 +300,6 @@ describe("MessageBubble", () => {
     expect(btn).toHaveAttribute("aria-pressed", "false");
   });
 
-  // TTS tests
-
-  it("renders TTS button on assistant messages", () => {
-    const message = createMessage({
-      role: "assistant",
-      parts: [{ type: "text" as const, text: "안녕하세요" }],
-    });
-    render(<MessageBubble message={message} />);
-    expect(screen.getByLabelText("Read message aloud")).toBeInTheDocument();
-  });
-
-  it("does not render TTS button on user messages", () => {
-    const message = createMessage({
-      role: "user",
-      parts: [{ type: "text" as const, text: "Hello" }],
-    });
-    render(<MessageBubble message={message} />);
-    expect(screen.queryByLabelText("Read message aloud")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Stop reading")).not.toBeInTheDocument();
-  });
-
-  it("calls speechSynthesis.speak with Korean lang when TTS button is clicked", () => {
-    mockSpeak.mockClear();
-    mockCancel.mockClear();
-    const message = createMessage({
-      role: "assistant",
-      parts: [{ type: "text" as const, text: "안녕하세요" }],
-    });
-    render(<MessageBubble message={message} />);
-
-    fireEvent.click(screen.getByLabelText("Read message aloud"));
-
-    expect(mockSpeak).toHaveBeenCalledTimes(1);
-    const utterance = mockSpeak.mock.calls[0][0];
-    expect(utterance.text).toBe("안녕하세요");
-    expect(utterance.lang).toBe("ko-KR");
-    expect(utterance.rate).toBe(0.9);
-  });
-
-  it("TTS button click does not trigger translation", () => {
-    vi.spyOn(global, "fetch").mockImplementation(() => new Promise(() => {}));
-    mockSpeak.mockClear();
-    const message = createMessage({
-      role: "assistant",
-      parts: [{ type: "text" as const, text: "안녕하세요" }],
-    });
-    render(<MessageBubble message={message} />);
-
-    fireEvent.click(screen.getByLabelText("Read message aloud"));
-
-    // fetch should not be called — translation was not triggered
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
   // Vocabulary save tests
 
   it("renders save vocabulary button on assistant messages that contain vocabulary", () => {
@@ -478,24 +401,4 @@ describe("MessageBubble", () => {
     expect(screen.queryByLabelText("Save vocabulary")).not.toBeInTheDocument();
   });
 
-  it("shows stop icon and cancels speech when clicked while speaking", () => {
-    mockSpeak.mockClear();
-    mockCancel.mockClear();
-    const message = createMessage({
-      role: "assistant",
-      parts: [{ type: "text" as const, text: "안녕하세요" }],
-    });
-    render(<MessageBubble message={message} />);
-
-    // Start speaking
-    fireEvent.click(screen.getByLabelText("Read message aloud"));
-    expect(mockSpeak).toHaveBeenCalledTimes(1);
-
-    // Now button should show "Stop reading"
-    expect(screen.getByLabelText("Stop reading")).toBeInTheDocument();
-
-    // Click again to stop
-    fireEvent.click(screen.getByLabelText("Stop reading"));
-    expect(mockCancel).toHaveBeenCalled();
-  });
 });

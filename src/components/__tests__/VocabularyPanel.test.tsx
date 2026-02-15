@@ -20,6 +20,29 @@ const sampleWords: VocabularyItem[] = [
   },
 ];
 
+// Mock speechSynthesis
+const mockSpeak = vi.fn();
+const mockCancel = vi.fn();
+Object.defineProperty(global, "speechSynthesis", {
+  value: { speak: mockSpeak, cancel: mockCancel, speaking: false },
+  writable: true,
+});
+
+class MockSpeechSynthesisUtterance {
+  text: string;
+  lang = "";
+  rate = 1;
+  onend: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  constructor(text: string) {
+    this.text = text;
+  }
+}
+Object.defineProperty(global, "SpeechSynthesisUtterance", {
+  value: MockSpeechSynthesisUtterance,
+  writable: true,
+});
+
 describe("VocabularyPanel", () => {
   it("renders heading text in Korean and English", () => {
     render(
@@ -202,5 +225,74 @@ describe("VocabularyPanel", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Study flashcards" }));
     expect(onStartStudy).toHaveBeenCalledTimes(1);
+  });
+
+  // TTS tests
+
+  it("renders TTS button for each word", () => {
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    expect(
+      screen.getByLabelText("Listen to 안녕하세요")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Listen to 감사합니다")
+    ).toBeInTheDocument();
+  });
+
+  it("calls speechSynthesis.speak with correct Korean word and lang", () => {
+    mockSpeak.mockClear();
+    mockCancel.mockClear();
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByLabelText("Listen to 안녕하세요"));
+    expect(mockSpeak).toHaveBeenCalledTimes(1);
+    const utterance = mockSpeak.mock.calls[0][0];
+    expect(utterance.text).toBe("안녕하세요");
+    expect(utterance.lang).toBe("ko-KR");
+    expect(utterance.rate).toBe(0.9);
+  });
+
+  it("shows stop label when word is being spoken", () => {
+    mockSpeak.mockClear();
+    mockCancel.mockClear();
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByLabelText("Listen to 안녕하세요"));
+    expect(
+      screen.getByLabelText("Stop listening to 안녕하세요")
+    ).toBeInTheDocument();
+  });
+
+  it("cancels speech when stop button is clicked", () => {
+    mockSpeak.mockClear();
+    mockCancel.mockClear();
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+    // Start speaking
+    fireEvent.click(screen.getByLabelText("Listen to 안녕하세요"));
+    // Stop speaking
+    fireEvent.click(screen.getByLabelText("Stop listening to 안녕하세요"));
+    expect(mockCancel).toHaveBeenCalled();
   });
 });

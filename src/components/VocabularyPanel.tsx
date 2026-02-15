@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import type { VocabularyItem } from "@/types";
 
 interface VocabularyPanelProps {
@@ -20,6 +21,34 @@ export default function VocabularyPanel({
   const sortedWords = [...words].sort(
     (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
   );
+
+  // TTS state — tracks which word is currently being spoken
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+
+  // Cancel speech on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof speechSynthesis !== "undefined") {
+        speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handleSpeak = useCallback((word: VocabularyItem) => {
+    if (speakingId === word.id) {
+      speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(word.korean);
+    utterance.lang = "ko-KR";
+    utterance.rate = 0.9;
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+    speechSynthesis.speak(utterance);
+    setSpeakingId(word.id);
+  }, [speakingId]);
 
   return (
     <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
@@ -105,22 +134,54 @@ export default function VocabularyPanel({
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => onRemoveWord(word.id)}
-                aria-label={`Remove ${word.korean}`}
-                className="p-1 text-goshiwon-text-muted hover:text-goshiwon-accent-light transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-              >
-                <svg
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
+              <div className="flex items-center gap-0.5 shrink-0">
+                {/* TTS button */}
+                <button
+                  onClick={() => handleSpeak(word)}
+                  aria-label={speakingId === word.id ? `Stop listening to ${word.korean}` : `Listen to ${word.korean}`}
+                  className="p-1 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
                 >
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
+                  {speakingId === word.id ? (
+                    <svg
+                      className="w-3.5 h-3.5"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <rect x="6" y="6" width="12" height="12" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-3.5 h-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 010 7.07" />
+                    </svg>
+                  )}
+                </button>
+                {/* Delete button */}
+                <button
+                  onClick={() => onRemoveWord(word.id)}
+                  aria-label={`Remove ${word.korean}`}
+                  className="p-1 text-goshiwon-text-muted hover:text-goshiwon-accent-light transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
           ))
         )}

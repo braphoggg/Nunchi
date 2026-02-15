@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { VocabularyItem } from "@/types";
 import { useFlashcards } from "@/hooks/useFlashcards";
 
@@ -52,6 +52,43 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
   useEffect(() => {
     setAnimKey((k) => k + 1);
   }, [currentIndex]);
+
+  // TTS state
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Cancel speech on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof speechSynthesis !== "undefined") {
+        speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Cancel speech when card changes
+  useEffect(() => {
+    if (typeof speechSynthesis !== "undefined") {
+      speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  }, [currentIndex]);
+
+  const handleSpeak = useCallback(() => {
+    if (!currentCard) return;
+    if (isSpeaking) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(currentCard.korean);
+    utterance.lang = "ko-KR";
+    utterance.rate = 0.9;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  }, [isSpeaking, currentCard]);
 
   // Auto-start session on mount
   useEffect(() => {
@@ -202,10 +239,13 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
             key={animKey}
             className="flashcard-container w-full max-w-sm animate-card-slide-in"
           >
-            <button
+            <div
               onClick={flip}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } }}
+              role="button"
+              tabIndex={0}
               aria-label={flipped ? "Flip card to front" : "Flip card to back"}
-              className="w-full"
+              className="w-full cursor-pointer"
             >
               <div className={`flashcard-inner ${flipped ? "flashcard-flipped" : ""}`}>
                 {/* Front face */}
@@ -213,7 +253,23 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
                   <span className="text-[#d4a843] text-2xl font-bold leading-relaxed">
                     {currentCard.korean}
                   </span>
-                  <span className="text-[10px] text-goshiwon-text-muted mt-4">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleSpeak(); }}
+                    aria-label={isSpeaking ? "Stop listening" : "Listen to pronunciation"}
+                    className="mt-3 p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded-full"
+                  >
+                    {isSpeaking ? (
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="6" width="12" height="12" rx="1" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M15.54 8.46a5 5 0 010 7.07" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-[10px] text-goshiwon-text-muted mt-2">
                     tap to flip
                   </span>
                 </div>
@@ -227,7 +283,7 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
                   </span>
                 </div>
               </div>
-            </button>
+            </div>
           </div>
         )}
       </div>

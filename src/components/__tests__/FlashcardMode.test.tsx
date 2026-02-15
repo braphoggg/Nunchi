@@ -21,6 +21,29 @@ const sampleWords: VocabularyItem[] = [
   makeWord({ id: "4", korean: "벽", romanization: "byeok", english: "wall" }),
 ];
 
+// Mock speechSynthesis
+const mockSpeak = vi.fn();
+const mockCancel = vi.fn();
+Object.defineProperty(global, "speechSynthesis", {
+  value: { speak: mockSpeak, cancel: mockCancel, speaking: false },
+  writable: true,
+});
+
+class MockSpeechSynthesisUtterance {
+  text: string;
+  lang = "";
+  rate = 1;
+  onend: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  constructor(text: string) {
+    this.text = text;
+  }
+}
+Object.defineProperty(global, "SpeechSynthesisUtterance", {
+  value: MockSpeechSynthesisUtterance,
+  writable: true,
+});
+
 describe("FlashcardMode", () => {
   it("renders card front with Korean text on mount", () => {
     render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
@@ -212,5 +235,28 @@ describe("FlashcardMode", () => {
     expect(screen.getByText("2 / 4")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Previous card"));
     expect(screen.getByText("1 / 4")).toBeInTheDocument();
+  });
+
+  // TTS tests
+
+  it("renders speak button on flashcard", () => {
+    render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
+    expect(
+      screen.getByLabelText("Listen to pronunciation")
+    ).toBeInTheDocument();
+  });
+
+  it("calls speechSynthesis.speak with current card Korean word", () => {
+    mockSpeak.mockClear();
+    mockCancel.mockClear();
+    render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Listen to pronunciation"));
+    expect(mockSpeak).toHaveBeenCalledTimes(1);
+    const utterance = mockSpeak.mock.calls[0][0];
+    // Should be one of the sample words (deck is shuffled)
+    const koreanWords = sampleWords.map((w) => w.korean);
+    expect(koreanWords).toContain(utterance.text);
+    expect(utterance.lang).toBe("ko-KR");
+    expect(utterance.rate).toBe(0.9);
   });
 });
