@@ -1,4 +1,4 @@
-# Nunchi
+# Nunchi눈치
 
 **눈치** — *Learn Korean from the neighbor you never asked for.*
 
