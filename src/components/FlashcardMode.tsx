@@ -209,7 +209,7 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
             >
               <div className={`flashcard-inner ${flipped ? "flashcard-flipped" : ""}`}>
                 {/* Front face */}
-                <div className="flashcard-front bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 min-h-[200px] flex flex-col items-center justify-center">
+                <div className="flashcard-front bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 flex flex-col items-center justify-center">
                   <span className="text-[#d4a843] text-2xl font-bold leading-relaxed">
                     {currentCard.korean}
                   </span>
@@ -218,7 +218,7 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
                   </span>
                 </div>
                 {/* Back face */}
-                <div className="flashcard-back bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 min-h-[200px] flex flex-col items-center justify-center absolute inset-0">
+                <div className="flashcard-back bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 flex flex-col items-center justify-center">
                   <span className="text-goshiwon-text-muted text-sm mb-2">
                     {currentCard.romanization}
                   </span>
@@ -240,23 +240,26 @@ export default function FlashcardMode({ words, onClose }: FlashcardModeProps) {
             <button
               onClick={() => grade("again")}
               aria-label="Grade: Again"
-              className="flex-1 max-w-[100px] py-2 text-xs font-medium rounded-lg bg-goshiwon-accent/20 text-goshiwon-accent-light border border-goshiwon-accent/40 hover:bg-goshiwon-accent/30 transition-colors"
+              className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-accent/20 text-goshiwon-accent-light border border-goshiwon-accent/40 hover:bg-goshiwon-accent/30 transition-colors flex flex-col items-center gap-0.5"
             >
-              다시
+              <span>Again</span>
+              <span className="text-[10px] opacity-60">다시</span>
             </button>
             <button
               onClick={() => grade("good")}
               aria-label="Grade: Good"
-              className="flex-1 max-w-[100px] py-2 text-xs font-medium rounded-lg bg-goshiwon-surface text-goshiwon-text border border-goshiwon-border hover:bg-goshiwon-surface-hover transition-colors"
+              className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-surface text-goshiwon-text border border-goshiwon-border hover:bg-goshiwon-surface-hover transition-colors flex flex-col items-center gap-0.5"
             >
-              좋아요
+              <span>Good</span>
+              <span className="text-[10px] opacity-60">좋아요</span>
             </button>
             <button
               onClick={() => grade("easy")}
               aria-label="Grade: Easy"
-              className="flex-1 max-w-[100px] py-2 text-xs font-medium rounded-lg bg-goshiwon-yellow/15 text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors"
+              className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-yellow/15 text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors flex flex-col items-center gap-0.5"
             >
-              쉬워요
+              <span>Easy</span>
+              <span className="text-[10px] opacity-60">쉬워요</span>
             </button>
           </div>
         )}
