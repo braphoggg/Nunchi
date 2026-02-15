@@ -6,12 +6,16 @@ interface VocabularyPanelProps {
   words: VocabularyItem[];
   onRemoveWord: (id: string) => void;
   onClose: () => void;
+  onStartStudy?: () => void;
+  studyableCount?: number;
 }
 
 export default function VocabularyPanel({
   words,
   onRemoveWord,
   onClose,
+  onStartStudy,
+  studyableCount = 0,
 }: VocabularyPanelProps) {
   const sortedWords = [...words].sort(
     (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
@@ -30,6 +34,21 @@ export default function VocabularyPanel({
             {words.length === 1 ? "word" : "words"}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          {onStartStudy && studyableCount >= 2 && (
+            <button
+              onClick={onStartStudy}
+              aria-label="Study flashcards"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              Study
+            </button>
+          )}
         <button
           onClick={onClose}
           aria-label="Close vocabulary panel"
@@ -46,6 +65,7 @@ export default function VocabularyPanel({
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
+        </div>
       </div>
 
       {/* Word list */}

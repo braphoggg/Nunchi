@@ -160,6 +160,62 @@ body {
   animation: vocab-panel-in 0.25s ease-out;
 }
 
+/* Flashcard 3D flip */
+.flashcard-container {
+  perspective: 800px;
+}
+
+.flashcard-inner {
+  position: relative;
+  transition: transform 0.5s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.flashcard-flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+  backface-visibility: hidden;
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+/* Card slide transition */
+@keyframes card-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-card-slide-in {
+  animation: card-slide-in 0.25s ease-out;
+}
+
+/* Summary fade-in */
+@keyframes summary-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-summary-in {
+  animation: summary-in 0.4s ease-out;
+}
+
 /* Mobile touch improvements */
 @media (max-width: 640px) {
   ::-webkit-scrollbar {

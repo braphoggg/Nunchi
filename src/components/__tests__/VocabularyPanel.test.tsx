@@ -158,4 +158,49 @@ describe("VocabularyPanel", () => {
       screen.getByRole("button", { name: "Remove 감사합니다" })
     ).toBeInTheDocument();
   });
+
+  it("shows Study button when onStartStudy is provided and studyableCount >= 2", () => {
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+        onStartStudy={vi.fn()}
+        studyableCount={2}
+      />
+    );
+    expect(
+      screen.getByRole("button", { name: "Study flashcards" })
+    ).toBeInTheDocument();
+  });
+
+  it("hides Study button when studyableCount < 2", () => {
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+        onStartStudy={vi.fn()}
+        studyableCount={1}
+      />
+    );
+    expect(
+      screen.queryByRole("button", { name: "Study flashcards" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls onStartStudy when Study button is clicked", () => {
+    const onStartStudy = vi.fn();
+    render(
+      <VocabularyPanel
+        words={sampleWords}
+        onRemoveWord={vi.fn()}
+        onClose={vi.fn()}
+        onStartStudy={onStartStudy}
+        studyableCount={4}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Study flashcards" }));
+    expect(onStartStudy).toHaveBeenCalledTimes(1);
+  });
 });

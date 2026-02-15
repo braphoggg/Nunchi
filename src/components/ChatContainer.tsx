@@ -8,8 +8,10 @@ import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
 import WelcomeScreen from "./WelcomeScreen";
 import VocabularyPanel from "./VocabularyPanel";
+import FlashcardMode from "./FlashcardMode";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
 import { useVocabulary } from "@/hooks/useVocabulary";
+import { useFlashcards } from "@/hooks/useFlashcards";
 import { resetTimestampCounter } from "@/lib/timestamps";
 
 export default function ChatContainer() {
@@ -35,6 +37,14 @@ export default function ChatContainer() {
     togglePanel,
     closePanel,
   } = useVocabulary();
+
+  // Flashcard mode
+  const {
+    startSession: startFlashcards,
+    endSession: endFlashcards,
+    isActive: flashcardActive,
+    studyableCount,
+  } = useFlashcards(words);
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -76,6 +86,7 @@ export default function ChatContainer() {
 
   // Reset conversation
   const handleReset = useCallback(() => {
+    endFlashcards();
     closePanel();
     setShowFarewell(true);
     setTimeout(() => {
@@ -85,7 +96,7 @@ export default function ChatContainer() {
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
-  }, [setMessages, closePanel]);
+  }, [setMessages, closePanel, endFlashcards]);
 
   const handleTopicSelect = (message: string) => {
     sendMessage({ text: message });
@@ -109,11 +120,20 @@ export default function ChatContainer() {
         vocabularyCount={unseenCount}
       />
 
-      {panelOpen && (
+      {panelOpen && !flashcardActive && (
         <VocabularyPanel
           words={words}
           onRemoveWord={removeWord}
           onClose={closePanel}
+          onStartStudy={startFlashcards}
+          studyableCount={studyableCount}
+        />
+      )}
+
+      {panelOpen && flashcardActive && (
+        <FlashcardMode
+          words={words}
+          onClose={endFlashcards}
         />
       )}
 
