@@ -1,8 +1,8 @@
-# Nunchi
+# Nunchi눈치
 
-**눈치** — *Learn Korean from the neighbor you never asked for.*
+**Nunchi눈치** — *Learn Korean from the neighbor you never asked for.*
 
-An AI-powered Korean language learning app where your teacher is Seo Moon-jo (서문조), the dentist from Room 203 at Eden Goshiwon. Inspired by the K-drama *Strangers from Hell* (타인은 지옥이다), Nunchi teaches vocabulary, grammar, and Korean culture through immersive, in-character conversation with a charmingly unsettling tutor. Completely free — runs on a local LLM via Ollama. No API keys needed.
+An AI-powered Korean language learning app where your teacher is Seo Moon-jo (서문조), the dentist from Room 203 at Eden Goshiwon. Inspired by the K-drama *Strangers from Hell* (타인은 지옥이다), Nunchi (눈치) teaches vocabulary, grammar, and Korean culture through immersive, in-character conversation with a charmingly unsettling tutor. Completely free — runs on a local LLM via Ollama. No API keys needed.
 
 ![screenshot](screenshot.png)
 
