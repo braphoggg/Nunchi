@@ -377,6 +377,59 @@ describe("MessageBubble", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  // Vocabulary save tests
+
+  it("renders save vocabulary button on assistant messages that contain vocabulary", () => {
+    const message = createMessage({
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "Learn **안녕** (annyeong) hello" }],
+    });
+    render(<MessageBubble message={message} onSaveWords={vi.fn()} isWordSaved={vi.fn().mockReturnValue(false)} />);
+    expect(screen.getByLabelText("Save vocabulary")).toBeInTheDocument();
+  });
+
+  it("does not render save vocabulary button on user messages", () => {
+    const message = createMessage({
+      role: "user",
+      parts: [{ type: "text" as const, text: "**안녕** (annyeong) hello" }],
+    });
+    render(<MessageBubble message={message} onSaveWords={vi.fn()} isWordSaved={vi.fn()} />);
+    expect(screen.queryByLabelText("Save vocabulary")).not.toBeInTheDocument();
+  });
+
+  it("does not render save vocabulary button when message has no vocabulary", () => {
+    const message = createMessage({
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "Welcome to Room 203." }],
+    });
+    render(<MessageBubble message={message} onSaveWords={vi.fn()} isWordSaved={vi.fn()} />);
+    expect(screen.queryByLabelText("Save vocabulary")).not.toBeInTheDocument();
+  });
+
+  it("calls onSaveWords with parsed vocabulary when save button is clicked", () => {
+    const onSaveWords = vi.fn();
+    const message = createMessage({
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "Learn **문** (mun) door" }],
+    });
+    render(<MessageBubble message={message} onSaveWords={onSaveWords} isWordSaved={vi.fn().mockReturnValue(false)} />);
+
+    fireEvent.click(screen.getByLabelText("Save vocabulary"));
+
+    expect(onSaveWords).toHaveBeenCalledWith([
+      { korean: "문", romanization: "mun", english: "door" },
+    ]);
+  });
+
+  it("does not render save button when onSaveWords is not provided", () => {
+    const message = createMessage({
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "Learn **안녕** (annyeong) hello" }],
+    });
+    render(<MessageBubble message={message} />);
+    expect(screen.queryByLabelText("Save vocabulary")).not.toBeInTheDocument();
+  });
+
   it("shows stop icon and cancels speech when clicked while speaking", () => {
     mockSpeak.mockClear();
     mockCancel.mockClear();

@@ -48,4 +48,38 @@ describe("TopBar", () => {
     render(<TopBar />);
     expect(screen.queryByLabelText("Leave Room 203")).not.toBeInTheDocument();
   });
+
+  // Vocabulary button tests
+
+  it("renders vocabulary button when onToggleVocabulary is provided", () => {
+    render(<TopBar onToggleVocabulary={vi.fn()} />);
+    expect(screen.getByLabelText("Open vocabulary list")).toBeInTheDocument();
+  });
+
+  it("does not render vocabulary button when onToggleVocabulary is not provided", () => {
+    render(<TopBar />);
+    expect(screen.queryByLabelText("Open vocabulary list")).not.toBeInTheDocument();
+  });
+
+  it("calls onToggleVocabulary when vocabulary button is clicked", () => {
+    const onToggleVocabulary = vi.fn();
+    render(<TopBar onToggleVocabulary={onToggleVocabulary} />);
+    fireEvent.click(screen.getByLabelText("Open vocabulary list"));
+    expect(onToggleVocabulary).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows word count badge when vocabularyCount > 0", () => {
+    render(<TopBar onToggleVocabulary={vi.fn()} vocabularyCount={5} />);
+    expect(screen.getByText("5")).toBeInTheDocument();
+  });
+
+  it("does not show badge when vocabularyCount is 0", () => {
+    render(<TopBar onToggleVocabulary={vi.fn()} vocabularyCount={0} />);
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
+  it("caps badge display at 99", () => {
+    render(<TopBar onToggleVocabulary={vi.fn()} vocabularyCount={150} />);
+    expect(screen.getByText("99")).toBeInTheDocument();
+  });
 });

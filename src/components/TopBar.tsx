@@ -2,9 +2,11 @@ interface TopBarProps {
   onReset?: () => void;
   onToggleMute?: () => void;
   isMuted?: boolean;
+  onToggleVocabulary?: () => void;
+  vocabularyCount?: number;
 }
 
-export default function TopBar({ onReset, onToggleMute, isMuted }: TopBarProps) {
+export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, vocabularyCount }: TopBarProps) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
       {/* Avatar — silhouette */}
@@ -29,6 +31,33 @@ export default function TopBar({ onReset, onToggleMute, isMuted }: TopBarProps) 
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Vocabulary panel toggle */}
+        {onToggleVocabulary && (
+          <button
+            onClick={onToggleVocabulary}
+            aria-label="Open vocabulary list"
+            className="relative p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+            </svg>
+            {(vocabularyCount ?? 0) > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-goshiwon-accent rounded-full flex items-center justify-center text-[8px] text-goshiwon-text font-medium">
+                {vocabularyCount! > 99 ? "99" : vocabularyCount}
+              </span>
+            )}
+          </button>
+        )}
+
         {/* Mute toggle */}
         {onToggleMute && (
           <button

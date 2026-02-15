@@ -7,7 +7,9 @@ import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
 import WelcomeScreen from "./WelcomeScreen";
+import VocabularyPanel from "./VocabularyPanel";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { resetTimestampCounter } from "@/lib/timestamps";
 
 export default function ChatContainer() {
@@ -20,6 +22,18 @@ export default function ChatContainer() {
 
   // Sound engine
   const { playKeyClick, playAmbientHum, muted, toggleMute } = useSoundEngine();
+
+  // Vocabulary tracker
+  const {
+    words,
+    wordCount,
+    panelOpen,
+    addWords,
+    removeWord,
+    isWordSaved,
+    togglePanel,
+    closePanel,
+  } = useVocabulary();
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -61,6 +75,7 @@ export default function ChatContainer() {
 
   // Reset conversation
   const handleReset = useCallback(() => {
+    closePanel();
     setShowFarewell(true);
     setTimeout(() => {
       setMessages([]);
@@ -69,7 +84,7 @@ export default function ChatContainer() {
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
-  }, [setMessages]);
+  }, [setMessages, closePanel]);
 
   const handleTopicSelect = (message: string) => {
     sendMessage({ text: message });
@@ -84,12 +99,22 @@ export default function ChatContainer() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border">
+    <div className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border">
       <TopBar
         onReset={messages.length > 0 ? handleReset : undefined}
         onToggleMute={toggleMute}
         isMuted={muted}
+        onToggleVocabulary={togglePanel}
+        vocabularyCount={wordCount}
       />
+
+      {panelOpen && (
+        <VocabularyPanel
+          words={words}
+          onRemoveWord={removeWord}
+          onClose={closePanel}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {/* Farewell overlay */}
@@ -109,7 +134,11 @@ export default function ChatContainer() {
           <div className={transitioning ? "fade-enter" : "fade-enter-active"}>
             {messages.map((m) => (
               <div key={m.id} className="mb-3">
-                <MessageBubble message={m} />
+                <MessageBubble
+                  message={m}
+                  onSaveWords={addWords}
+                  isWordSaved={isWordSaved}
+                />
               </div>
             ))}
             {isLoading &&

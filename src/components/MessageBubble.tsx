@@ -4,9 +4,13 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import type { UIMessage } from "ai";
 import { formatMessage } from "@/lib/format-message";
 import { getAtmosphericTimestamp } from "@/lib/timestamps";
+import { parseVocabulary, hasVocabulary } from "@/lib/parse-vocabulary";
+import type { VocabularyItem } from "@/types";
 
 interface MessageBubbleProps {
   message: UIMessage;
+  onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
+  isWordSaved?: (korean: string) => boolean;
 }
 
 function getTextContent(message: UIMessage): string {
@@ -16,7 +20,7 @@ function getTextContent(message: UIMessage): string {
     .join("");
 }
 
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({ message, onSaveWords, isWordSaved }: MessageBubbleProps) {
   const isAssistant = message.role === "assistant";
   const content = getTextContent(message);
 
@@ -26,6 +30,17 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const [translateError, setTranslateError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSaveWords = useCallback(() => {
+    if (!onSaveWords) return;
+    const vocabItems = parseVocabulary(content);
+    if (vocabItems.length > 0) {
+      onSaveWords(vocabItems);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    }
+  }, [content, onSaveWords]);
 
   // Cancel speech on unmount
   useEffect(() => {
@@ -245,6 +260,35 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                 </svg>
               )}
             </button>
+
+            {/* Save vocabulary */}
+            {onSaveWords && hasVocabulary(content) && (
+              <button
+                onClick={handleSaveWords}
+                aria-label="Save vocabulary"
+                className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
+              >
+                {saved ? (
+                  <span className="text-[10px] text-goshiwon-yellow font-medium">
+                    Saved!
+                  </span>
+                ) : (
+                  <svg
+                    className="w-3.5 h-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-1 mt-1 mr-1 justify-end">
