@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WelcomeScreen from "../WelcomeScreen";
 import { LESSON_TOPICS } from "@/lib/lesson-topics";
+import type { RankInfo } from "@/types";
 
 describe("WelcomeScreen", () => {
   const onSelectTopic = vi.fn();
@@ -46,5 +47,33 @@ describe("WelcomeScreen", () => {
   it("shows the footer hint text", () => {
     render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
     expect(screen.getByText(/Moon-jo is always/)).toBeInTheDocument();
+  });
+
+  it("shows rank-specific greeting for quiet_tenant", () => {
+    const rank: RankInfo = {
+      id: "quiet_tenant",
+      korean: "조용한 세입자",
+      english: "Quiet Tenant",
+      description: "Moon-jo has noticed.",
+      minXP: 100,
+      minVocab: 10,
+    };
+    render(<WelcomeScreen onSelectTopic={onSelectTopic} rank={rank} />);
+    expect(screen.getByText(/돌아왔군요/)).toBeInTheDocument();
+    expect(screen.getByText(/You're back/)).toBeInTheDocument();
+  });
+
+  it("shows rank-specific greeting for floor_senior", () => {
+    const rank: RankInfo = {
+      id: "floor_senior",
+      korean: "층 선배",
+      english: "Floor Senior",
+      description: "You belong here. Moon-jo smiles.",
+      minXP: 5000,
+      minVocab: 150,
+    };
+    render(<WelcomeScreen onSelectTopic={onSelectTopic} rank={rank} />);
+    expect(screen.getByText(/선배님/)).toBeInTheDocument();
+    expect(screen.getByText(/This floor belongs to you/)).toBeInTheDocument();
   });
 });

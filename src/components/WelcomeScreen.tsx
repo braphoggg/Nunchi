@@ -1,20 +1,48 @@
 "use client";
 
 import { LESSON_TOPICS } from "@/lib/lesson-topics";
+import type { RankInfo } from "@/types";
+
+/** Atmospheric welcome greetings per rank */
+const WELCOME_GREETINGS: Record<string, { korean: string; english: string }> = {
+  new_resident: {
+    korean: "환영합니다, 새 입주자님.",
+    english: "Welcome, new resident. What shall we study tonight?",
+  },
+  quiet_tenant: {
+    korean: "돌아왔군요, 세입자님.",
+    english: "You're back. Shall we continue where we left off?",
+  },
+  regular: {
+    korean: "어서 오세요. 기다리고 있었어요.",
+    english: "Welcome. I've been waiting for you.",
+  },
+  trusted_neighbor: {
+    korean: "다시 만나서 반가워요, 이웃님.",
+    english: "Good to see you again, neighbor. The usual?",
+  },
+  floor_senior: {
+    korean: "선배님, 오셨군요. 이 층은 당신 것이에요.",
+    english: "You're here. This floor belongs to you now.",
+  },
+};
 
 interface WelcomeScreenProps {
   onSelectTopic: (message: string) => void;
+  rank?: RankInfo;
 }
 
-export default function WelcomeScreen({ onSelectTopic }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onSelectTopic, rank }: WelcomeScreenProps) {
+  const greeting = WELCOME_GREETINGS[rank?.id ?? "new_resident"] ?? WELCOME_GREETINGS.new_resident;
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-light text-goshiwon-text mb-2">
-          환영합니다, 새 입주자님.
+          {greeting.korean}
         </h2>
         <p className="text-sm text-goshiwon-text-secondary">
-          Welcome, new resident. What shall we study tonight?
+          {greeting.english}
         </p>
       </div>
 

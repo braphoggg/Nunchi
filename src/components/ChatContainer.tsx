@@ -107,17 +107,25 @@ export default function ChatContainer() {
   const prevRankRef = useRef<ResidentRank>(rank.id);
   const [rankUpMessage, setRankUpMessage] = useState<{ korean: string; english: string } | null>(null);
 
+  // Detect rank changes (set message immediately, but don't start timer yet)
   useEffect(() => {
     if (prevRankRef.current !== rank.id && prevRankRef.current !== undefined) {
       const msg = RANK_UP_MESSAGES[rank.id];
       if (msg) {
         setRankUpMessage(msg);
-        const timer = setTimeout(() => setRankUpMessage(null), 5000);
-        return () => clearTimeout(timer);
       }
     }
     prevRankRef.current = rank.id;
   }, [rank.id]);
+
+  // Auto-dismiss rank-up notification only when overlays are closed
+  useEffect(() => {
+    if (!rankUpMessage) return;
+    // If an overlay is blocking the view, wait — don't start the timer
+    if (panelOpen || flashcardActive || statsOpen) return;
+    const timer = setTimeout(() => setRankUpMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [rankUpMessage, panelOpen, flashcardActive, statsOpen]);
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -258,7 +266,7 @@ export default function ChatContainer() {
 
         {!showFarewell && messages.length === 0 ? (
           <div className={transitioning ? "fade-exit-active" : ""}>
-            <WelcomeScreen onSelectTopic={handleTopicSelect} />
+            <WelcomeScreen onSelectTopic={handleTopicSelect} rank={rank} />
           </div>
         ) : !showFarewell ? (
           <div className={transitioning ? "fade-enter" : "fade-enter-active"}>
