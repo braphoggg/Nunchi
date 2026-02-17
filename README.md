@@ -199,62 +199,18 @@ Tests use Vitest with jsdom and React Testing Library. Build validated with Type
 
 ## Recent Improvements
 
-### Session 3 - Manual Testing & Bug Verification ✅
+- **Help/tutorial modal** — ? button in TopBar, comprehensive guide (Escape to close)
+- **AI character boundaries** — Refuses non-Korean topics, redirects to language learning
+- **Context awareness** — References previous messages when asked
+- **Message length optimization** — <200 words per response, progressive teaching
+- **TypeError prevention** — Defensive checks in topic selection and form submission
+- **Translation race condition** — Guard prevents duplicate XP from rapid clicks
+- **Overlay management** — Mutual exclusion, proper z-index, Escape key closes
+- **Rank tooltips** — Hover over Korean names to see English
+- **Leave confirmation** — Safety dialog before conversation reset
+- **Progress clarity** — "110/500 XP · 13/30 words" instead of "needed" format
 
-**Comprehensive browser testing conducted** to verify all fixes from Session 2. All 6 bugs manually reproduced and tested using Chrome extension automation:
-
-| Bug | Status | Test Result |
-|-----|--------|-------------|
-| **Bug 1**: No help/tutorial button | ✅ VERIFIED FIXED | Help modal accessible via ? icon, comprehensive tutorial content, Escape closes overlay |
-| **Bug 2**: Translate button (hover vs click) | ✅ NO CHANGE NEEDED | User chose to keep click-to-translate (yellow globe + hint text) |
-| **Bug 3**: Moon-jo teaches math/non-Korean topics | ✅ VERIFIED FIXED | Tested "what is 2+2?" and "help me with calculus" — correctly refuses and redirects to Korean |
-| **Bug 4**: No context awareness | ✅ VERIFIED WORKING | Tested "what did you just teach me?" — correctly references previous lesson |
-| **Bug 5**: Messages too long (250+ words) | ✅ VERIFIED FIXED | Responses now under 200 words, 2-3 concepts max, progressive teaching |
-| **Bug 6**: TypeError on topic selection | ✅ VERIFIED FIXED | Tested "Describing Feelings" button — no errors, defensive checks working |
-
-**Key Finding:** All Session 2 fixes were already implemented and working correctly. The system prompt's CRITICAL BOUNDARIES, CONVERSATION CONTINUITY, and MESSAGE LENGTH sections are functioning as designed.
-
-**Files Previously Modified in Session 2:**
-- `src/lib/system-prompt.ts` — CRITICAL BOUNDARIES (refuses non-Korean topics), CONVERSATION CONTINUITY (references context), MESSAGE LENGTH (<200 words)
-- `src/components/ChatContainer.tsx` — TypeError guards, help modal state, Escape key handler
-- `src/components/HelpModal.tsx` — NEW - comprehensive tutorial overlay
-- `src/components/TopBar.tsx` — Help button (? icon)
-
-**Test Results:** All 358 tests passing ✅
-
----
-
-### Session 2 - Bug Fixes & Help Modal (6 bugs fixed)
-1. **Help/Tutorial Modal** — Created comprehensive help overlay (Escape to close) covering XP system, ranks, vocabulary, flashcards, streaks, keyboard shortcuts, and learning tips
-2. **AI Character Boundaries** — Moon-jo now refuses non-Korean topics (math, weather, etc.) and redirects to Korean learning with example phrases
-3. **AI Context Awareness** — Moon-jo references previous messages when asked "what did you just say?" and maintains conversation continuity
-4. **Message Length Optimization** — Responses limited to <200 words, 2-3 concepts max, progressive teaching across multiple exchanges
-5. **TypeError Prevention** — Added defensive `!sendMessage` checks in topic selection and message submission to prevent undefined state access
-6. **Translate Button Decision** — Kept current click-to-translate implementation (yellow globe icon + hint text) per user preference
-
-**Files Modified:**
-- `src/lib/system-prompt.ts` — Added CRITICAL BOUNDARIES, CONVERSATION CONTINUITY, MESSAGE LENGTH sections
-- `src/components/ChatContainer.tsx` — TypeError guards, help modal integration, Escape key handler
-- `src/components/HelpModal.tsx` — NEW FILE - comprehensive tutorial overlay
-- `src/components/TopBar.tsx` — Added help button (? icon)
-
-### Session 1 - QoL & Visual Fixes (7 bugs + 4 enhancements)
-**Bug Fixes:**
-1. **Translate double-click race condition** — Added `translating` guard to prevent duplicate XP from rapid clicks
-2. **Overlays coexistence** — Stats + vocab panels can no longer render simultaneously
-3. **Escape key handling** — Pressing Escape now closes overlays (stats → flashcards → vocab priority)
-4. **Progress bar overflow** — Clamped progress to 100% to prevent visual overflow
-5. **TopBar/StatsBar z-index** — Raised to z-50 so they remain clickable above overlays
-6. **StatsPanel progress clarity** — Changed from "500 XP & 30 words needed" to "110/500 XP · 13/30 words"
-7. **VocabCount propagation** — Fixed missing prop threading to StatsPanel
-
-**QoL Enhancements:**
-1. **Rank tooltips** — Hover over Korean rank names (조용한 세입자) to see English ("Quiet Tenant — Moon-jo has noticed.")
-2. **Onboarding hint** — New residents see "Tip: Write in Korean to earn XP and rise through the ranks"
-3. **Translation visual feedback** — Active translations show yellow globe icon + "Translated — tap the globe to see original" hint
-4. **Leave confirmation** — Click "Leave" → banner appears: "Leave Room 203? Leave / Stay" (auto-dismisses in 5s, Escape cancels)
-
-All improvements verified via browser testing. Tests updated (358 passing). Build clean.
+All 358 tests passing ✅
 
 ## License
 
