@@ -87,6 +87,7 @@ export default function ChatContainer() {
   const {
     totalXP,
     recentXPGain,
+    koreanHint,
     currentStreak,
     longestStreak,
     rank,
@@ -418,6 +419,17 @@ export default function ChatContainer() {
       {/* XP Toast */}
       {recentXPGain && (
         <XPToast amount={recentXPGain.amount} action={recentXPGain.action} />
+      )}
+
+      {/* Korean hint — shown when user sends English-only message */}
+      {koreanHint && !recentXPGain && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-xp-toast">
+          <div className="bg-goshiwon-surface border border-goshiwon-border rounded-lg px-3 py-1.5 shadow-lg flex items-center gap-2">
+            <span className="text-goshiwon-text-muted text-xs italic">
+              한국어로 쓰면 XP를 받아요
+            </span>
+          </div>
+        </div>
       )}
 
       <ChatInput

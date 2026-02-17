@@ -74,5 +74,5 @@ export function generateMoodSystemAddendum(messages: SimpleMessage[]): string {
   const mood = getMoodLevel(ratio);
   const directive = getMoodDirective(mood);
 
-  return `\n\n## CURRENT MOOD STATE\nKorean usage: ${Math.round(ratio * 100)}%. Mood: ${mood}.\n${directive}`;
+  return `\n\n## CURRENT MOOD STATE\nKorean usage: ${Math.round(ratio * 100)}%. Mood: ${mood}.\n${directive}\n\nREMINDER: Write ONLY in Korean (Hangul) + romanization. ZERO English words or sentences in your response.`;
 }

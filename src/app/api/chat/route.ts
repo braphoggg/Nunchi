@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       model: ollama("exaone3.5:7.8b"),
       system: MOONJO_SYSTEM_PROMPT + moodAddendum,
       messages: modelMessages,
-      temperature: 0.85,
+      temperature: 0.7,
       maxOutputTokens: 1000,
       providerOptions: {
         openai: { store: false },

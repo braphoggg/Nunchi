@@ -89,7 +89,7 @@ describe("POST /api/chat", () => {
       expect.objectContaining({
         model: "mocked-model",
         messages: expect.any(Array),
-        temperature: 0.85,
+        temperature: 0.7,
         maxOutputTokens: 1000,
       })
     );

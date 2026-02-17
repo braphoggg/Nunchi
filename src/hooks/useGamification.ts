@@ -55,8 +55,10 @@ export interface RecentXPGain {
 export function useGamification(vocabCount: number) {
   const [data, setData] = useState<GamificationData>(createDefaultGamificationData);
   const [recentXPGain, setRecentXPGain] = useState<RecentXPGain | null>(null);
+  const [koreanHint, setKoreanHint] = useState(false);
   const initialized = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -72,10 +74,11 @@ export function useGamification(vocabCount: number) {
     saveToStorage(data);
   }, [data]);
 
-  // Cleanup toast timer
+  // Cleanup timers
   useEffect(() => {
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
+      if (hintTimer.current) clearTimeout(hintTimer.current);
     };
   }, []);
 
@@ -133,6 +136,14 @@ export function useGamification(vocabCount: number) {
         if (messageXP) {
           updated = addXPEvent(messageXP.action, messageXP.amount, updated);
           showXPToast(messageXP.amount, messageXP.action);
+          setKoreanHint(false);
+        } else {
+          // Show hint that Korean earns XP (only for non-empty messages)
+          if (content.trim().length > 0) {
+            setKoreanHint(true);
+            if (hintTimer.current) clearTimeout(hintTimer.current);
+            hintTimer.current = setTimeout(() => setKoreanHint(false), 3000);
+          }
         }
 
         // XP for no-translate milestone (every 5 messages without translating)
@@ -222,6 +233,7 @@ export function useGamification(vocabCount: number) {
     // XP
     totalXP: data.xp.totalXP,
     recentXPGain,
+    koreanHint,
 
     // Streak
     currentStreak: data.streak.currentStreak,

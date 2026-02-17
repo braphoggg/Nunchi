@@ -6,6 +6,18 @@ const MAX_KOREAN_LENGTH = 50;
 const MAX_ROMANIZATION_LENGTH = 200;
 const MAX_ITEMS = 50;
 
+/** Common Western/English names to filter out when they appear as "romanization" */
+const COMMON_NAMES = new Set([
+  "alex", "alexander", "michael", "sarah", "john", "james", "david", "daniel",
+  "chris", "christopher", "jessica", "jennifer", "emma", "olivia", "sophia",
+  "william", "robert", "joseph", "thomas", "charles", "matthew", "andrew",
+  "mark", "paul", "steven", "kevin", "brian", "george", "edward", "peter",
+  "sam", "samuel", "ryan", "jason", "nick", "nicholas", "tony", "frank",
+  "anna", "maria", "lisa", "susan", "karen", "nancy", "betty", "helen",
+  "kate", "katie", "emily", "amy", "rachel", "laura", "julie", "jane",
+  "tom", "mike", "jake", "luke", "ben", "jack", "max", "leo", "adam", "eric",
+]);
+
 /**
  * Maximum Korean characters for a vocabulary item.
  * Filters out full sentences that happen to be bolded.
@@ -47,6 +59,7 @@ function isValidRomanization(text: string): boolean {
  * Returns true if the string is a valid English meaning.
  * Must not contain Hangul, must not be just punctuation/dashes,
  * must contain at least one Latin letter.
+ * Must look like actual English, not a romanization fragment.
  */
 function isValidEnglish(text: string): boolean {
   if (!text) return false;
@@ -55,6 +68,43 @@ function isValidEnglish(text: string): boolean {
   if (!/[a-zA-Z]/.test(text)) return false;
   // Reject strings that are just dashes, punctuation, or whitespace
   if (/^[\s\-—–:.,;!?'"()]+$/.test(text)) return false;
+  return true;
+}
+
+/**
+ * Returns true if text looks like a romanization fragment rather than English.
+ * Romanization is typically a single word that matches Korean syllable patterns.
+ * English meanings are common English words or multi-word phrases.
+ */
+function looksLikeRomanization(text: string): boolean {
+  if (!text) return false;
+  const trimmed = text.trim().toLowerCase();
+
+  // Common single English words that are NOT romanization
+  const commonEnglishWords = new Set([
+    "hello", "hi", "hey", "bye", "goodbye", "yes", "no", "ok", "okay",
+    "thank", "thanks", "please", "sorry", "excuse", "welcome",
+    "door", "room", "wall", "floor", "house", "home", "food", "water",
+    "rice", "meat", "fish", "soup", "tea", "beer", "wine", "milk",
+    "name", "friend", "teacher", "student", "doctor", "dentist",
+    "morning", "night", "today", "tomorrow", "yesterday",
+    "good", "bad", "big", "small", "hot", "cold", "new", "old",
+    "man", "woman", "person", "people", "child", "sir", "madam",
+    "love", "hate", "like", "want", "need", "know", "think",
+    "come", "go", "eat", "drink", "sleep", "work", "study", "read",
+    "right", "left", "up", "down", "here", "there",
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "really", "very", "much", "more", "less", "again", "also", "too",
+  ]);
+  if (commonEnglishWords.has(trimmed)) return false;
+
+  // Multi-word English phrases are not romanization
+  const englishIndicators = /\b(the|a|an|is|are|was|were|to|for|of|in|on|at|it|this|that|with|from|by|not|but|or|and|I|you|he|she|we|they|my|your|his|her|its|our|their|have|has|had|do|does|did|can|will|would|should|could|said|before|after|used|just)\b/i;
+  if (englishIndicators.test(text)) return false;
+
+  // If it's a single word with typical Korean romanization patterns, it's romanization
+  if (!text.includes(" ") && /^[a-z\-''.]+$/i.test(text)) return true;
+
   return true;
 }
 
@@ -101,6 +151,15 @@ export function parseVocabulary(
     // Skip long sentences — only save vocabulary words/short phrases
     if (korean.length > MAX_KOREAN_WORD_LENGTH) continue;
 
+    // Skip names with honorific 씨 (ssi) — these are user/person names, not vocabulary
+    // Matches patterns like "알렉스 씨", "마이클 씨", etc.
+    if (/\s씨$/.test(korean) || korean === "씨") continue;
+
+    // Skip items where the parenthesized content is a person's name, not romanization
+    // e.g. **알렉스** (Alex) — this is a transliterated name, not vocabulary
+    const rawParenCheck = stripBoldMarkers(stripHtml(match[2].trim())).trim().toLowerCase();
+    if (COMMON_NAMES.has(rawParenCheck)) continue;
+
     // Skip duplicates within same message
     if (seenKorean.has(korean)) continue;
 
@@ -118,17 +177,32 @@ export function parseVocabulary(
       const beforeComma = rawParen.slice(0, commaIdx).trim();
       const afterComma = rawParen.slice(commaIdx + 1).trim();
 
-      if (isValidRomanization(beforeComma) && isValidEnglish(afterComma)) {
+      // First check: if the whole thing is valid romanization, prefer that
+      // This handles cases like "ne, majayo" where both parts are romanization
+      if (isValidRomanization(rawParen) && looksLikeRomanization(afterComma)) {
+        romanization = rawParen;
+      } else if (isValidRomanization(beforeComma) && isValidEnglish(afterComma) && !looksLikeRomanization(afterComma)) {
         romanization = beforeComma;
         english = afterComma;
       } else if (isValidRomanization(beforeComma)) {
-        romanization = beforeComma;
+        // If afterComma looks like romanization, keep full string
+        if (looksLikeRomanization(afterComma)) {
+          romanization = rawParen;
+        } else {
+          romanization = beforeComma;
+        }
       } else if (isValidRomanization(rawParen)) {
         romanization = rawParen;
       }
     } else {
       // No comma — entire paren content is romanization
       if (isValidRomanization(rawParen)) {
+        // If it's a single unhyphenated word that's a common English word, skip it
+        // e.g. **도이치** (doctor) — "doctor" is English, not romanization
+        // But allow hyphenated romanization like "an-nyeong-ha-se-yo"
+        if (!rawParen.includes(" ") && !rawParen.includes("-") && !looksLikeRomanization(rawParen)) {
+          continue;
+        }
         romanization = rawParen;
       }
     }
