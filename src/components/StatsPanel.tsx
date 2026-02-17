@@ -26,7 +26,7 @@ export default function StatsPanel({
   onClose,
 }: StatsPanelProps) {
   return (
-    <div className="absolute inset-x-0 top-0 bottom-0 z-40 bg-goshiwon-bg/95 backdrop-blur-sm overflow-y-auto animate-vocab-panel-in">
+    <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm overflow-y-auto animate-vocab-panel-in">
       {/* Header */}
       <div className="sticky top-0 flex items-center justify-between px-4 py-3 bg-goshiwon-surface border-b border-goshiwon-border">
         <h2 className="text-sm font-medium text-goshiwon-text">
