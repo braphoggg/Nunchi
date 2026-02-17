@@ -51,7 +51,7 @@ export default function VocabularyPanel({
   }, [speakingId]);
 
   return (
-    <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
+    <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-goshiwon-border">
         <div>

@@ -205,6 +205,7 @@ Tests use Vitest with jsdom and React Testing Library. Build validated with Type
 - **Message length optimization** — <200 words per response, progressive teaching
 - **TypeError prevention** — Defensive checks in topic selection and form submission
 - **Translation race condition** — Guard prevents duplicate XP from rapid clicks
+- **Vocabulary panel z-index fix** — Overlay now properly covers screen (was only showing header strip)
 - **Overlay management** — Mutual exclusion, proper z-index, Escape key closes
 - **Rank tooltips** — Hover over Korean names to see English
 - **Leave confirmation** — Safety dialog before conversation reset
