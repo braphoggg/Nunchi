@@ -36,6 +36,7 @@ const defaultProps = {
   currentStreak: 5,
   longestStreak: 12,
   stats,
+  vocabCount: 18,
   onClose: vi.fn(),
 };
 

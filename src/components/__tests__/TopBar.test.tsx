@@ -1,6 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TopBar from "../TopBar";
+import type { RankInfo } from "@/types";
+
+const mockRank: RankInfo = {
+  id: "quiet_tenant",
+  korean: "조용한 세입자",
+  english: "Quiet Tenant",
+  description: "Moon-jo has noticed.",
+  minXP: 100,
+  minVocab: 10,
+};
 
 describe("TopBar", () => {
   it("renders the character name in Korean and English", () => {
@@ -81,5 +91,17 @@ describe("TopBar", () => {
   it("caps badge display at 99", () => {
     render(<TopBar onToggleVocabulary={vi.fn()} vocabularyCount={150} />);
     expect(screen.getByText("99")).toBeInTheDocument();
+  });
+
+  it("shows rank Korean name with English tooltip", () => {
+    render(<TopBar rank={mockRank} />);
+    expect(screen.getByText(/조용한 세입자/)).toBeInTheDocument();
+    const rankSpan = screen.getByTitle("Quiet Tenant \u2014 Moon-jo has noticed.");
+    expect(rankSpan).toBeInTheDocument();
+  });
+
+  it("shows Eden Goshiwon when no rank provided", () => {
+    render(<TopBar />);
+    expect(screen.getByText(/Eden Goshiwon/)).toBeInTheDocument();
   });
 });

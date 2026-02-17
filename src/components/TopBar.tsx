@@ -1,15 +1,17 @@
+import type { RankInfo } from "@/types";
+
 interface TopBarProps {
   onReset?: () => void;
   onToggleMute?: () => void;
   isMuted?: boolean;
   onToggleVocabulary?: () => void;
   vocabularyCount?: number;
-  rankKorean?: string;
+  rank?: RankInfo;
 }
 
-export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, vocabularyCount, rankKorean }: TopBarProps) {
+export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, vocabularyCount, rank }: TopBarProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
+    <div className="relative z-50 flex items-center gap-3 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
       {/* Avatar — silhouette */}
       <div
         className="w-10 h-10 rounded-full bg-goshiwon-bg flex items-center justify-center border border-goshiwon-accent/40 overflow-hidden"
@@ -27,7 +29,7 @@ export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabul
           서문조 (Seo Moon-jo)
         </h1>
         <p className="text-xs text-goshiwon-text-muted leading-tight">
-          Room 203{rankKorean ? ` · ${rankKorean}` : " · Eden Goshiwon"}
+          Room 203{rank ? <span title={`${rank.english} — ${rank.description}`}> · {rank.korean}</span> : " · Eden Goshiwon"}
         </p>
       </div>
 

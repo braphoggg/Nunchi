@@ -74,4 +74,9 @@ describe("StatsBar", () => {
     render(<StatsBar {...defaultProps} streak={10} />);
     expect(screen.getByText(/You can't leave/)).toBeTruthy();
   });
+
+  it("shows English tooltip on Korean rank name", () => {
+    render(<StatsBar {...defaultProps} />);
+    expect(screen.getByTitle("Quiet Tenant — Moon-jo has noticed.")).toBeTruthy();
+  });
 });

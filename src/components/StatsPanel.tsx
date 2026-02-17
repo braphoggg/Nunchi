@@ -10,6 +10,7 @@ interface StatsPanelProps {
   currentStreak: number;
   longestStreak: number;
   stats: SessionStats;
+  vocabCount: number;
   onClose: () => void;
 }
 
@@ -21,6 +22,7 @@ export default function StatsPanel({
   currentStreak,
   longestStreak,
   stats,
+  vocabCount,
   onClose,
 }: StatsPanelProps) {
   return (
@@ -62,11 +64,11 @@ export default function StatsPanel({
               <div className="w-full h-1.5 bg-goshiwon-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-goshiwon-yellow rounded-full transition-all duration-500"
-                  style={{ width: `${Math.round(rankProgress * 100)}%` }}
+                  style={{ width: `${Math.round(Math.min(rankProgress, 1) * 100)}%` }}
                 />
               </div>
               <p className="text-[10px] text-goshiwon-text-muted mt-1 text-center">
-                {nextRank.minXP} XP &amp; {nextRank.minVocab} words needed
+                {totalXP}/{nextRank.minXP} XP &middot; {vocabCount}/{nextRank.minVocab} words
               </p>
             </div>
           )}

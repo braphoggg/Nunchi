@@ -74,6 +74,11 @@ export default function WelcomeScreen({ onSelectTopic, rank }: WelcomeScreenProp
       <p className="mt-8 text-xs text-goshiwon-text-secondary text-center max-w-sm">
         Or simply type a message below. Moon-jo is always... watching.
       </p>
+      {(!rank || rank.id === "new_resident") && (
+        <p className="mt-1 text-[10px] text-goshiwon-text-muted italic text-center">
+          Tip: Write in Korean to earn XP and rise through the ranks.
+        </p>
+      )}
     </div>
   );
 }

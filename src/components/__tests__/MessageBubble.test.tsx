@@ -164,7 +164,8 @@ describe("MessageBubble", () => {
       expect(screen.getByText(/Hello/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Translate message" }));
+    // After translation is shown, button label changes to "Show original message"
+    fireEvent.click(screen.getByRole("button", { name: "Show original message" }));
     await waitFor(() => {
       expect(screen.getByText(/안녕하세요/)).toBeInTheDocument();
     });
@@ -206,11 +207,13 @@ describe("MessageBubble", () => {
     });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Translate message" }));
+    // Toggle back to original (button label changes when translation is showing)
+    fireEvent.click(screen.getByRole("button", { name: "Show original message" }));
     await waitFor(() => {
       expect(screen.getByText(/안녕하세요/)).toBeInTheDocument();
     });
 
+    // Toggle again to show cached translation (button is back to "Translate message")
     fireEvent.click(screen.getByRole("button", { name: "Translate message" }));
     await waitFor(() => {
       expect(screen.getByText(/Hello/)).toBeInTheDocument();

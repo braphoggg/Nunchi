@@ -85,7 +85,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
   const timestamp = useMemo(() => getAtmosphericTimestamp(), []);
 
   async function handleTranslate() {
-    if (!isAssistant) return;
+    if (!isAssistant || translating) return;
 
     // Toggle back to original
     if (showTranslation) {
@@ -164,6 +164,11 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
               isAssistant ? "pt-1.5" : ""
             }`}
           >
+            {showTranslation && translation && (
+              <p className="text-[10px] text-goshiwon-text-muted italic mb-1">
+                Translated — tap the globe to see original
+              </p>
+            )}
             {translating ? (
               <span className="text-goshiwon-text-secondary italic">
                 Translating...
@@ -200,10 +205,14 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
             {/* Translate */}
             <button
               onClick={handleTranslate}
-              title="Translate"
-              aria-label="Translate message"
+              title={showTranslation ? "Show original" : "Translate"}
+              aria-label={showTranslation ? "Show original message" : "Translate message"}
               aria-pressed={showTranslation}
-              className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
+              className={`p-1.5 transition-colors rounded ${
+                showTranslation
+                  ? "text-goshiwon-yellow hover:text-goshiwon-yellow/80"
+                  : "text-goshiwon-text-muted hover:text-goshiwon-text"
+              }`}
             >
               <svg
                 className="w-3.5 h-3.5"

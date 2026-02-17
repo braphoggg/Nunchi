@@ -100,8 +100,38 @@ export default function ChatContainer() {
 
   // Stats panel
   const [statsOpen, setStatsOpen] = useState(false);
-  const toggleStats = useCallback(() => setStatsOpen((o) => !o), []);
+  const toggleStats = useCallback(() => {
+    setStatsOpen((o) => {
+      if (!o) closePanel(); // Close vocab when opening stats
+      return !o;
+    });
+  }, [closePanel]);
   const closeStats = useCallback(() => setStatsOpen(false), []);
+
+  // Wrap vocab toggle to also close stats
+  const handleToggleVocabulary = useCallback(() => {
+    closeStats();
+    togglePanel();
+  }, [closeStats, togglePanel]);
+
+  // Leave confirmation
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const promptLeave = useCallback(() => setConfirmLeave(true), []);
+  const cancelLeave = useCallback(() => setConfirmLeave(false), []);
+
+  // Escape key closes overlays
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (confirmLeave) { cancelLeave(); return; }
+        if (statsOpen) { closeStats(); return; }
+        if (flashcardActive) { endFlashcards(); return; }
+        if (panelOpen) { closePanel(); return; }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [confirmLeave, statsOpen, flashcardActive, panelOpen, cancelLeave, closeStats, endFlashcards, closePanel]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -126,6 +156,13 @@ export default function ChatContainer() {
     const timer = setTimeout(() => setRankUpMessage(null), 5000);
     return () => clearTimeout(timer);
   }, [rankUpMessage, panelOpen, flashcardActive, statsOpen]);
+
+  // Auto-dismiss leave confirmation after 5 seconds
+  useEffect(() => {
+    if (!confirmLeave) return;
+    const timer = setTimeout(() => setConfirmLeave(false), 5000);
+    return () => clearTimeout(timer);
+  }, [confirmLeave]);
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -167,6 +204,7 @@ export default function ChatContainer() {
 
   // Reset conversation
   const handleReset = useCallback(() => {
+    setConfirmLeave(false);
     endFlashcards();
     closePanel();
     closeStats();
@@ -206,12 +244,12 @@ export default function ChatContainer() {
   return (
     <div style={styleOverrides} className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border night-transition">
       <TopBar
-        onReset={messages.length > 0 ? handleReset : undefined}
+        onReset={messages.length > 0 ? promptLeave : undefined}
         onToggleMute={toggleMute}
         isMuted={muted}
-        onToggleVocabulary={togglePanel}
+        onToggleVocabulary={handleToggleVocabulary}
         vocabularyCount={unseenCount}
-        rankKorean={rank.korean}
+        rank={rank}
       />
 
       <StatsBar
@@ -221,6 +259,25 @@ export default function ChatContainer() {
         rankProgress={rankProgress}
         onToggleStats={toggleStats}
       />
+
+      {/* Leave confirmation banner */}
+      {confirmLeave && (
+        <div className="relative z-50 flex items-center justify-center gap-3 px-4 py-2 bg-goshiwon-accent/20 border-b border-goshiwon-accent/40 animate-message-in">
+          <span className="text-xs text-goshiwon-text-secondary">Leave Room 203?</span>
+          <button
+            onClick={handleReset}
+            className="text-xs text-goshiwon-accent-light hover:text-goshiwon-accent font-medium transition-colors"
+          >
+            Leave
+          </button>
+          <button
+            onClick={cancelLeave}
+            className="text-xs text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+          >
+            Stay
+          </button>
+        </div>
+      )}
 
       {/* Stats panel overlay */}
       {statsOpen && (
@@ -232,6 +289,7 @@ export default function ChatContainer() {
           currentStreak={currentStreak}
           longestStreak={longestStreak}
           stats={stats}
+          vocabCount={wordCount}
           onClose={closeStats}
         />
       )}

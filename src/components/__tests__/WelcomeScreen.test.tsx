@@ -76,4 +76,22 @@ describe("WelcomeScreen", () => {
     expect(screen.getByText(/선배님/)).toBeInTheDocument();
     expect(screen.getByText(/This floor belongs to you/)).toBeInTheDocument();
   });
+
+  it("shows XP onboarding hint for new residents", () => {
+    render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+    expect(screen.getByText(/Write in Korean to earn XP/)).toBeInTheDocument();
+  });
+
+  it("hides XP onboarding hint for higher ranks", () => {
+    const rank: RankInfo = {
+      id: "quiet_tenant",
+      korean: "조용한 세입자",
+      english: "Quiet Tenant",
+      description: "Moon-jo has noticed.",
+      minXP: 100,
+      minVocab: 10,
+    };
+    render(<WelcomeScreen onSelectTopic={onSelectTopic} rank={rank} />);
+    expect(screen.queryByText(/Write in Korean to earn XP/)).not.toBeInTheDocument();
+  });
 });

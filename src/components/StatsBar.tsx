@@ -28,7 +28,7 @@ export default function StatsBar({
   return (
     <button
       onClick={onToggleStats}
-      className="w-full flex items-center justify-between px-3 py-1 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer"
+      className="relative z-50 w-full flex items-center justify-between px-3 py-1 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer"
       aria-label="Open stats panel"
     >
       {/* Streak */}
@@ -51,11 +51,11 @@ export default function StatsBar({
 
       {/* Rank + progress */}
       <div className="flex items-center gap-2">
-        <span className="text-goshiwon-yellow text-[11px]">{rank.korean}</span>
+        <span className="text-goshiwon-yellow text-[11px]" title={`${rank.english} — ${rank.description}`}>{rank.korean}</span>
         <div className="w-12 h-[3px] bg-goshiwon-border rounded-full overflow-hidden">
           <div
             className="h-full bg-goshiwon-yellow rounded-full transition-all duration-500"
-            style={{ width: `${Math.round(rankProgress * 100)}%` }}
+            style={{ width: `${Math.round(Math.min(rankProgress, 1) * 100)}%` }}
           />
         </div>
       </div>
