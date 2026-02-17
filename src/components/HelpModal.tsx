@@ -74,7 +74,7 @@ export default function HelpModal({ onClose }: HelpModalProps) {
             <li>• 새 입주자 (New Resident): 0 XP, 0 words</li>
             <li>• 조용한 세입자 (Quiet Tenant): 100 XP, 10 words</li>
             <li>• 단골 (Regular): 500 XP, 30 words</li>
-            <li>• 믿을 수 있는 이웃 (Trusted Neighbor): 1500 XP, 75 words</li>
+            <li>• 믿을 만한 이웃 (Trusted Neighbor): 1500 XP, 75 words</li>
             <li>• 층 선배 (Floor Senior): 5000 XP, 150 words</li>
           </ul>
         </section>
@@ -85,7 +85,7 @@ export default function HelpModal({ onClose }: HelpModalProps) {
             Saving Vocabulary
           </h3>
           <p className="text-xs text-goshiwon-text-secondary leading-relaxed">
-            Moon-jo highlights Korean words in <strong>bold</strong> with romanization.
+            Moon-jo highlights Korean words in <span className="text-goshiwon-yellow">yellow</span> with romanization.
             Click the bookmark icon to save them to your collection (나의 단어장).
             Access your vocabulary panel anytime via the book icon in the top bar.
           </p>
