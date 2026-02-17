@@ -142,7 +142,7 @@ export function useGamification(vocabCount: number) {
           if (content.trim().length > 0) {
             setKoreanHint(true);
             if (hintTimer.current) clearTimeout(hintTimer.current);
-            hintTimer.current = setTimeout(() => setKoreanHint(false), 3000);
+            hintTimer.current = setTimeout(() => setKoreanHint(false), 5000);
           }
         }
 

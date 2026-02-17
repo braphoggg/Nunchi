@@ -422,11 +422,12 @@ export default function ChatContainer() {
       )}
 
       {/* Korean hint — shown when user sends English-only message */}
-      {koreanHint && !recentXPGain && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-xp-toast">
+      {koreanHint && (
+        <div className={`absolute left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-hint-toast transition-all duration-200 ${recentXPGain ? "bottom-28" : "bottom-20"}`}>
           <div className="bg-goshiwon-surface border border-goshiwon-border rounded-lg px-3 py-1.5 shadow-lg flex items-center gap-2">
-            <span className="text-goshiwon-text-muted text-xs italic">
-              한국어로 쓰면 XP를 받아요
+            <span className="text-goshiwon-yellow text-xs">✦</span>
+            <span className="text-goshiwon-text-secondary text-xs">
+              Write in Korean to earn XP
             </span>
           </div>
         </div>

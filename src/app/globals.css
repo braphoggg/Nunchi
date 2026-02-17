@@ -243,6 +243,29 @@ body {
   animation: xp-toast 2s ease-out forwards;
 }
 
+@keyframes hint-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.animate-hint-toast {
+  animation: hint-toast 4.5s ease-out forwards;
+}
+
 /* Rank-up glow animation */
 @keyframes rank-glow {
   0% {
@@ -275,8 +298,14 @@ body {
   transition: background-color 2s ease, border-color 2s ease, color 2s ease;
 }
 
-.night-transition * {
+.night-transition *:not(.flashcard-inner) {
   transition: background-color 2s ease, border-color 2s ease, color 2s ease;
+}
+
+/* Flashcard inner needs its own transition for the 3D flip — must not be
+   overridden by night-transition's wildcard rule */
+.night-transition .flashcard-inner {
+  transition: transform 0.5s ease-in-out, background-color 2s ease, border-color 2s ease, color 2s ease;
 }
 
 /* Mobile touch improvements */

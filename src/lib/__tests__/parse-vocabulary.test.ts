@@ -279,6 +279,47 @@ describe("parseVocabulary", () => {
       expect(result[0].english).not.toContain("<img");
     }
   });
+
+  // Romanization correction tests
+  it("corrects wrong romanization for known Korean words", () => {
+    const content = "**한글** (annyeonghaseyo)";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].korean).toBe("한글");
+    expect(result[0].romanization).toBe("hangeul");
+  });
+
+  it("keeps correct romanization unchanged", () => {
+    const content = "**안녕하세요** (annyeonghaseyo)";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].romanization).toBe("annyeonghaseyo");
+  });
+
+  // Non-bold vocabulary pattern tests (fallback parser)
+  it("parses vocabulary without bold markers: 이해해요 (ihaehaeyo)", () => {
+    const content = "이해해요 (ihaehaeyo) — 조금 더 자세히 말씀해 주시겠어요?";
+    const result = parseVocabulary(content);
+    expect(result).toHaveLength(1);
+    expect(result[0].korean).toBe("이해해요");
+    expect(result[0].romanization).toBe("ihaehaeyo");
+  });
+
+  it("parses multiple non-bold vocab items from a message", () => {
+    const content = "마이클 씨, 안녕하세요 (annyeonghaseyo). 감사합니다 (gamsahamnida). 한국어 (hangugeo)를 배워요.";
+    const result = parseVocabulary(content);
+    expect(result.length).toBeGreaterThanOrEqual(2);
+    const koreans = result.map(r => r.korean);
+    expect(koreans).toContain("안녕하세요");
+    expect(koreans).toContain("감사합니다");
+  });
+
+  it("skips names in non-bold pattern: 마이클 (Michael)", () => {
+    const content = "마이클 (Michael) 씨, 안녕하세요.";
+    const result = parseVocabulary(content);
+    const koreans = result.map(r => r.korean);
+    expect(koreans).not.toContain("마이클");
+  });
 });
 
 describe("hasVocabulary", () => {
@@ -288,6 +329,10 @@ describe("hasVocabulary", () => {
 
   it("returns true for Korean-only vocabulary format", () => {
     expect(hasVocabulary("**안녕** (annyeong)")).toBe(true);
+  });
+
+  it("returns true for non-bold Korean + romanization pattern", () => {
+    expect(hasVocabulary("안녕하세요 (annyeonghaseyo). 한국어를 배워요.")).toBe(true);
   });
 
   it("returns false for plain text without bold markers", () => {

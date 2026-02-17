@@ -19,12 +19,66 @@ const COMMON_NAMES = new Set([
 ]);
 
 /**
+ * Known-correct romanizations for common Korean words.
+ * Used as a safety net when the LLM provides incorrect romanization pairings.
+ * Only includes words where the model has been observed making mistakes.
+ */
+const ROMANIZATION_CORRECTIONS: Record<string, string> = {
+  "한글": "hangeul",
+  "안녕하세요": "annyeonghaseyo",
+  "감사합니다": "gamsahamnida",
+  "죄송합니다": "joesonghamnida",
+  "네": "ne",
+  "아니요": "aniyo",
+  "이름": "ireum",
+  "선생님": "seonsaengnim",
+  "학생": "haksaeng",
+  "사람": "saram",
+  "물": "mul",
+  "밥": "bap",
+  "집": "jip",
+  "방": "bang",
+  "문": "mun",
+  "의사": "uisa",
+  "치과의사": "chigwauisa",
+  "고시원": "gosiwon",
+  "한국어": "hangugeo",
+  "영어": "yeongeo",
+  "좋아요": "joayo",
+  "맞아요": "majayo",
+  "이해해요": "ihaehaeyo",
+  "몰라요": "mollayo",
+  "도와주세요": "dowajuseyo",
+  "여기": "yeogi",
+  "저기": "jeogi",
+  "어디": "eodi",
+  "뭐": "mwo",
+  "왜": "wae",
+  "어떻게": "eotteoke",
+};
+
+/**
  * Maximum Korean characters for a vocabulary item.
  * Filters out full sentences that happen to be bolded.
  * Allows short phrases (e.g. "조용히 하세요" = 7 chars) but rejects
  * long sentences (e.g. "안녕하세요, 마이클 씨. 잘 지내고 계신가요?" = 20+ chars).
  */
 const MAX_KOREAN_WORD_LENGTH = 15;
+
+/**
+ * Corrects romanization for known Korean words if the LLM provided the wrong one.
+ * Returns the corrected romanization, or the original if no correction is needed.
+ */
+function correctRomanization(korean: string, romanization: string): string {
+  const correct = ROMANIZATION_CORRECTIONS[korean];
+  if (!correct) return romanization;
+  // Only correct if the provided romanization is clearly wrong
+  // (doesn't match the known-correct one, case-insensitive)
+  if (romanization.toLowerCase().replace(/[\s\-]/g, "") !== correct.toLowerCase().replace(/[\s\-]/g, "")) {
+    return correct;
+  }
+  return romanization;
+}
 
 /** Strip HTML tags from a string to prevent XSS. */
 function stripHtml(text: string): string {
@@ -135,11 +189,18 @@ export function parseVocabulary(
   const results: Omit<VocabularyItem, "id" | "savedAt">[] = [];
   const seenKorean = new Set<string>();
 
-  // Match: **Korean text** followed by (parenthesized content) and optionally text after
-  const pattern = /\*\*([^*]+)\*\*\s*\(([^)]+)\)(?:\s*[—–:\-]\s*([^\n*]+)|\s*([^\n*]*))?/g;
+  // Pass 1: Match **Korean text** followed by (parenthesized content) and optionally text after
+  const boldPattern = /\*\*([^*]+)\*\*\s*\(([^)]+)\)(?:\s*[—–:\-]\s*([^\n*]+)|\s*([^\n*]*))?/g;
+
+  // Pass 2 (fallback): Match Korean text (romanization) WITHOUT bold markers
+  // e.g. "이해해요 (ihaehamnida)" — catches words Moon-jo writes without bold formatting
+  // Only matches isolated Hangul words/phrases followed by parenthesized Latin text
+  // Note: trailing capture limited to avoid consuming the rest of the line
+  const unboldPattern = /(?:^|[\s.!?,;:\-—–])([가-힣][가-힣\s]{0,14}?)\s*\(([a-zA-Z][a-zA-Z\s\-''.]*)\)(?:\s*[—–:\-]\s*([^\n(가-힣*]{1,40}))?/g;
 
   let match: RegExpExecArray | null;
-  while ((match = pattern.exec(safeContent)) !== null) {
+  // First pass: bold patterns (higher confidence)
+  while ((match = boldPattern.exec(safeContent)) !== null) {
     // Security: cap total items
     if (results.length >= MAX_ITEMS) break;
 
@@ -151,9 +212,9 @@ export function parseVocabulary(
     // Skip long sentences — only save vocabulary words/short phrases
     if (korean.length > MAX_KOREAN_WORD_LENGTH) continue;
 
-    // Skip names with honorific 씨 (ssi) — these are user/person names, not vocabulary
-    // Matches patterns like "알렉스 씨", "마이클 씨", etc.
-    if (/\s씨$/.test(korean) || korean === "씨") continue;
+    // Skip items containing honorific 씨 (ssi) — these include user/person names
+    // Matches patterns like "알렉스 씨", "마이클 씨.", "안녕하세요, 마이클 씨", etc.
+    if (/씨[.!?,;:]?$/.test(korean) || korean === "씨" || /\s씨[\s,.!?;:]/.test(korean)) continue;
 
     // Skip items where the parenthesized content is a person's name, not romanization
     // e.g. **알렉스** (Alex) — this is a transliterated name, not vocabulary
@@ -236,7 +297,67 @@ export function parseVocabulary(
 
     seenKorean.add(korean);
     // English is optional — will be looked up via translate API if empty
-    results.push({ korean, romanization, english });
+    results.push({ korean, romanization: correctRomanization(korean, romanization), english });
+  }
+
+  // Second pass: non-bold patterns (fallback for messages without ** formatting)
+  while ((match = unboldPattern.exec(safeContent)) !== null) {
+    if (results.length >= MAX_ITEMS) break;
+
+    const korean = stripHtml(match[1].trim());
+    if (!containsHangul(korean)) continue;
+    if (korean.length > MAX_KOREAN_WORD_LENGTH) continue;
+    // Skip items containing honorific 씨 (ssi) — these include user/person names
+    if (/씨[.!?,;:]?$/.test(korean) || korean === "씨" || /\s씨[\s,.!?;:]/.test(korean)) continue;
+    // Skip items with commas in Korean text — these are phrases like "안녕하세요, 마이클 씨"
+    if (korean.includes(",")) continue;
+    const rawParenCheckUnbold = stripBoldMarkers(stripHtml(match[2].trim())).trim().toLowerCase();
+    if (COMMON_NAMES.has(rawParenCheckUnbold)) continue;
+    // Skip if already found in bold pass
+    if (seenKorean.has(korean)) continue;
+
+    const rawParen = stripBoldMarkers(stripHtml(match[2].trim()));
+    const afterDash = match[3] ? stripHtml(match[3].trim()) : "";
+
+    let romanization = "";
+    let english = "";
+
+    const commaIdx = rawParen.indexOf(",");
+    if (commaIdx > 0) {
+      const beforeComma = rawParen.slice(0, commaIdx).trim();
+      const afterComma = rawParen.slice(commaIdx + 1).trim();
+      if (isValidRomanization(rawParen) && looksLikeRomanization(afterComma)) {
+        romanization = rawParen;
+      } else if (isValidRomanization(beforeComma) && isValidEnglish(afterComma) && !looksLikeRomanization(afterComma)) {
+        romanization = beforeComma;
+        english = afterComma;
+      } else if (isValidRomanization(beforeComma)) {
+        romanization = looksLikeRomanization(afterComma) ? rawParen : beforeComma;
+      } else if (isValidRomanization(rawParen)) {
+        romanization = rawParen;
+      }
+    } else {
+      if (isValidRomanization(rawParen)) {
+        if (!rawParen.includes(" ") && !rawParen.includes("-") && !looksLikeRomanization(rawParen)) {
+          continue;
+        }
+        romanization = rawParen;
+      }
+    }
+
+    if (!english && afterDash) {
+      const cleaned = afterDash.replace(/^[\s\-—–:]+/, "").replace(/[.!?,;:]+$/, "").trim();
+      if (isValidEnglish(cleaned)) english = cleaned;
+    }
+
+    english = english.replace(/[.!?,;:]+$/, "").trim();
+
+    if (!korean || !romanization || korean.length > MAX_KOREAN_LENGTH || romanization.length > MAX_ROMANIZATION_LENGTH) {
+      continue;
+    }
+
+    seenKorean.add(korean);
+    results.push({ korean, romanization: correctRomanization(korean, romanization), english });
   }
 
   return results;
@@ -245,8 +366,13 @@ export function parseVocabulary(
 /**
  * Returns true if the message content contains any parseable vocabulary.
  * Lightweight check for enabling/disabling the save button.
+ * Checks both bold (**word**) and non-bold (word) patterns with romanization.
  */
 export function hasVocabulary(content: string): boolean {
   if (!content) return false;
-  return /\*\*[^*]+\*\*\s*\([^)]+\)/.test(content);
+  // Bold pattern: **한글** (romanization)
+  if (/\*\*[^*]+\*\*\s*\([^)]+\)/.test(content)) return true;
+  // Non-bold fallback: 한글 (romanization) — Hangul followed by Latin in parens
+  if (/[가-힣]+\s*\([a-zA-Z][a-zA-Z\s\-''.]*\)/.test(content)) return true;
+  return false;
 }
