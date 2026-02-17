@@ -197,9 +197,24 @@ npm test
 
 Tests use Vitest with jsdom and React Testing Library. Build validated with TypeScript strict mode.
 
-## Recent Improvements (Latest Session)
+## Recent Improvements
 
-### Bug Fixes (7 total)
+### Session 2 - Bug Fixes & Help Modal (6 bugs fixed)
+1. **Help/Tutorial Modal** — Created comprehensive help overlay (Escape to close) covering XP system, ranks, vocabulary, flashcards, streaks, keyboard shortcuts, and learning tips
+2. **AI Character Boundaries** — Moon-jo now refuses non-Korean topics (math, weather, etc.) and redirects to Korean learning with example phrases
+3. **AI Context Awareness** — Moon-jo references previous messages when asked "what did you just say?" and maintains conversation continuity
+4. **Message Length Optimization** — Responses limited to <200 words, 2-3 concepts max, progressive teaching across multiple exchanges
+5. **TypeError Prevention** — Added defensive `!sendMessage` checks in topic selection and message submission to prevent undefined state access
+6. **Translate Button Decision** — Kept current click-to-translate implementation (yellow globe icon + hint text) per user preference
+
+**Files Modified:**
+- `src/lib/system-prompt.ts` — Added CRITICAL BOUNDARIES, CONVERSATION CONTINUITY, MESSAGE LENGTH sections
+- `src/components/ChatContainer.tsx` — TypeError guards, help modal integration, Escape key handler
+- `src/components/HelpModal.tsx` — NEW FILE - comprehensive tutorial overlay
+- `src/components/TopBar.tsx` — Added help button (? icon)
+
+### Session 1 - QoL & Visual Fixes (7 bugs + 4 enhancements)
+**Bug Fixes:**
 1. **Translate double-click race condition** — Added `translating` guard to prevent duplicate XP from rapid clicks
 2. **Overlays coexistence** — Stats + vocab panels can no longer render simultaneously
 3. **Escape key handling** — Pressing Escape now closes overlays (stats → flashcards → vocab priority)
@@ -208,7 +223,7 @@ Tests use Vitest with jsdom and React Testing Library. Build validated with Type
 6. **StatsPanel progress clarity** — Changed from "500 XP & 30 words needed" to "110/500 XP · 13/30 words"
 7. **VocabCount propagation** — Fixed missing prop threading to StatsPanel
 
-### QoL Enhancements (4 total)
+**QoL Enhancements:**
 1. **Rank tooltips** — Hover over Korean rank names (조용한 세입자) to see English ("Quiet Tenant — Moon-jo has noticed.")
 2. **Onboarding hint** — New residents see "Tip: Write in Korean to earn XP and rise through the ranks"
 3. **Translation visual feedback** — Active translations show yellow globe icon + "Translated — tap the globe to see original" hint

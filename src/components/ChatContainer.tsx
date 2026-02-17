@@ -13,6 +13,7 @@ import GoshiwonEventBubble from "./GoshiwonEventBubble";
 import StatsBar from "./StatsBar";
 import StatsPanel from "./StatsPanel";
 import XPToast from "./XPToast";
+import HelpModal from "./HelpModal";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
@@ -114,6 +115,20 @@ export default function ChatContainer() {
     togglePanel();
   }, [closeStats, togglePanel]);
 
+  // Help modal
+  const [helpOpen, setHelpOpen] = useState(false);
+  const toggleHelp = useCallback(() => {
+    setHelpOpen((o) => {
+      if (!o) {
+        // Close other overlays when opening help
+        closePanel();
+        closeStats();
+      }
+      return !o;
+    });
+  }, [closePanel, closeStats]);
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
+
   // Leave confirmation
   const [confirmLeave, setConfirmLeave] = useState(false);
   const promptLeave = useCallback(() => setConfirmLeave(true), []);
@@ -124,6 +139,7 @@ export default function ChatContainer() {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         if (confirmLeave) { cancelLeave(); return; }
+        if (helpOpen) { closeHelp(); return; }
         if (statsOpen) { closeStats(); return; }
         if (flashcardActive) { endFlashcards(); return; }
         if (panelOpen) { closePanel(); return; }
@@ -131,7 +147,7 @@ export default function ChatContainer() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [confirmLeave, statsOpen, flashcardActive, panelOpen, cancelLeave, closeStats, endFlashcards, closePanel]);
+  }, [confirmLeave, helpOpen, statsOpen, flashcardActive, panelOpen, cancelLeave, closeHelp, closeStats, endFlashcards, closePanel]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -219,6 +235,10 @@ export default function ChatContainer() {
   }, [setMessages, closePanel, endFlashcards, closeStats]);
 
   const handleTopicSelect = (message: string) => {
+    if (!sendMessage) {
+      console.error("[ChatContainer] sendMessage not available");
+      return;
+    }
     recordMessage(message);
     sendMessage({ text: message });
   };
@@ -226,7 +246,7 @@ export default function ChatContainer() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || isLoading) return;
+    if (!text || isLoading || !sendMessage) return;
     setInput("");
     recordMessage(text);
     sendMessage({ text });
@@ -248,6 +268,7 @@ export default function ChatContainer() {
         onToggleMute={toggleMute}
         isMuted={muted}
         onToggleVocabulary={handleToggleVocabulary}
+        onToggleHelp={toggleHelp}
         vocabularyCount={unseenCount}
         rank={rank}
       />
@@ -278,6 +299,9 @@ export default function ChatContainer() {
           </button>
         </div>
       )}
+
+      {/* Help modal */}
+      {helpOpen && <HelpModal onClose={closeHelp} />}
 
       {/* Stats panel overlay */}
       {statsOpen && (

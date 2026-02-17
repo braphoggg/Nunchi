@@ -5,11 +5,12 @@ interface TopBarProps {
   onToggleMute?: () => void;
   isMuted?: boolean;
   onToggleVocabulary?: () => void;
+  onToggleHelp?: () => void;
   vocabularyCount?: number;
   rank?: RankInfo;
 }
 
-export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, vocabularyCount, rank }: TopBarProps) {
+export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, onToggleHelp, vocabularyCount, rank }: TopBarProps) {
   return (
     <div className="relative z-50 flex items-center gap-3 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
       {/* Avatar — silhouette */}
@@ -59,6 +60,30 @@ export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabul
                 {vocabularyCount! > 99 ? "99" : vocabularyCount}
               </span>
             )}
+          </button>
+        )}
+
+        {/* Help button */}
+        {onToggleHelp && (
+          <button
+            onClick={onToggleHelp}
+            title="Help"
+            aria-label="Open help"
+            className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
           </button>
         )}
 
