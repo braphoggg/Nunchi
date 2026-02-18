@@ -4,13 +4,16 @@ interface TopBarProps {
   onReset?: () => void;
   onToggleMute?: () => void;
   isMuted?: boolean;
+  onToggleHistory?: () => void;
   onToggleVocabulary?: () => void;
   onToggleHelp?: () => void;
+  onShare?: () => void;
+  shareDisabled?: boolean;
   vocabularyCount?: number;
   rank?: RankInfo;
 }
 
-export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabulary, onToggleHelp, vocabularyCount, rank }: TopBarProps) {
+export default function TopBar({ onReset, onToggleMute, isMuted, onToggleHistory, onToggleVocabulary, onToggleHelp, onShare, shareDisabled, vocabularyCount, rank }: TopBarProps) {
   return (
     <div className="relative z-50 flex items-center gap-3 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
       {/* Avatar — silhouette */}
@@ -35,6 +38,54 @@ export default function TopBar({ onReset, onToggleMute, isMuted, onToggleVocabul
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Lesson history */}
+        {onToggleHistory && (
+          <button
+            onClick={onToggleHistory}
+            title="Lesson History"
+            aria-label="Open lesson history"
+            className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </button>
+        )}
+
+        {/* Share conversation */}
+        {onShare && (
+          <button
+            onClick={onShare}
+            disabled={shareDisabled}
+            title="Share conversation"
+            aria-label="Share conversation as image"
+            className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors disabled:opacity-30 disabled:cursor-default"
+          >
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          </button>
+        )}
+
         {/* Vocabulary panel toggle */}
         {onToggleVocabulary && (
           <button

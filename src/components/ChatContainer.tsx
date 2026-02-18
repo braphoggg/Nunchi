@@ -14,13 +14,19 @@ import StatsBar from "./StatsBar";
 import StatsPanel from "./StatsPanel";
 import XPToast from "./XPToast";
 import HelpModal from "./HelpModal";
+import LessonHistory from "./LessonHistory";
+import LessonReview from "./LessonReview";
+import { useShareConversation } from "./ShareButton";
+import HangulKeyboard from "./HangulKeyboard";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
 import { useGoshiwonEvents } from "@/hooks/useGoshiwonEvents";
 import { useNightProgression } from "@/hooks/useNightProgression";
 import { useGamification } from "@/hooks/useGamification";
+import { useLessonHistory } from "@/hooks/useLessonHistory";
 import { resetTimestampCounter } from "@/lib/timestamps";
+import { getTextContent } from "@/lib/message-utils";
 import type { ResidentRank } from "@/types";
 
 /** Rank-up atmospheric messages from Moon-jo */
@@ -50,7 +56,17 @@ export default function ChatContainer() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
 
+  // Share conversation as image
+  const { handleShare, exporting: shareExporting } = useShareConversation(messages);
+
   const isLoading = status === "submitted" || status === "streaming";
+
+  // Hangul keyboard
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const toggleKeyboard = useCallback(() => setKeyboardVisible((v) => !v), []);
+  const handleKeyboardInput = useCallback((text: string) => {
+    setInput((prev) => prev + text);
+  }, []);
 
   // Sound engine
   const { playKeyClick, playAmbientHum, muted, toggleMute } = useSoundEngine();
@@ -100,6 +116,16 @@ export default function ChatContainer() {
     recordWordSaved,
   } = useGamification(wordCount);
 
+  // Hangul keyboard submit (needs recordMessage from useGamification)
+  const handleKeyboardSubmit = useCallback(() => {
+    if (input.trim() && !isLoading && sendMessage) {
+      const text = input.trim();
+      setInput("");
+      recordMessage(text);
+      sendMessage({ text });
+    }
+  }, [input, isLoading, sendMessage, recordMessage]);
+
   // Stats panel
   const [statsOpen, setStatsOpen] = useState(false);
   const toggleStats = useCallback(() => {
@@ -109,6 +135,26 @@ export default function ChatContainer() {
     });
   }, [closePanel]);
   const closeStats = useCallback(() => setStatsOpen(false), []);
+
+  // Lesson history
+  const {
+    conversations,
+    historyOpen,
+    reviewingConversation,
+    saveConversation,
+    deleteConversation,
+    toggleHistory,
+    closeHistory,
+    reviewConversation,
+    closeReview,
+  } = useLessonHistory();
+
+  // Wrap history toggle to close other overlays
+  const handleToggleHistory = useCallback(() => {
+    closePanel();
+    closeStats();
+    toggleHistory();
+  }, [closePanel, closeStats, toggleHistory]);
 
   // Wrap vocab toggle to also close stats
   const handleToggleVocabulary = useCallback(() => {
@@ -141,14 +187,17 @@ export default function ChatContainer() {
       if (e.key === "Escape") {
         if (confirmLeave) { cancelLeave(); return; }
         if (helpOpen) { closeHelp(); return; }
+        if (reviewingConversation) { closeReview(); return; }
+        if (historyOpen) { closeHistory(); return; }
         if (statsOpen) { closeStats(); return; }
         if (flashcardActive) { endFlashcards(); return; }
         if (panelOpen) { closePanel(); return; }
+        if (keyboardVisible) { setKeyboardVisible(false); return; }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [confirmLeave, helpOpen, statsOpen, flashcardActive, panelOpen, cancelLeave, closeHelp, closeStats, endFlashcards, closePanel]);
+  }, [confirmLeave, helpOpen, reviewingConversation, historyOpen, statsOpen, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeReview, closeHistory, closeStats, endFlashcards, closePanel]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -225,6 +274,13 @@ export default function ChatContainer() {
     endFlashcards();
     closePanel();
     closeStats();
+    closeHistory();
+    // Save conversation before clearing
+    if (messages.length > 0) {
+      saveConversation(
+        messages.map((m) => ({ role: m.role, text: getTextContent(m) }))
+      );
+    }
     setShowFarewell(true);
     setTimeout(() => {
       setMessages([]);
@@ -233,7 +289,7 @@ export default function ChatContainer() {
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
-  }, [setMessages, closePanel, endFlashcards, closeStats]);
+  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, saveConversation]);
 
   const handleTopicSelect = (message: string) => {
     if (!sendMessage) {
@@ -268,6 +324,9 @@ export default function ChatContainer() {
         onReset={messages.length > 0 ? promptLeave : undefined}
         onToggleMute={toggleMute}
         isMuted={muted}
+        onToggleHistory={handleToggleHistory}
+        onShare={messages.length > 0 ? handleShare : undefined}
+        shareDisabled={shareExporting}
         onToggleVocabulary={handleToggleVocabulary}
         onToggleHelp={toggleHelp}
         vocabularyCount={unseenCount}
@@ -303,6 +362,22 @@ export default function ChatContainer() {
 
       {/* Help modal */}
       {helpOpen && <HelpModal onClose={closeHelp} />}
+
+      {/* Lesson history */}
+      {historyOpen && !reviewingConversation && (
+        <LessonHistory
+          conversations={conversations}
+          onSelect={reviewConversation}
+          onDelete={deleteConversation}
+          onClose={closeHistory}
+        />
+      )}
+      {reviewingConversation && (
+        <LessonReview
+          conversation={reviewingConversation}
+          onClose={closeReview}
+        />
+      )}
 
       {/* Stats panel overlay */}
       {statsOpen && (
@@ -433,11 +508,19 @@ export default function ChatContainer() {
         </div>
       )}
 
+      <HangulKeyboard
+        onInput={handleKeyboardInput}
+        onSubmit={handleKeyboardSubmit}
+        visible={keyboardVisible}
+      />
+
       <ChatInput
         input={input}
         onChange={setInput}
         onSubmit={handleSubmit}
         isLoading={isLoading}
+        keyboardVisible={keyboardVisible}
+        onToggleKeyboard={toggleKeyboard}
       />
     </div>
   );

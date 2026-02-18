@@ -7,6 +7,8 @@ interface ChatInputProps {
   onChange: (value: string) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   isLoading: boolean;
+  keyboardVisible?: boolean;
+  onToggleKeyboard?: () => void;
 }
 
 export default function ChatInput({
@@ -14,6 +16,8 @@ export default function ChatInput({
   onChange,
   onSubmit,
   isLoading,
+  keyboardVisible,
+  onToggleKeyboard,
 }: ChatInputProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -42,6 +46,23 @@ export default function ChatInput({
       className="border-t border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm px-3 py-2 sm:px-4 sm:py-3 safe-area-bottom"
     >
       <div className="flex gap-2 items-end">
+        {/* Hangul keyboard toggle */}
+        {onToggleKeyboard && (
+          <button
+            type="button"
+            onClick={onToggleKeyboard}
+            title={keyboardVisible ? "Hide Korean keyboard" : "Korean keyboard"}
+            aria-label={keyboardVisible ? "Hide Korean keyboard" : "Show Korean keyboard"}
+            className={`min-w-[40px] min-h-[40px] px-2 py-2 rounded-lg border transition-colors flex items-center justify-center text-sm font-bold ${
+              keyboardVisible
+                ? "bg-goshiwon-yellow/15 text-goshiwon-yellow border-goshiwon-yellow/30"
+                : "bg-goshiwon-bg text-goshiwon-text-muted border-goshiwon-border hover:text-goshiwon-text"
+            }`}
+          >
+            ㄱ
+          </button>
+        )}
+
         <textarea
           ref={textareaRef}
           rows={1}

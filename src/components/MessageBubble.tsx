@@ -6,19 +6,13 @@ import { formatMessage } from "@/lib/format-message";
 import { getAtmosphericTimestamp } from "@/lib/timestamps";
 import { parseVocabulary, hasVocabulary } from "@/lib/parse-vocabulary";
 import type { VocabularyItem } from "@/types";
+import { getTextContent } from "@/lib/message-utils";
 
 interface MessageBubbleProps {
   message: UIMessage;
   onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
   isWordSaved?: (korean: string) => boolean;
   onTranslateUsed?: () => void;
-}
-
-function getTextContent(message: UIMessage): string {
-  return message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join("");
 }
 
 export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: MessageBubbleProps) {

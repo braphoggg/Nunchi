@@ -2,7 +2,7 @@
  * Security utilities for input validation and rate limiting.
  */
 
-import type { GamificationData, XPAction, XPEvent } from "@/types";
+import type { GamificationData, XPAction, XPEvent, SavedConversation } from "@/types";
 
 const VALID_XP_ACTIONS: XPAction[] = [
   "message_korean",
@@ -237,6 +237,63 @@ export function validateGamificationData(
       messagesWithoutTranslate: stats.messagesWithoutTranslate as number,
     },
   };
+}
+
+/**
+ * Validates and sanitizes lesson history data loaded from localStorage.
+ * Returns a sanitized array on valid input, or null on invalid.
+ */
+export function validateLessonHistory(data: unknown): SavedConversation[] | null {
+  if (!Array.isArray(data)) return null;
+
+  const MAX_CONVERSATIONS = 20;
+  const MAX_MESSAGES_PER_CONVERSATION = 100;
+  const VALID_ROLES = ["user", "assistant"];
+
+  const valid: SavedConversation[] = [];
+
+  for (const entry of data.slice(0, MAX_CONVERSATIONS)) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) continue;
+
+    const e = entry as Record<string, unknown>;
+
+    // Prototype pollution check
+    if ("__proto__" in e || "constructor" in e || "prototype" in e) continue;
+
+    // Validate required fields
+    if (
+      typeof e.id !== "string" || e.id.length === 0 ||
+      typeof e.savedAt !== "string" || isNaN(Date.parse(e.savedAt)) ||
+      typeof e.preview !== "string" ||
+      typeof e.messageCount !== "number" || !Number.isInteger(e.messageCount) || e.messageCount < 0 ||
+      !Array.isArray(e.messages)
+    ) continue;
+
+    // Validate and sanitize messages
+    const validMessages: Array<{ role: "user" | "assistant"; text: string }> = [];
+    for (const msg of (e.messages as unknown[]).slice(0, MAX_MESSAGES_PER_CONVERSATION)) {
+      if (typeof msg !== "object" || msg === null || Array.isArray(msg)) continue;
+      const m = msg as Record<string, unknown>;
+      if (typeof m.role !== "string" || !VALID_ROLES.includes(m.role)) continue;
+      if (typeof m.text !== "string") continue;
+      validMessages.push({
+        role: m.role as "user" | "assistant",
+        text: (m.text as string).replace(/<[^>]*>/g, ""), // strip HTML
+      });
+    }
+
+    if (validMessages.length === 0) continue;
+
+    valid.push({
+      id: e.id as string,
+      savedAt: e.savedAt as string,
+      preview: (e.preview as string).replace(/<[^>]*>/g, "").slice(0, 100),
+      messageCount: validMessages.length,
+      messages: validMessages,
+    });
+  }
+
+  return valid;
 }
 
 /**

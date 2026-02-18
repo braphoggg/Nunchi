@@ -1,3 +1,17 @@
+// Lesson history
+export interface SavedMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface SavedConversation {
+  id: string;
+  savedAt: string;
+  preview: string;
+  messageCount: number;
+  messages: SavedMessage[];
+}
+
 export interface LessonTopic {
   id: string;
   title: string;

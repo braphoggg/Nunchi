@@ -160,6 +160,15 @@ body {
   animation: vocab-panel-in 0.25s ease-out;
 }
 
+/* Hangul keyboard slide-up */
+@keyframes keyboard-slide-up {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-keyboard-in {
+  animation: keyboard-slide-up 0.25s ease-out;
+}
+
 /* Flashcard 3D flip */
 .flashcard-container {
   perspective: 800px;
