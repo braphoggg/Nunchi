@@ -13,6 +13,15 @@ function stripHtml(text: string): string {
   return text.replace(/<[^>]*>/g, "");
 }
 
+/** Remove markdown formatting (bold, italic, etc.) for plain-text previews */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")  // **bold**
+    .replace(/__(.+?)__/g, "$1")       // __bold__
+    .replace(/\*(.+?)\*/g, "$1")       // *italic*
+    .replace(/_(.+?)_/g, "$1");        // _italic_
+}
+
 function loadFromStorage(): SavedConversation[] {
   if (typeof window === "undefined") return [];
   try {
@@ -69,9 +78,10 @@ export function useLessonHistory() {
 
       // Generate preview from first assistant message
       const firstAssistant = filtered.find((m) => m.role === "assistant");
-      const preview = firstAssistant
-        ? firstAssistant.text.slice(0, PREVIEW_LENGTH).replace(/\n/g, " ")
-        : filtered[0].text.slice(0, PREVIEW_LENGTH).replace(/\n/g, " ");
+      const rawPreview = firstAssistant
+        ? firstAssistant.text.slice(0, PREVIEW_LENGTH + 20).replace(/\n/g, " ")
+        : filtered[0].text.slice(0, PREVIEW_LENGTH + 20).replace(/\n/g, " ");
+      const preview = stripMarkdown(rawPreview).slice(0, PREVIEW_LENGTH);
 
       const conversation: SavedConversation = {
         id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
