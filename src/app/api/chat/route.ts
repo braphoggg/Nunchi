@@ -1,13 +1,8 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { streamText, convertToModelMessages, UIMessage } from "ai";
 import { MOONJO_SYSTEM_PROMPT } from "@/lib/system-prompt";
 import { validateMessages, checkRateLimit } from "@/lib/security";
 import { generateMoodSystemAddendum } from "@/lib/mood-engine";
-
-const ollama = createOpenAI({
-  baseURL: "http://localhost:11434/v1",
-  apiKey: "ollama",
-});
 
 export async function POST(req: Request) {
   try {
@@ -42,8 +37,7 @@ export async function POST(req: Request) {
     }
 
     // Strip non-standard parts (e.g. item_reference) and providerMetadata that
-    // convertToModelMessages can't handle or that trigger item_reference generation
-    // in the OpenAI provider. Ollama doesn't support the Responses API store feature.
+    // convertToModelMessages can't handle.
     const KNOWN_PART_TYPES = new Set(["text", "reasoning", "file", "tool", "data", "step-start"]);
     const cleanedMessages = (messages as UIMessage[]).map((msg) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -74,14 +68,11 @@ export async function POST(req: Request) {
     const modelMessages = await convertToModelMessages(cleanedMessages);
 
     const result = streamText({
-      model: ollama("exaone3.5:7.8b"),
+      model: google("gemini-2.5-flash"),
       system: MOONJO_SYSTEM_PROMPT + moodAddendum,
       messages: modelMessages,
       temperature: 0.7,
       maxOutputTokens: 1000,
-      providerOptions: {
-        openai: { store: false },
-      },
     });
 
     return result.toUIMessageStreamResponse();

@@ -1,11 +1,6 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { checkRateLimit } from "@/lib/security";
-
-const ollama = createOpenAI({
-  baseURL: "http://localhost:11434/v1",
-  apiKey: "ollama",
-});
 
 /** Maximum words per request */
 const MAX_WORDS = 20;
@@ -70,7 +65,7 @@ export async function POST(req: Request) {
       .join("\n");
 
     const result = await generateText({
-      model: ollama("exaone3.5:7.8b"),
+      model: google("gemini-2.5-flash"),
       system:
         "You are a Korean-English dictionary. For each Korean word or phrase given, " +
         "provide ONLY its English translation. " +

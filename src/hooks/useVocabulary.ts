@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import type { VocabularyItem } from "@/types";
+import { correctRomanization } from "@/lib/parse-vocabulary";
 
 const STORAGE_KEY = "nunchi-vocabulary";
 const MAX_WORDS = 5000;
@@ -39,7 +40,28 @@ function loadFromStorage(): VocabularyItem[] {
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) return [];
     // Validate each item and discard malformed entries
-    return parsed.filter(isValidVocabularyItem);
+    const validated = parsed.filter(isValidVocabularyItem);
+    // Migrate: apply romanization corrections to previously-saved items
+    // that may have been saved with incorrect LLM-generated romanizations
+    let migrated = false;
+    const corrected = validated.map((item) => {
+      const fixed = correctRomanization(item.korean, item.romanization);
+      if (fixed !== item.romanization) {
+        migrated = true;
+        return { ...item, romanization: fixed };
+      }
+      return item;
+    });
+    // Persist the corrected data if any changes were made
+    if (migrated) {
+      try {
+        const serialized = JSON.stringify(corrected);
+        if (serialized.length <= MAX_STORAGE_BYTES) {
+          localStorage.setItem(STORAGE_KEY, serialized);
+        }
+      } catch { /* ignore */ }
+    }
+    return corrected;
   } catch {
     return [];
   }

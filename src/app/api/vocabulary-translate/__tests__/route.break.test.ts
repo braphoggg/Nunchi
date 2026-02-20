@@ -12,8 +12,8 @@ vi.mock("@/lib/security", async () => {
   };
 });
 
-vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: vi.fn(() => vi.fn(() => "mocked-model")),
+vi.mock("@ai-sdk/google", () => ({
+  google: vi.fn(() => "mocked-model"),
 }));
 
 vi.mock("ai", async () => {

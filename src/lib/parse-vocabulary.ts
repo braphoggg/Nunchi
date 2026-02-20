@@ -24,37 +24,101 @@ const COMMON_NAMES = new Set([
  * Only includes words where the model has been observed making mistakes.
  */
 const ROMANIZATION_CORRECTIONS: Record<string, string> = {
+  // Basic greetings & common expressions
   "한글": "hangeul",
   "안녕하세요": "annyeonghaseyo",
   "감사합니다": "gamsahamnida",
   "죄송합니다": "joesonghamnida",
   "네": "ne",
   "아니요": "aniyo",
+  "괜찮아요": "gwaenchanayo",
+  "반갑습니다": "bangapseumnida",
+  "안녕히 가세요": "annyeonghi gaseyo",
+  "안녕히 계세요": "annyeonghi gyeseyo",
+
+  // People & titles
   "이름": "ireum",
   "선생님": "seonsaengnim",
   "학생": "haksaeng",
   "사람": "saram",
-  "물": "mul",
-  "밥": "bap",
-  "집": "jip",
-  "방": "bang",
-  "문": "mun",
   "의사": "uisa",
   "치과의사": "chigwauisa",
+
+  // Places & goshiwon vocabulary
   "고시원": "gosiwon",
+  "방": "bang",
+  "문": "mun",
+  "집": "jip",
+  "여기": "yeogi",
+  "저기": "jeogi",
+  "복도": "bokdo",
+  "옥상": "oksang",
+  "화장실": "hwajangsil",
+
+  // Food & drink
+  "물": "mul",
+  "밥": "bap",
+  "음식": "eumsik",
+  "커피": "keopi",
+
+  // Languages
   "한국어": "hangugeo",
   "영어": "yeongeo",
+
+  // Common adjectives & adverbs
   "좋아요": "joayo",
   "맞아요": "majayo",
+  "조용합니다": "joyonghamnida",
+  "조용히": "joyonghi",
+
+  // Common verbs & phrases
   "이해해요": "ihaehaeyo",
   "몰라요": "mollayo",
   "도와주세요": "dowajuseyo",
-  "여기": "yeogi",
-  "저기": "jeogi",
+  "도와드릴까요": "dowadeurilkkayo",
+  "배우고 싶으신가요": "baeugo sipeusingayo",
+  "함께 시작해볼까요": "hamkke sijakhaebollkkayo",
+  "시작해볼까요": "sijakhaebollkkayo",
+  "시작해요": "sijakaeyo",
+  "들어오세요": "deureooseyo",
+  "앉으세요": "anjeuseyo",
+
+  // Question words
   "어디": "eodi",
   "뭐": "mwo",
   "왜": "wae",
   "어떻게": "eotteoke",
+  "누구": "nugu",
+  "언제": "eonje",
+
+  // Moon-jo character vocabulary
+  "우리": "uri",
+  "같이": "gachi",
+  "함께": "hamkke",
+  "미소": "miso",
+  "치과": "chigwa",
+
+  // Korean jamo & learning terms
+  "자음": "jaeum",
+  "모음": "moeum",
+  "음절": "eumjeol",
+  "글자": "geulja",
+  "단어": "daneo",
+  "문장": "munjang",
+
+  // Numbers (native Korean)
+  "하나": "hana",
+  "둘": "dul",
+  "셋": "set",
+  "넷": "net",
+  "다섯": "daseot",
+
+  // Common conversation phrases
+  "어서오세요": "eoseooiseyo",
+  "다시 한번": "dasi hanbeon",
+  "천천히": "cheoncheonhi",
+  "잘 했어요": "jal haesseoyo",
+  "따라 해보세요": "ttara haeboseyo",
 };
 
 /**
@@ -68,8 +132,9 @@ const MAX_KOREAN_WORD_LENGTH = 15;
 /**
  * Corrects romanization for known Korean words if the LLM provided the wrong one.
  * Returns the corrected romanization, or the original if no correction is needed.
+ * Exported so that previously-saved vocabulary can be retroactively corrected on load.
  */
-function correctRomanization(korean: string, romanization: string): string {
+export function correctRomanization(korean: string, romanization: string): string {
   const correct = ROMANIZATION_CORRECTIONS[korean];
   if (!correct) return romanization;
   // Only correct if the provided romanization is clearly wrong

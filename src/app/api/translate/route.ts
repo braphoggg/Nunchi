@@ -1,11 +1,6 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { checkRateLimit } from "@/lib/security";
-
-const ollama = createOpenAI({
-  baseURL: "http://localhost:11434/v1",
-  apiKey: "ollama",
-});
 
 export async function POST(req: Request) {
   try {
@@ -44,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     const result = await generateText({
-      model: ollama("exaone3.5:7.8b"),
+      model: google("gemini-2.5-flash"),
       system:
         "You are a translator for a Korean language lesson. Convert this teaching message into plain English. " +
         "Replace all Korean text (Hangul) with its English meaning. " +
