@@ -10,12 +10,12 @@ describe("XPToast", () => {
 
   it("renders action label for message_korean", () => {
     render(<XPToast amount={5} action="message_korean" />);
-    expect(screen.getByText("Korean message")).toBeTruthy();
+    expect(screen.getByText("Korean used")).toBeTruthy();
   });
 
   it("renders action label for flashcard_session", () => {
     render(<XPToast amount={20} action="flashcard_session" />);
-    expect(screen.getByText("Flashcards")).toBeTruthy();
+    expect(screen.getByText("Flashcards done")).toBeTruthy();
   });
 
   it("has the animate-xp-toast CSS class", () => {

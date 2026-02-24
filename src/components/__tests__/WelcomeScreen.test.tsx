@@ -34,7 +34,7 @@ describe("WelcomeScreen", () => {
       .getByText(greetingsTopic.titleKr)
       .closest("button")!;
     await userEvent.click(button);
-    expect(handler).toHaveBeenCalledWith(greetingsTopic.starterMessage);
+    expect(handler).toHaveBeenCalledWith(greetingsTopic.starterMessage, greetingsTopic.id);
   });
 
   it("renders each topic icon", () => {

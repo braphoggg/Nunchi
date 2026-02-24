@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TopBar from "./TopBar";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
@@ -16,6 +16,7 @@ import XPToast from "./XPToast";
 import HelpModal from "./HelpModal";
 import LessonHistory from "./LessonHistory";
 import LessonReview from "./LessonReview";
+import OnboardingOverlay from "./OnboardingOverlay";
 import { useShareConversation } from "./ShareButton";
 import HangulKeyboard from "./HangulKeyboard";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
@@ -27,7 +28,11 @@ import { useGamification } from "@/hooks/useGamification";
 import { useLessonHistory } from "@/hooks/useLessonHistory";
 import { resetTimestampCounter } from "@/lib/timestamps";
 import { getTextContent } from "@/lib/message-utils";
+import { computeKoreanRatio, getMoodLevel } from "@/lib/mood-engine";
 import type { ResidentRank } from "@/types";
+
+const VISITED_TOPICS_KEY = "nunchi-visited-topics";
+const ONBOARDED_KEY = "nunchi-onboarded";
 
 /** Rank-up atmospheric messages from Moon-jo */
 const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string } | null> = {
@@ -116,7 +121,7 @@ export default function ChatContainer() {
     recordWordSaved,
   } = useGamification(wordCount);
 
-  // Hangul keyboard submit (needs recordMessage from useGamification)
+  // Hangul keyboard submit
   const handleKeyboardSubmit = useCallback(() => {
     if (input.trim() && !isLoading && sendMessage) {
       const text = input.trim();
@@ -130,7 +135,7 @@ export default function ChatContainer() {
   const [statsOpen, setStatsOpen] = useState(false);
   const toggleStats = useCallback(() => {
     setStatsOpen((o) => {
-      if (!o) closePanel(); // Close vocab when opening stats
+      if (!o) closePanel();
       return !o;
     });
   }, [closePanel]);
@@ -149,14 +154,12 @@ export default function ChatContainer() {
     closeReview,
   } = useLessonHistory();
 
-  // Wrap history toggle to close other overlays
   const handleToggleHistory = useCallback(() => {
     closePanel();
     closeStats();
     toggleHistory();
   }, [closePanel, closeStats, toggleHistory]);
 
-  // Wrap vocab toggle to also close stats
   const handleToggleVocabulary = useCallback(() => {
     closeStats();
     togglePanel();
@@ -167,7 +170,6 @@ export default function ChatContainer() {
   const toggleHelp = useCallback(() => {
     setHelpOpen((o) => {
       if (!o) {
-        // Close other overlays when opening help
         closePanel();
         closeStats();
       }
@@ -176,7 +178,43 @@ export default function ChatContainer() {
   }, [closePanel, closeStats]);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
 
-  // Leave confirmation
+  // Onboarding overlay — show once per browser
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShowOnboarding(!localStorage.getItem(ONBOARDED_KEY));
+    }
+  }, []);
+  const dismissOnboarding = useCallback(() => {
+    localStorage.setItem(ONBOARDED_KEY, "1");
+    setShowOnboarding(false);
+  }, []);
+
+  // Visited topics — persisted in localStorage
+  const [visitedTopics, setVisitedTopics] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(VISITED_TOPICS_KEY);
+        setVisitedTopics(new Set(stored ? JSON.parse(stored) : []));
+      } catch {
+        setVisitedTopics(new Set());
+      }
+    }
+  }, []);
+  const markTopicVisited = useCallback((topicId: string) => {
+    setVisitedTopics((prev) => {
+      if (prev.has(topicId)) return prev;
+      const next = new Set(prev);
+      next.add(topicId);
+      try {
+        localStorage.setItem(VISITED_TOPICS_KEY, JSON.stringify([...next]));
+      } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  // Leave confirmation — requires explicit user action, no auto-dismiss
   const [confirmLeave, setConfirmLeave] = useState(false);
   const promptLeave = useCallback(() => setConfirmLeave(true), []);
   const cancelLeave = useCallback(() => setConfirmLeave(false), []);
@@ -203,32 +241,20 @@ export default function ChatContainer() {
   const prevRankRef = useRef<ResidentRank>(rank.id);
   const [rankUpMessage, setRankUpMessage] = useState<{ korean: string; english: string } | null>(null);
 
-  // Detect rank changes (set message immediately, but don't start timer yet)
   useEffect(() => {
     if (prevRankRef.current !== rank.id && prevRankRef.current !== undefined) {
       const msg = RANK_UP_MESSAGES[rank.id];
-      if (msg) {
-        setRankUpMessage(msg);
-      }
+      if (msg) setRankUpMessage(msg);
     }
     prevRankRef.current = rank.id;
   }, [rank.id]);
 
-  // Auto-dismiss rank-up notification only when overlays are closed
   useEffect(() => {
     if (!rankUpMessage) return;
-    // If an overlay is blocking the view, wait — don't start the timer
     if (panelOpen || flashcardActive || statsOpen) return;
     const timer = setTimeout(() => setRankUpMessage(null), 5000);
     return () => clearTimeout(timer);
   }, [rankUpMessage, panelOpen, flashcardActive, statsOpen]);
-
-  // Auto-dismiss leave confirmation after 5 seconds
-  useEffect(() => {
-    if (!confirmLeave) return;
-    const timer = setTimeout(() => setConfirmLeave(false), 5000);
-    return () => clearTimeout(timer);
-  }, [confirmLeave]);
 
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
@@ -268,6 +294,16 @@ export default function ChatContainer() {
     if (error) setErrorDismissed(false);
   }, [error]);
 
+  // Compute current mood from message history
+  const currentMood = useMemo(() => {
+    if (messages.length === 0) return "neutral" as const;
+    const simpleMessages = messages.map((m) => ({
+      role: m.role,
+      content: getTextContent(m),
+    }));
+    return getMoodLevel(computeKoreanRatio(simpleMessages));
+  }, [messages]);
+
   // Reset conversation
   const handleReset = useCallback(() => {
     setConfirmLeave(false);
@@ -275,7 +311,6 @@ export default function ChatContainer() {
     closePanel();
     closeStats();
     closeHistory();
-    // Save conversation before clearing
     if (messages.length > 0) {
       saveConversation(
         messages.map((m) => ({ role: m.role, text: getTextContent(m) }))
@@ -291,14 +326,15 @@ export default function ChatContainer() {
     }, 2000);
   }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, saveConversation]);
 
-  const handleTopicSelect = (message: string) => {
+  const handleTopicSelect = useCallback((message: string, topicId: string) => {
     if (!sendMessage) {
       console.error("[ChatContainer] sendMessage not available");
       return;
     }
+    markTopicVisited(topicId);
     recordMessage(message);
     sendMessage({ text: message });
-  };
+  }, [sendMessage, markTopicVisited, recordMessage]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -331,6 +367,7 @@ export default function ChatContainer() {
         onToggleHelp={toggleHelp}
         vocabularyCount={unseenCount}
         rank={rank}
+        mood={currentMood}
       />
 
       <StatsBar
@@ -338,13 +375,15 @@ export default function ChatContainer() {
         totalXP={totalXP}
         rank={rank}
         rankProgress={rankProgress}
+        nextRank={nextRank}
+        vocabCount={wordCount}
         onToggleStats={toggleStats}
       />
 
-      {/* Leave confirmation banner */}
+      {/* Leave confirmation banner — no auto-dismiss */}
       {confirmLeave && (
         <div className="relative z-50 flex items-center justify-center gap-3 px-4 py-2 bg-goshiwon-accent/20 border-b border-goshiwon-accent/40 animate-message-in">
-          <span className="text-xs text-goshiwon-text-secondary">Leave Room 203?</span>
+          <span className="text-xs text-goshiwon-text-secondary">Leave Room 203? Your conversation will be saved.</span>
           <button
             onClick={handleReset}
             className="text-xs text-goshiwon-accent-light hover:text-goshiwon-accent font-medium transition-colors"
@@ -424,7 +463,11 @@ export default function ChatContainer() {
 
         {!showFarewell && messages.length === 0 ? (
           <div className={transitioning ? "fade-exit-active" : ""}>
-            <WelcomeScreen onSelectTopic={handleTopicSelect} rank={rank} />
+            <WelcomeScreen
+              onSelectTopic={handleTopicSelect}
+              rank={rank}
+              visitedTopics={visitedTopics}
+            />
           </div>
         ) : !showFarewell ? (
           <div className={transitioning ? "fade-enter" : "fade-enter-active"}>
@@ -482,8 +525,7 @@ export default function ChatContainer() {
               Something went wrong
             </p>
             <p className="mt-1 text-goshiwon-text-secondary text-xs">
-              {error.message ||
-                "An unexpected error occurred. Please try again."}
+              {error.message || "An unexpected error occurred. Please try again."}
             </p>
           </div>
         )}
@@ -496,7 +538,7 @@ export default function ChatContainer() {
         <XPToast amount={recentXPGain.amount} action={recentXPGain.action} />
       )}
 
-      {/* Korean hint — shown when user sends English-only message */}
+      {/* Korean hint */}
       {koreanHint && (
         <div className={`absolute left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-hint-toast transition-all duration-200 ${recentXPGain ? "bottom-28" : "bottom-20"}`}>
           <div className="bg-goshiwon-surface border border-goshiwon-border rounded-lg px-3 py-1.5 shadow-lg flex items-center gap-2">
@@ -522,6 +564,9 @@ export default function ChatContainer() {
         keyboardVisible={keyboardVisible}
         onToggleKeyboard={toggleKeyboard}
       />
+
+      {/* First-run onboarding overlay */}
+      {showOnboarding && <OnboardingOverlay onDismiss={dismissOnboarding} />}
     </div>
   );
 }

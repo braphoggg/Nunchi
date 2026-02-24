@@ -7,14 +7,16 @@ interface StatsBarProps {
   totalXP: number;
   rank: RankInfo;
   rankProgress: number;
+  nextRank: RankInfo | null;
+  vocabCount: number;
   onToggleStats: () => void;
 }
 
 function getStreakLabel(days: number): string {
-  if (days === 0) return "You haven't started";
+  if (days === 0) return "Start your streak";
   if (days === 1) return "Day 1";
   if (days < 7) return `${days} days`;
-  if (days < 30) return `${days} days \u2014 You can't leave`;
+  if (days < 30) return `${days} days \u2014 You can\u2019t leave`;
   return `${days} days \u2014 Home.`;
 }
 
@@ -23,13 +25,20 @@ export default function StatsBar({
   totalXP,
   rank,
   rankProgress,
+  nextRank,
+  vocabCount,
   onToggleStats,
 }: StatsBarProps) {
+  const progressTitle = nextRank
+    ? `${totalXP} / ${nextRank.minXP} XP · ${vocabCount} / ${nextRank.minVocab} words → ${nextRank.english}`
+    : "Max rank reached";
+
   return (
     <button
       onClick={onToggleStats}
-      className="relative z-50 w-full flex items-center justify-between px-3 py-1 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer"
+      className="relative z-50 w-full flex items-center justify-between px-3 py-1.5 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer group"
       aria-label="Open stats panel"
+      title="View detailed stats"
     >
       {/* Streak */}
       <div className="flex items-center gap-1">
@@ -46,18 +55,37 @@ export default function StatsBar({
       {/* XP */}
       <div className="flex items-center gap-1">
         <span className="text-goshiwon-yellow">&#10022;</span>
-        <span className="text-goshiwon-yellow font-medium">{totalXP} XP</span>
+        <span className="text-goshiwon-yellow font-medium">{totalXP.toLocaleString()} XP</span>
       </div>
 
-      {/* Rank + progress */}
+      {/* Rank + progress + chevron */}
       <div className="flex items-center gap-2">
-        <span className="text-goshiwon-yellow text-[11px]" title={`${rank.english} — ${rank.description}`}>{rank.korean}</span>
-        <div className="w-12 h-[3px] bg-goshiwon-border rounded-full overflow-hidden">
+        <span className="text-goshiwon-yellow text-[11px]" title={`${rank.english} — ${rank.description}`}>
+          {rank.korean}
+        </span>
+        <div
+          className="w-12 h-[3px] bg-goshiwon-border rounded-full overflow-hidden"
+          title={progressTitle}
+          aria-label={progressTitle}
+        >
           <div
             className="h-full bg-goshiwon-yellow rounded-full transition-all duration-500"
             style={{ width: `${Math.round(Math.min(rankProgress, 1) * 100)}%` }}
           />
         </div>
+        {/* Chevron affordance */}
+        <svg
+          className="w-3 h-3 text-goshiwon-text-muted/50 group-hover:text-goshiwon-text-muted transition-colors"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
       </div>
     </button>
   );

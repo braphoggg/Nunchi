@@ -175,7 +175,12 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
                 </span>
               </>
             ) : isAssistant ? (
-              formatMessage(displayContent)
+              formatMessage(
+                displayContent,
+                onSaveWords && hasVocabulary(content) && !allWordsSaved && !showTranslation
+                  ? { onVocabClick: handleSaveWords }
+                  : undefined
+              )
             ) : (
               content
             )}

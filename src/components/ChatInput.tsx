@@ -59,7 +59,17 @@ export default function ChatInput({
                 : "bg-goshiwon-bg text-goshiwon-text-muted border-goshiwon-border hover:text-goshiwon-text"
             }`}
           >
-            ㄱ
+            {/* Keyboard icon */}
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <line x1="6" y1="10" x2="6" y2="10" strokeWidth="2.5" />
+              <line x1="10" y1="10" x2="10" y2="10" strokeWidth="2.5" />
+              <line x1="14" y1="10" x2="14" y2="10" strokeWidth="2.5" />
+              <line x1="18" y1="10" x2="18" y2="10" strokeWidth="2.5" />
+              <line x1="6" y1="14" x2="6" y2="14" strokeWidth="2.5" />
+              <line x1="18" y1="14" x2="18" y2="14" strokeWidth="2.5" />
+              <line x1="10" y1="14" x2="14" y2="14" strokeWidth="2.5" />
+            </svg>
           </button>
         )}
 

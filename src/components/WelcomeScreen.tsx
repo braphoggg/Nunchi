@@ -28,16 +28,17 @@ const WELCOME_GREETINGS: Record<string, { korean: string; english: string }> = {
 };
 
 interface WelcomeScreenProps {
-  onSelectTopic: (message: string) => void;
+  onSelectTopic: (message: string, topicId: string) => void;
   rank?: RankInfo;
+  visitedTopics?: Set<string>;
 }
 
-export default function WelcomeScreen({ onSelectTopic, rank }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics }: WelcomeScreenProps) {
   const greeting = WELCOME_GREETINGS[rank?.id ?? "new_resident"] ?? WELCOME_GREETINGS.new_resident;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-      <div className="text-center mb-8">
+    <div className="w-full flex flex-col items-center px-4 py-4 sm:py-8">
+      <div className="text-center mb-5 sm:mb-8">
         <h2 className="text-2xl font-light text-goshiwon-text mb-2">
           {greeting.korean}
         </h2>
@@ -46,32 +47,47 @@ export default function WelcomeScreen({ onSelectTopic, rank }: WelcomeScreenProp
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-        {LESSON_TOPICS.map((topic) => (
-          <button
-            key={topic.id}
-            onClick={() => onSelectTopic(topic.starterMessage)}
-            aria-label={`Start lesson: ${topic.title}`}
-            className="group text-left p-4 bg-goshiwon-surface border border-goshiwon-border rounded-lg hover:border-goshiwon-yellow/50 hover:bg-goshiwon-surface-hover transition-all duration-300 border-t-2 border-t-goshiwon-accent"
-          >
-            <div className="flex items-center gap-3">
-              <span className="w-10 h-10 flex items-center justify-center rounded-full bg-goshiwon-accent/10 border border-goshiwon-accent/20 text-lg text-goshiwon-yellow/70 group-hover:text-goshiwon-yellow group-hover:bg-goshiwon-accent/20 transition-all duration-300 shrink-0">
-                {topic.icon}
-              </span>
-              <div>
-                <div className="text-sm font-medium text-goshiwon-text">
-                  {topic.titleKr}
-                </div>
-                <div className="text-xs text-goshiwon-text-muted">
-                  {topic.title}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-lg">
+        {LESSON_TOPICS.map((topic, index) => {
+          const isLast = index === LESSON_TOPICS.length - 1;
+          const isOddCount = LESSON_TOPICS.length % 2 !== 0;
+          const visited = visitedTopics?.has(topic.id) ?? false;
+
+          return (
+            <button
+              key={topic.id}
+              onClick={() => onSelectTopic(topic.starterMessage, topic.id)}
+              aria-label={`Start lesson: ${topic.title}`}
+              className={`group relative text-left p-3 sm:p-4 bg-goshiwon-surface border border-goshiwon-border rounded-lg hover:border-goshiwon-yellow/50 hover:bg-goshiwon-surface-hover transition-all duration-300 border-t-2 border-t-goshiwon-accent ${
+                isLast && isOddCount ? "col-span-2" : ""
+              }`}
+            >
+              {/* Visited dot */}
+              {visited && (
+                <span
+                  className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-goshiwon-yellow/60"
+                  title="Previously studied"
+                />
+              )}
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-goshiwon-accent/10 border border-goshiwon-accent/20 text-lg text-goshiwon-yellow/70 group-hover:text-goshiwon-yellow group-hover:bg-goshiwon-accent/20 transition-all duration-300 shrink-0">
+                  {topic.icon}
+                </span>
+                <div>
+                  <div className="text-sm font-medium text-goshiwon-text">
+                    {topic.titleKr}
+                  </div>
+                  <div className="text-xs text-goshiwon-text-muted">
+                    {topic.title}
+                  </div>
                 </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
-      <p className="mt-8 text-xs text-goshiwon-text-secondary text-center max-w-sm">
+      <p className="mt-6 sm:mt-8 text-xs text-goshiwon-text-secondary text-center max-w-sm">
         Or simply type a message below. Moon-jo is always... watching.
       </p>
       {(!rank || rank.id === "new_resident") && (

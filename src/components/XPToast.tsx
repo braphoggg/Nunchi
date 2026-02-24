@@ -3,12 +3,12 @@
 import type { XPAction } from "@/types";
 
 const ACTION_LABELS: Record<XPAction, string> = {
-  message_korean: "Korean message",
-  message_full_korean: "Full Korean",
-  flashcard_session: "Flashcards",
-  flashcard_perfect: "Perfect session",
+  message_korean: "Korean used",
+  message_full_korean: "Full Korean!",
+  flashcard_session: "Flashcards done",
+  flashcard_perfect: "Perfect session!",
   word_saved: "Words saved",
-  no_translate: "No translate",
+  no_translate: "No-translate streak",
 };
 
 interface XPToastProps {

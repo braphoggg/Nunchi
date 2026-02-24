@@ -30,9 +30,10 @@ describe("TopBar", () => {
     expect(screen.getByText(/Eden Goshiwon/)).toBeInTheDocument();
   });
 
-  it("shows online status indicator", () => {
+  it("shows mood status indicator", () => {
     render(<TopBar />);
-    expect(screen.getByText("Online")).toBeInTheDocument();
+    // Default mood is "neutral" → label "Watching"
+    expect(screen.getByText("Watching")).toBeInTheDocument();
   });
 
   it("calls onReset when leave button is clicked", () => {

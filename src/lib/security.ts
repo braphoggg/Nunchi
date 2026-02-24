@@ -255,10 +255,14 @@ export function validateLessonHistory(data: unknown): SavedConversation[] | null
   for (const entry of data.slice(0, MAX_CONVERSATIONS)) {
     if (typeof entry !== "object" || entry === null || Array.isArray(entry)) continue;
 
-    const e = entry as Record<string, unknown>;
+    const e = entry as unknown as Record<string, unknown>;
 
-    // Prototype pollution check
-    if ("__proto__" in e || "constructor" in e || "prototype" in e) continue;
+    // Prototype pollution check (use hasOwnProperty to avoid TS narrowing to never)
+    if (
+      Object.prototype.hasOwnProperty.call(e, "__proto__") ||
+      Object.prototype.hasOwnProperty.call(e, "constructor") ||
+      Object.prototype.hasOwnProperty.call(e, "prototype")
+    ) continue;
 
     // Validate required fields
     if (

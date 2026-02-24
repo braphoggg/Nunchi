@@ -17,6 +17,8 @@ const defaultProps = {
   totalXP: 245,
   rank: mockRank,
   rankProgress: 0.4,
+  nextRank: null,
+  vocabCount: 0,
   onToggleStats: vi.fn(),
 };
 
@@ -38,7 +40,7 @@ describe("StatsBar", () => {
 
   it("shows appropriate label when streak is 0", () => {
     render(<StatsBar {...defaultProps} streak={0} />);
-    expect(screen.getByText("You haven't started")).toBeTruthy();
+    expect(screen.getByText("Start your streak")).toBeTruthy();
   });
 
   it("shows progress bar with correct width", () => {
@@ -72,7 +74,7 @@ describe("StatsBar", () => {
 
   it("renders atmospheric streak label for 7+ days", () => {
     render(<StatsBar {...defaultProps} streak={10} />);
-    expect(screen.getByText(/You can't leave/)).toBeTruthy();
+    expect(screen.getByText(/can\u2019t leave/)).toBeTruthy();
   });
 
   it("shows English tooltip on Korean rank name", () => {
