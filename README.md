@@ -7,8 +7,6 @@
 An AI-powered Korean language learning app set in a fictional goshiwon,<br>
 inspired by the K-drama *Strangers from Hell* (타인은 지옥이다).
 
-Completely free. Runs locally via [Ollama](https://ollama.com). No API keys needed.
-
 ![screenshot](screenshot.png)
 
 [Getting Started](#getting-started) · [Features](#features) · [How It Works](#how-it-works) · [Tech Stack](#tech-stack) · [Testing](#testing) · [Project Structure](#project-structure)
@@ -32,7 +30,7 @@ Everything happens between 1 and 3 AM. The hallway lights flicker. The twins are
 ### Prerequisites
 
 - [Node.js](https://nodejs.org) 18+
-- [Ollama](https://ollama.com) installed and running
+- A [Google Gemini API key](https://aistudio.google.com/apikey) (free tier: 15 RPM, 1,000 requests/day)
 
 ### Setup
 
@@ -42,16 +40,15 @@ cd Nunchi
 npm install
 ```
 
-Pull the language model (~4.8 GB download):
+Create `.env.local` and add your API key:
 
 ```bash
-ollama pull exaone3.5:7.8b
+GOOGLE_GENERATIVE_AI_API_KEY=your_key_here
 ```
 
-Start Ollama and the dev server:
+Start the dev server:
 
 ```bash
-ollama serve
 npm run dev
 ```
 
@@ -153,15 +150,13 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 
 ### Architecture
 
-Single-page Next.js application with three API routes, all powered by a local Ollama instance:
+Single-page Next.js application with three API routes, all powered by Google Gemini 2.5 Flash:
 
 | Route | Purpose | Temperature |
 |-------|---------|-------------|
 | `/api/chat` | Streaming conversation with Moon-jo's system prompt + mood addendum | 0.7 |
 | `/api/translate` | On-demand Korean → English translation | 0.3 |
 | `/api/vocabulary-translate` | Batch translate vocabulary words for the dictionary | 0.2 |
-
-All AI runs locally through Ollama using `exaone3.5:7.8b`. No data leaves your machine.
 
 ### Moon-jo's Character
 
@@ -223,8 +218,7 @@ Corrupted data auto-resets to safe defaults. XP has anti-tampering validation (m
 | Framework | [Next.js 16](https://nextjs.org) (App Router) |
 | Language | TypeScript 5.9 (strict mode) |
 | UI | [React 19](https://react.dev) |
-| AI | [Vercel AI SDK v6](https://sdk.vercel.ai) + [Ollama](https://ollama.com) |
-| Model | [EXAONE 3.5 7.8B](https://huggingface.co/LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct) |
+| AI | [Vercel AI SDK v6](https://sdk.vercel.ai) + [Google Gemini 2.5 Flash](https://deepmind.google/technologies/gemini/) |
 | Styling | [Tailwind CSS v4](https://tailwindcss.com) with custom goshiwon theme |
 | Image Export | [html-to-image](https://github.com/bubkoo/html-to-image) |
 | Audio | Web Audio API + Web Speech API |
@@ -256,7 +250,7 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-**398 tests** across 28 test files covering:
+**600 tests** across 47 test files covering:
 
 - **API routes** — Chat streaming, translation, vocabulary batch, error handling, rate limiting
 - **Components** — All UI components including overlays, message rendering, input handling
@@ -274,7 +268,7 @@ Tests run with Vitest in a jsdom environment with React Testing Library. TypeScr
 src/
 ├── app/
 │   ├── api/
-│   │   ├── chat/                  # Streaming chat (Ollama)
+│   │   ├── chat/                  # Streaming chat (Gemini 2.5 Flash)
 │   │   ├── translate/             # Korean → English translation
 │   │   └── vocabulary-translate/  # Batch vocabulary translation
 │   ├── globals.css                # Goshiwon theme + 12 animations
@@ -332,7 +326,7 @@ src/
 | `npm run dev` | Start development server |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
-| `npm test` | Run all 398 tests |
+| `npm test` | Run all 600 tests |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run test:coverage` | Tests with coverage report |
 | `npm run lint` | ESLint check |
