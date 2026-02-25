@@ -41,14 +41,17 @@ export async function POST(req: Request) {
     const result = await generateText({
       model: google("gemini-2.5-flash"),
       system:
-        "You are a translator for a Korean language lesson. Convert this teaching message into plain English. " +
-        "Replace all Korean text (Hangul) with its English meaning. " +
-        "Remove romanization in parentheses. " +
-        "Keep the message structure readable. Preserve ** markers for bold. " +
-        "Output only the English version, nothing else.",
+        "You are a Korean-to-English translator. Translate the user's message into English. " +
+        "Rules: " +
+        "1. Output ONLY the translated text — no preamble, no postamble, no explanations, no additional examples. " +
+        "2. Replace every Korean word or phrase with its English equivalent. " +
+        "3. Remove any romanization shown in parentheses. " +
+        "4. Preserve **bold markers** exactly as they appear around the corresponding English words. " +
+        "5. Preserve line breaks and paragraph spacing. " +
+        "6. Do not add anything that was not in the original message.",
       prompt: text,
-      temperature: 0.3,
-      maxOutputTokens: 1000,
+      temperature: 0.1,
+      maxOutputTokens: 2000,
     });
 
     return new Response(

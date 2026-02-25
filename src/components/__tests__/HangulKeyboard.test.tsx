@@ -4,10 +4,12 @@ import HangulKeyboard from "../HangulKeyboard";
 
 describe("HangulKeyboard", () => {
   let onInput: ReturnType<typeof vi.fn>;
+  let onDeleteChar: ReturnType<typeof vi.fn>;
   let onSubmit: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     onInput = vi.fn();
+    onDeleteChar = vi.fn();
     onSubmit = vi.fn();
   });
 
@@ -148,13 +150,14 @@ describe("HangulKeyboard", () => {
     expect(screen.getByText("ㅂ")).toBeInTheDocument();
   });
 
-  it("handles backspace when nothing is composing", () => {
+  it("handles backspace when nothing is composing — passes through to parent", () => {
     render(
-      <HangulKeyboard onInput={onInput} onSubmit={onSubmit} visible={true} />
+      <HangulKeyboard onInput={onInput} onDeleteChar={onDeleteChar} onSubmit={onSubmit} visible={true} />
     );
-    // Backspace on empty state should not crash
+    // Backspace on empty composition state should pass through to parent (not crash)
     fireEvent.click(screen.getByLabelText("Backspace"));
     expect(onInput).not.toHaveBeenCalled();
+    expect(onDeleteChar).toHaveBeenCalledTimes(1);
   });
 
   it("decomposes composing character on backspace", () => {
@@ -194,5 +197,78 @@ describe("HangulKeyboard", () => {
     fireEvent.click(screen.getByText("⇧"));
     expect(screen.getByText("ㅒ")).toBeInTheDocument();
     expect(screen.getByText("ㅖ")).toBeInTheDocument();
+  });
+
+  it("backspace on committed char calls onDeleteChar and removes it from internal buffer", () => {
+    // Setup: type ㄱ+ㅏ+ㄴ+ㅏ → "가" committed to parent, "나" composing
+    // Then backspace 3x should call onDeleteChar once (for committed "가")
+    render(
+      <HangulKeyboard onInput={onInput} onDeleteChar={onDeleteChar} onSubmit={onSubmit} visible={true} />
+    );
+    fireEvent.click(screen.getByText("ㄱ"));
+    fireEvent.click(screen.getByText("ㅏ"));
+    fireEvent.click(screen.getByText("ㄴ"));
+    fireEvent.click(screen.getByText("ㅏ")); // commits "가" via onInput, starts "나" composing
+    expect(onInput).toHaveBeenCalledWith("가");
+    expect(onDeleteChar).not.toHaveBeenCalled();
+
+    // Backspace 1: removes vowel ㅏ from composing "나" → "ㄴ" — no parent delete
+    fireEvent.click(screen.getByLabelText("Backspace"));
+    expect(onDeleteChar).not.toHaveBeenCalled();
+
+    // Backspace 2: removes ㄴ from composing → composing null — no parent delete
+    fireEvent.click(screen.getByLabelText("Backspace"));
+    expect(onDeleteChar).not.toHaveBeenCalled();
+
+    // Backspace 3: composing=null, committed="가" → removes "가" from buffer + calls onDeleteChar
+    fireEvent.click(screen.getByLabelText("Backspace"));
+    expect(onDeleteChar).toHaveBeenCalledTimes(1);
+  });
+
+  it("backspace pass-through after space resets composition", () => {
+    // After space, internal state resets. Backspace should pass through to parent.
+    render(
+      <HangulKeyboard onInput={onInput} onDeleteChar={onDeleteChar} onSubmit={onSubmit} visible={true} />
+    );
+    // Type 하 and commit via space
+    fireEvent.click(screen.getByText("ㅎ"));
+    fireEvent.click(screen.getByText("ㅏ"));
+    fireEvent.click(screen.getByText("space")); // onInput("하 "), state reset
+    onDeleteChar.mockClear();
+
+    // Now backspace — composition is empty, should pass through
+    fireEvent.click(screen.getByLabelText("Backspace"));
+    expect(onDeleteChar).toHaveBeenCalledTimes(1);
+    expect(onInput).toHaveBeenCalledTimes(1); // only the original "하 " call
+  });
+
+  it("shift resets after space", () => {
+    render(
+      <HangulKeyboard onInput={onInput} onSubmit={onSubmit} visible={true} />
+    );
+    // Activate shift
+    fireEvent.click(screen.getByText("⇧"));
+    expect(screen.getByText("ㅃ")).toBeInTheDocument();
+
+    // Press space — shift should reset
+    fireEvent.click(screen.getByText("space"));
+    expect(screen.getByText("ㅂ")).toBeInTheDocument();
+    expect(screen.queryByText("ㅃ")).not.toBeInTheDocument();
+  });
+
+  it("shift resets after enter", () => {
+    vi.useFakeTimers();
+    render(
+      <HangulKeyboard onInput={onInput} onSubmit={onSubmit} visible={true} />
+    );
+    // Activate shift
+    fireEvent.click(screen.getByText("⇧"));
+    expect(screen.getByText("ㅃ")).toBeInTheDocument();
+
+    // Press enter — shift should reset
+    fireEvent.click(screen.getByText("↵"));
+    expect(screen.getByText("ㅂ")).toBeInTheDocument();
+    expect(screen.queryByText("ㅃ")).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 });

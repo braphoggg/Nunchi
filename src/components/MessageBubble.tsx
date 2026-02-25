@@ -200,7 +200,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
 
         {/* Action buttons — below the bubble */}
         {isAssistant ? (
-          <div className="flex items-center gap-1 mt-1 ml-1">
+          <div data-tutorial="message-actions" className="flex items-center gap-1 mt-1 ml-1">
             {/* Translate */}
             <button
               onClick={handleTranslate}

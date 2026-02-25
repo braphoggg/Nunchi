@@ -21,7 +21,8 @@ describe("TopBar", () => {
 
   it("displays the avatar with aria-label", () => {
     render(<TopBar />);
-    expect(screen.getByRole("img", { name: "Moon-jo avatar" })).toBeInTheDocument();
+    // Avatar wrapper carries the aria-label (mood dot overlaid on it)
+    expect(screen.getByLabelText(/Moon-jo avatar/)).toBeInTheDocument();
   });
 
   it("shows the location description", () => {
@@ -30,10 +31,10 @@ describe("TopBar", () => {
     expect(screen.getByText(/Eden Goshiwon/)).toBeInTheDocument();
   });
 
-  it("shows mood status indicator", () => {
+  it("shows mood status indicator on avatar", () => {
     render(<TopBar />);
-    // Default mood is "neutral" → label "Watching"
-    expect(screen.getByText("Watching")).toBeInTheDocument();
+    // Mood dot is overlaid on avatar — label exposed via title attribute
+    expect(screen.getByTitle("Moon-jo is watching")).toBeInTheDocument();
   });
 
   it("calls onReset when leave button is clicked", () => {

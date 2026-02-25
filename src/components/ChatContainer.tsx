@@ -17,9 +17,11 @@ import HelpModal from "./HelpModal";
 import LessonHistory from "./LessonHistory";
 import LessonReview from "./LessonReview";
 import OnboardingOverlay from "./OnboardingOverlay";
+import TutorialOverlay from "./TutorialOverlay";
 import { useShareConversation } from "./ShareButton";
 import HangulKeyboard from "./HangulKeyboard";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
+import { useTutorial } from "@/hooks/useTutorial";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
 import { useGoshiwonEvents } from "@/hooks/useGoshiwonEvents";
@@ -58,6 +60,8 @@ const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string }
 export default function ChatContainer() {
   const { messages, sendMessage, status, error, setMessages } = useChat();
   const [input, setInput] = useState("");
+  const inputRef = useRef(input);
+  inputRef.current = input;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
 
@@ -66,11 +70,20 @@ export default function ChatContainer() {
 
   const isLoading = status === "submitted" || status === "streaming";
 
+  // Interactive tutorial
+  const tutorial = useTutorial();
+
   // Hangul keyboard
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const toggleKeyboard = useCallback(() => setKeyboardVisible((v) => !v), []);
+  const toggleKeyboard = useCallback(() => {
+    setKeyboardVisible((v) => !v);
+    tutorial.notifyInteraction("keyboard");
+  }, [tutorial]);
   const handleKeyboardInput = useCallback((text: string) => {
     setInput((prev) => prev + text);
+  }, []);
+  const handleKeyboardDelete = useCallback(() => {
+    setInput((prev) => prev.slice(0, -1));
   }, []);
 
   // Sound engine
@@ -121,15 +134,23 @@ export default function ChatContainer() {
     recordWordSaved,
   } = useGamification(wordCount);
 
-  // Hangul keyboard submit
+  // Auto-open keyboard for tutorial step "hangul-keys"
+  useEffect(() => {
+    if (tutorial.isActive && tutorial.currentStep?.id === "hangul-keys" && !keyboardVisible) {
+      setKeyboardVisible(true);
+    }
+  }, [tutorial.isActive, tutorial.currentStep, keyboardVisible]);
+
+  // Hangul keyboard submit — use ref so the callback always sees the latest input
+  // even if called from a setTimeout (stale closure prevention)
   const handleKeyboardSubmit = useCallback(() => {
-    if (input.trim() && !isLoading && sendMessage) {
-      const text = input.trim();
+    const text = inputRef.current.trim();
+    if (text && !isLoading && sendMessage) {
       setInput("");
       recordMessage(text);
       sendMessage({ text });
     }
-  }, [input, isLoading, sendMessage, recordMessage]);
+  }, [isLoading, sendMessage, recordMessage]);
 
   // Stats panel
   const [statsOpen, setStatsOpen] = useState(false);
@@ -223,6 +244,7 @@ export default function ChatContainer() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        if (tutorial.isActive) { tutorial.skipTutorial(); return; }
         if (confirmLeave) { cancelLeave(); return; }
         if (helpOpen) { closeHelp(); return; }
         if (reviewingConversation) { closeReview(); return; }
@@ -235,7 +257,7 @@ export default function ChatContainer() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [confirmLeave, helpOpen, reviewingConversation, historyOpen, statsOpen, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeReview, closeHistory, closeStats, endFlashcards, closePanel]);
+  }, [tutorial, confirmLeave, helpOpen, reviewingConversation, historyOpen, statsOpen, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeReview, closeHistory, closeStats, endFlashcards, closePanel]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -331,10 +353,11 @@ export default function ChatContainer() {
       console.error("[ChatContainer] sendMessage not available");
       return;
     }
+    tutorial.notifyInteraction("topics");
     markTopicVisited(topicId);
     recordMessage(message);
     sendMessage({ text: message });
-  }, [sendMessage, markTopicVisited, recordMessage]);
+  }, [sendMessage, markTopicVisited, recordMessage, tutorial]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -400,7 +423,12 @@ export default function ChatContainer() {
       )}
 
       {/* Help modal */}
-      {helpOpen && <HelpModal onClose={closeHelp} />}
+      {helpOpen && (
+        <HelpModal
+          onClose={closeHelp}
+          onReplayTutorial={() => { closeHelp(); tutorial.startTutorial(); }}
+        />
+      )}
 
       {/* Lesson history */}
       {historyOpen && !reviewingConversation && (
@@ -552,6 +580,7 @@ export default function ChatContainer() {
 
       <HangulKeyboard
         onInput={handleKeyboardInput}
+        onDeleteChar={handleKeyboardDelete}
         onSubmit={handleKeyboardSubmit}
         visible={keyboardVisible}
       />
@@ -566,7 +595,24 @@ export default function ChatContainer() {
       />
 
       {/* First-run onboarding overlay */}
-      {showOnboarding && <OnboardingOverlay onDismiss={dismissOnboarding} />}
+      {showOnboarding && (
+        <OnboardingOverlay
+          onStartTour={() => { dismissOnboarding(); tutorial.startTutorial(); }}
+          onSkip={dismissOnboarding}
+        />
+      )}
+
+      {/* Interactive tutorial overlay */}
+      {tutorial.isActive && tutorial.currentStep && (
+        <TutorialOverlay
+          step={tutorial.currentStep}
+          stepIndex={tutorial.currentStepIndex}
+          totalSteps={tutorial.totalSteps}
+          onNext={tutorial.nextStep}
+          onPrev={tutorial.prevStep}
+          onSkip={tutorial.skipTutorial}
+        />
+      )}
     </div>
   );
 }

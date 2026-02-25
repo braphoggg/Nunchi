@@ -13,6 +13,8 @@ import {
 interface HangulKeyboardProps {
   /** Called with committed text to insert into the input */
   onInput: (text: string) => void;
+  /** Called when the keyboard needs to delete one character from the parent input */
+  onDeleteChar?: () => void;
   /** Called when Enter is pressed on the keyboard */
   onSubmit: () => void;
   visible: boolean;
@@ -31,7 +33,7 @@ const ROWS_SHIFT = [
   ["ㅋ","ㅌ","ㅊ","ㅍ","ㅠ","ㅜ","ㅡ"],
 ];
 
-export default function HangulKeyboard({ onInput, onSubmit, visible }: HangulKeyboardProps) {
+export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visible }: HangulKeyboardProps) {
   const [shifted, setShifted] = useState(false);
   // Use a ref for composition state to avoid React strict mode double-invocation
   // of setState callbacks causing duplicate side effects (onInput called twice).
@@ -64,8 +66,19 @@ export default function HangulKeyboard({ onInput, onSubmit, visible }: HangulKey
     const next = feedBackspace(prev);
     compRef.current = next;
     prevCommittedLenRef.current = next.committed.length;
+
+    // Propagate a deletion to the parent in two cases:
+    // 1. A previously-committed char was removed from our tracked buffer
+    // 2. Nothing left in keyboard state (pass-through) — parent owns the remaining chars
+    if (
+      next.committed.length < prev.committed.length ||
+      (!prev.composing && prev.committed.length === 0)
+    ) {
+      onDeleteChar?.();
+    }
+
     rerender();
-  }, [rerender]);
+  }, [rerender, onDeleteChar]);
 
   const handleSpace = useCallback(() => {
     const prev = compRef.current;
@@ -78,6 +91,19 @@ export default function HangulKeyboard({ onInput, onSubmit, visible }: HangulKey
       onInput(" ");
     }
 
+    compRef.current = createCompositionState();
+    prevCommittedLenRef.current = 0;
+    setShifted(false);
+    rerender();
+  }, [onInput, rerender]);
+
+  const handleCommitComposing = useCallback(() => {
+    const prev = compRef.current;
+    if (!prev.composing) return;
+    const text = commitAll(prev);
+    if (text.length > prevCommittedLenRef.current) {
+      onInput(text.slice(prevCommittedLenRef.current));
+    }
     compRef.current = createCompositionState();
     prevCommittedLenRef.current = 0;
     rerender();
@@ -94,6 +120,7 @@ export default function HangulKeyboard({ onInput, onSubmit, visible }: HangulKey
 
     compRef.current = createCompositionState();
     prevCommittedLenRef.current = 0;
+    setShifted(false);
     rerender();
 
     // Delay submit slightly so onInput fires first
@@ -108,13 +135,17 @@ export default function HangulKeyboard({ onInput, onSubmit, visible }: HangulKey
   if (!visible) return null;
 
   return (
-    <div className="border-t border-goshiwon-border bg-goshiwon-surface/98 backdrop-blur-sm px-2 py-2 animate-keyboard-in">
-      {/* Composing preview */}
+    <div data-tutorial="hangul-keyboard" className="border-t border-goshiwon-border bg-goshiwon-surface/98 backdrop-blur-sm px-2 py-2 animate-keyboard-in">
+      {/* Composing preview — tap to commit */}
       {composingChar && (
         <div className="text-center mb-1.5">
-          <span className="inline-block px-3 py-0.5 text-sm text-goshiwon-yellow bg-goshiwon-bg rounded border border-goshiwon-border">
+          <button
+            onClick={handleCommitComposing}
+            className="inline-block px-3 py-0.5 text-sm text-goshiwon-yellow bg-goshiwon-bg rounded border border-goshiwon-yellow/40 hover:bg-goshiwon-yellow/10 active:bg-goshiwon-yellow/20 transition-colors"
+            title="Tap to complete"
+          >
             {composingChar}
-          </span>
+          </button>
         </div>
       )}
 

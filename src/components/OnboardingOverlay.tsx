@@ -1,10 +1,11 @@
 "use client";
 
 interface OnboardingOverlayProps {
-  onDismiss: () => void;
+  onStartTour: () => void;
+  onSkip: () => void;
 }
 
-export default function OnboardingOverlay({ onDismiss }: OnboardingOverlayProps) {
+export default function OnboardingOverlay({ onStartTour, onSkip }: OnboardingOverlayProps) {
   return (
     <div
       className="absolute inset-0 z-[60] flex items-center justify-center bg-goshiwon-bg/90 backdrop-blur-sm animate-message-in"
@@ -21,61 +22,44 @@ export default function OnboardingOverlay({ onDismiss }: OnboardingOverlayProps)
           <h2 className="text-lg font-light text-goshiwon-text">
             Your neighbor is waiting.
           </h2>
-          <p className="mt-1 text-xs text-goshiwon-text-secondary leading-relaxed">
+          <p className="mt-1.5 text-xs text-goshiwon-text-secondary leading-relaxed">
             Seo Moon-jo will teach you Korean — his way.
             He speaks only Korean. You learn by doing.
           </p>
         </div>
 
-        {/* Three key mechanics */}
-        <ul className="flex flex-col gap-3">
-          <li className="flex items-start gap-3">
-            <span className="mt-0.5 text-goshiwon-yellow text-base leading-none">🌐</span>
-            <div>
-              <p className="text-xs font-medium text-goshiwon-text">
-                Tap the globe to translate
-              </p>
-              <p className="text-[11px] text-goshiwon-text-muted leading-relaxed">
-                Moon-jo never explains in English. Use the translate button on his messages when you&rsquo;re stuck.
-              </p>
-            </div>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="mt-0.5 text-goshiwon-yellow text-base leading-none">✦</span>
-            <div>
-              <p className="text-xs font-medium text-goshiwon-text">
-                Write in Korean to earn XP
-              </p>
-              <p className="text-[11px] text-goshiwon-text-muted leading-relaxed">
-                The more Korean you use, the warmer Moon-jo gets — and the more XP you earn.
-              </p>
-            </div>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="mt-0.5 text-goshiwon-yellow text-base leading-none">📖</span>
-            <div>
-              <p className="text-xs font-medium text-goshiwon-text">
-                Tap highlighted words to save them
-              </p>
-              <p className="text-[11px] text-goshiwon-text-muted leading-relaxed">
-                Gold words in Moon-jo&rsquo;s messages are vocabulary. Tap any of them to add to your dictionary.
-              </p>
-            </div>
-          </li>
-        </ul>
+        {/* Atmospheric hint */}
+        <div className="flex flex-col items-center gap-3 py-2">
+          <div className="flex gap-6 text-goshiwon-yellow/60">
+            <span className="text-xl">🌐</span>
+            <span className="text-xl">✦</span>
+            <span className="text-xl">📖</span>
+          </div>
+          <p className="text-[11px] text-goshiwon-text-muted text-center leading-relaxed max-w-[260px]">
+            Translate messages, earn XP by writing Korean, and save vocabulary words as you learn.
+          </p>
+        </div>
 
         <p className="text-center text-[10px] text-goshiwon-text-muted italic">
           &ldquo;The hallway light flickers. He already knows you&rsquo;re here.&rdquo;
         </p>
 
-        {/* CTA */}
-        <button
-          onClick={onDismiss}
-          autoFocus
-          className="w-full py-2.5 rounded-lg bg-goshiwon-accent hover:bg-goshiwon-accent-light transition-colors text-sm text-goshiwon-text font-medium"
-        >
-          Enter Room 203
-        </button>
+        {/* CTAs */}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={onStartTour}
+            autoFocus
+            className="w-full py-2.5 rounded-lg bg-goshiwon-accent hover:bg-goshiwon-accent-light transition-colors text-sm text-goshiwon-text font-medium"
+          >
+            Start Tour
+          </button>
+          <button
+            onClick={onSkip}
+            className="w-full py-2 rounded-lg text-xs text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+          >
+            Skip, I&rsquo;ll explore
+          </button>
+        </div>
       </div>
     </div>
   );

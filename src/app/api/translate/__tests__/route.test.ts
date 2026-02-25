@@ -69,8 +69,8 @@ describe("POST /api/translate", () => {
       expect.objectContaining({
         model: "mocked-model",
         prompt: "안녕하세요, 만나서 반갑습니다.",
-        temperature: 0.3,
-        maxOutputTokens: 1000,
+        temperature: 0.1,
+        maxOutputTokens: 2000,
       })
     );
   });

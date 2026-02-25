@@ -43,6 +43,7 @@ export default function ChatInput({
     <form
       ref={formRef}
       onSubmit={onSubmit}
+      data-tutorial="chat-input"
       className="border-t border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm px-3 py-2 sm:px-4 sm:py-3 safe-area-bottom"
     >
       <div className="flex gap-2 items-end">
@@ -51,6 +52,7 @@ export default function ChatInput({
           <button
             type="button"
             onClick={onToggleKeyboard}
+            data-tutorial="keyboard-toggle"
             title={keyboardVisible ? "Hide Korean keyboard" : "Korean keyboard"}
             aria-label={keyboardVisible ? "Hide Korean keyboard" : "Show Korean keyboard"}
             className={`min-w-[40px] min-h-[40px] px-2 py-2 rounded-lg border transition-colors flex items-center justify-center text-sm font-bold ${

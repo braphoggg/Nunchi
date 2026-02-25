@@ -48,7 +48,7 @@ function NavButton({
       disabled={disabled}
       title={title}
       aria-label={ariaLabel}
-      className={`relative flex flex-col items-center gap-0.5 px-1.5 py-1 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors disabled:opacity-30 disabled:cursor-default ${className}`}
+      className={`relative flex flex-col items-center gap-0.5 px-1.5 py-1 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default ${className}`}
     >
       {badge}
       {children}
@@ -75,17 +75,25 @@ export default function TopBar({
   const moodCfg = MOOD_CONFIG[mood];
 
   return (
-    <div className="relative z-50 flex items-center gap-2 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
-      {/* Avatar — silhouette */}
-      <div
-        className="w-10 h-10 rounded-full bg-goshiwon-bg flex items-center justify-center border border-goshiwon-accent/40 overflow-hidden shrink-0"
-        role="img"
-        aria-label="Moon-jo avatar"
-      >
-        <svg viewBox="0 0 40 40" className="w-full h-full" fill="none">
-          <circle cx="20" cy="16" r="7" fill="#4d4559" />
-          <ellipse cx="20" cy="38" rx="13" ry="12" fill="#4d4559" />
-        </svg>
+    <div data-tutorial="topbar" className="relative z-50 flex items-center gap-2 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
+      {/* Avatar — silhouette with mood dot overlay */}
+      <div className="relative shrink-0" aria-label={`Moon-jo avatar — ${moodCfg.label}`}>
+        <div
+          className="w-10 h-10 rounded-full bg-goshiwon-bg flex items-center justify-center border border-goshiwon-accent/40 overflow-hidden"
+          role="img"
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 40 40" className="w-full h-full" fill="none">
+            <circle cx="20" cy="16" r="7" fill="#4d4559" />
+            <ellipse cx="20" cy="38" rx="13" ry="12" fill="#4d4559" />
+          </svg>
+        </div>
+        {/* Mood status dot — bottom-right of avatar */}
+        <span
+          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-goshiwon-surface ${moodCfg.dot}`}
+          title={`Moon-jo is ${moodCfg.label.toLowerCase()}`}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -97,7 +105,7 @@ export default function TopBar({
         </p>
       </div>
 
-      <div className="flex items-center gap-0.5">
+      <div data-tutorial="topbar-tools" className="flex items-center gap-0.5">
         {/* Lesson history */}
         {onToggleHistory && (
           <NavButton
@@ -132,6 +140,7 @@ export default function TopBar({
 
         {/* Vocabulary panel toggle */}
         {onToggleVocabulary && (
+          <span data-tutorial="vocab-button">
           <NavButton
             onClick={onToggleVocabulary}
             title="My Vocabulary"
@@ -150,6 +159,7 @@ export default function TopBar({
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
             </svg>
           </NavButton>
+          </span>
         )}
 
         {/* Help button */}
@@ -193,20 +203,21 @@ export default function TopBar({
 
         {/* Reset conversation */}
         {onReset && (
-          <button
+          <NavButton
             onClick={onReset}
-            aria-label="Leave Room 203"
-            className="hidden sm:block text-[10px] text-goshiwon-text-muted hover:text-goshiwon-accent-light transition-colors uppercase tracking-wider ml-1"
+            title="Leave Room 203"
+            ariaLabel="Leave Room 203"
+            label="Leave"
+            className="hover:text-goshiwon-accent-light"
           >
-            Leave
-          </button>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </NavButton>
         )}
 
-        {/* Mood / status indicator */}
-        <div className="flex flex-col items-center gap-0.5 ml-1.5" aria-label={`Moon-jo is ${moodCfg.label.toLowerCase()}`}>
-          <span className={`w-2 h-2 rounded-full ${moodCfg.dot}`} />
-          <span className="text-[8px] leading-none text-goshiwon-text-muted/70">{moodCfg.label}</span>
-        </div>
       </div>
     </div>
   );

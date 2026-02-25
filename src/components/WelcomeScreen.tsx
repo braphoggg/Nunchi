@@ -47,7 +47,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics }: We
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-lg">
+      <div data-tutorial="welcome-topics" className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-lg">
         {LESSON_TOPICS.map((topic, index) => {
           const isLast = index === LESSON_TOPICS.length - 1;
           const isOddCount = LESSON_TOPICS.length % 2 !== 0;
