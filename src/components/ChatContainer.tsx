@@ -363,6 +363,7 @@ export default function ChatContainer() {
     e.preventDefault();
     const text = input.trim();
     if (!text || isLoading || !sendMessage) return;
+    tutorial.notifyInteraction("topics");
     setInput("");
     recordMessage(text);
     sendMessage({ text });

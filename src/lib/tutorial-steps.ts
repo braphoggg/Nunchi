@@ -1,12 +1,16 @@
 export interface TutorialStep {
   id: string;
   targetSelector: string | null;
+  /** Optional second element to spotlight simultaneously */
+  secondaryTargetSelector?: string | null;
   title: string;
   titleKr: string;
   moonjoSays: string;
   description: string;
   type: "observe" | "interact";
   interactionHint?: string;
+  /** Second interaction hint shown alongside the first with an "— or —" separator */
+  secondaryInteractionHint?: string;
   tooltipPosition: "top" | "bottom" | "center";
   spotlightPadding?: number;
 }
@@ -39,14 +43,16 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "topics",
     targetSelector: '[data-tutorial="welcome-topics"]',
-    title: "Lesson Topics",
-    titleKr: "수업 주제",
-    moonjoSays: "각 버튼은 다른 수업이에요. 하나를 눌러보세요...",
+    secondaryTargetSelector: '[data-tutorial="chat-input"]',
+    title: "Start a Lesson",
+    titleKr: "수업 시작하기",
+    moonjoSays: "준비됐나요? 주제를 고르거나... 아니면 그냥 말을 걸어도 돼요.",
     description:
-      "Choose a guided lesson topic, or just type freely below. Each topic teaches different Korean skills.",
+      "Pick a guided topic above — each one teaches a different skill. Or skip straight to conversation and type anything below.",
     type: "interact",
-    interactionHint: "Tap any topic to continue",
-    tooltipPosition: "top",
+    interactionHint: "Tap any topic above",
+    secondaryInteractionHint: "Or type a message below",
+    tooltipPosition: "bottom",
     spotlightPadding: 8,
   },
   {

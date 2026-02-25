@@ -19,19 +19,11 @@ interface Rect {
   height: number;
 }
 
-/**
- * Build an SVG path for a rounded-rect cutout in a full-viewport mask.
- * The outer rect is drawn clockwise, the cutout counter-clockwise so it punches a hole.
- */
-function buildClipPath(vw: number, vh: number, r: Rect, radius: number): string {
+/** Counter-clockwise rounded-rect path string (punches a hole in evenodd/nonzero fill). */
+function buildHolePath(r: Rect, radius: number): string {
   const { x, y, width: w, height: h } = r;
   const cr = Math.min(radius, w / 2, h / 2);
-
-  // Outer rect (clockwise)
-  const outer = `M0,0 H${vw} V${vh} H0 Z`;
-
-  // Inner rounded rect (counter-clockwise to punch hole)
-  const inner = [
+  return [
     `M${x + cr},${y}`,
     `H${x + w - cr}`,
     `Q${x + w},${y} ${x + w},${y + cr}`,
@@ -43,8 +35,16 @@ function buildClipPath(vw: number, vh: number, r: Rect, radius: number): string 
     `Q${x},${y} ${x + cr},${y}`,
     "Z",
   ].join(" ");
+}
 
-  return `${outer} ${inner}`;
+/**
+ * Build an SVG path for one or two rounded-rect cutouts in a full-viewport mask.
+ * Outer rect clockwise + each hole counter-clockwise → punches holes via nonzero winding rule.
+ */
+function buildClipPath(vw: number, vh: number, rects: Rect[], radius: number): string {
+  const outer = `M0,0 H${vw} V${vh} H0 Z`;
+  const holes = rects.map((r) => buildHolePath(r, radius)).join(" ");
+  return `${outer} ${holes}`;
 }
 
 export default function TutorialOverlay({
@@ -56,41 +56,88 @@ export default function TutorialOverlay({
   onSkip,
 }: TutorialOverlayProps) {
   const [cutout, setCutout] = useState<Rect | null>(null);
+  const [cutout2, setCutout2] = useState<Rect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<"top" | "bottom" | "center">(step.tooltipPosition);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [animKey, setAnimKey] = useState(0);
 
-  // Compute cutout rect from target element
+  // Compute cutout rect(s) from target elements
   const computeCutout = useCallback(() => {
+    const pad = step.spotlightPadding ?? 8;
+
     if (!step.targetSelector) {
       setCutout(null);
+      setCutout2(null);
       setTooltipPos("center");
       return;
     }
+
     const el = document.querySelector(step.targetSelector);
     if (!el) {
+      // Primary not found — try secondary as fallback spotlight (e.g. replaying
+      // tutorial mid-conversation when the welcome-topics grid isn't in the DOM)
+      if (step.secondaryTargetSelector) {
+        const el2 = document.querySelector(step.secondaryTargetSelector);
+        if (el2) {
+          el2.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          const rect2 = el2.getBoundingClientRect();
+          const fallback: Rect = {
+            x: rect2.left - pad,
+            y: rect2.top - pad,
+            width: rect2.width + pad * 2,
+            height: rect2.height + pad * 2,
+          };
+          setCutout(fallback);
+          setCutout2(null);
+          const spaceAbove = rect2.top;
+          const spaceBelow = window.innerHeight - rect2.bottom;
+          setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
+          return;
+        }
+      }
       setCutout(null);
+      setCutout2(null);
       setTooltipPos("center");
       return;
     }
 
-    // Scroll target into view
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Scroll primary target into view
+    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
     const rect = el.getBoundingClientRect();
-    const pad = step.spotlightPadding ?? 8;
-    setCutout({
+    const primary: Rect = {
       x: rect.left - pad,
       y: rect.top - pad,
       width: rect.width + pad * 2,
       height: rect.height + pad * 2,
-    });
+    };
+    setCutout(primary);
 
-    // Determine tooltip position based on available space
-    const spaceAbove = rect.top;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
-  }, [step.targetSelector, step.spotlightPadding]);
+    // Secondary target
+    let secondary: Rect | null = null;
+    if (step.secondaryTargetSelector) {
+      const el2 = document.querySelector(step.secondaryTargetSelector);
+      if (el2) {
+        const rect2 = el2.getBoundingClientRect();
+        secondary = {
+          x: rect2.left - pad,
+          y: rect2.top - pad,
+          width: rect2.width + pad * 2,
+          height: rect2.height + pad * 2,
+        };
+      }
+    }
+    setCutout2(secondary);
+
+    // Tooltip position: between the two cutouts when both exist, otherwise by space
+    if (secondary) {
+      setTooltipPos("bottom"); // will be overridden to "between" in render
+    } else {
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
+    }
+  }, [step.targetSelector, step.secondaryTargetSelector, step.spotlightPadding]);
 
   // Recompute on step change
   useEffect(() => {
@@ -107,18 +154,24 @@ export default function TutorialOverlay({
     return () => window.removeEventListener("resize", handleResize);
   }, [computeCutout]);
 
-  // Observe target for layout changes
+  // Observe both targets for layout changes
   useEffect(() => {
-    if (!step.targetSelector) return;
-    const el = document.querySelector(step.targetSelector);
-    if (!el) return;
-    const observer = new ResizeObserver(() => computeCutout());
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [step.targetSelector, computeCutout]);
+    const selectors = [step.targetSelector, step.secondaryTargetSelector].filter(Boolean) as string[];
+    const observers = selectors.map((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const obs = new ResizeObserver(() => computeCutout());
+      obs.observe(el);
+      return obs;
+    });
+    return () => observers.forEach((obs) => obs?.disconnect());
+  }, [step.targetSelector, step.secondaryTargetSelector, computeCutout]);
 
   const vw = typeof window !== "undefined" ? window.innerWidth : 1000;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+
+  // Collect all active cutouts
+  const activeCutouts = [cutout, cutout2].filter(Boolean) as Rect[];
 
   // Tooltip positioning
   let tooltipStyle: React.CSSProperties = {};
@@ -128,6 +181,16 @@ export default function TutorialOverlay({
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
+      maxWidth: "calc(100vw - 32px)",
+      width: "360px",
+    };
+  } else if (cutout && cutout2) {
+    // Two cutouts: position tooltip in the gap between them
+    const gapTop = cutout.y + cutout.height + 12;
+    tooltipStyle = {
+      position: "absolute",
+      top: gapTop,
+      left: Math.max(16, Math.min(cutout.x, vw - 376)),
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
     };
@@ -151,23 +214,15 @@ export default function TutorialOverlay({
 
   const isInteract = step.type === "interact";
 
+  const inRect = (r: Rect, cx: number, cy: number) =>
+    cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height;
+
   // Handle overlay click — advance on observe steps
   const handleOverlayClick = (e: React.MouseEvent) => {
-    // Don't advance if clicking the tooltip itself
     if (tooltipRef.current?.contains(e.target as Node)) return;
-    // Don't advance for interact steps or if clicking inside cutout
     if (isInteract) return;
-    if (cutout) {
-      const { clientX: cx, clientY: cy } = e;
-      if (
-        cx >= cutout.x &&
-        cx <= cutout.x + cutout.width &&
-        cy >= cutout.y &&
-        cy <= cutout.y + cutout.height
-      ) {
-        return; // Click inside cutout — let it pass through
-      }
-    }
+    const { clientX: cx, clientY: cy } = e;
+    if (activeCutouts.some((r) => inRect(r, cx, cy))) return;
     onNext();
   };
 
@@ -177,8 +232,9 @@ export default function TutorialOverlay({
       role="dialog"
       aria-modal="true"
       aria-label={`Tutorial step ${stepIndex + 1}: ${step.title}`}
+      style={{ pointerEvents: "none" }}
     >
-      {/* SVG overlay with cutout */}
+      {/* SVG overlay with one or two cutouts */}
       <svg
         className="absolute inset-0 w-full h-full"
         style={{ pointerEvents: "none" }}
@@ -186,44 +242,52 @@ export default function TutorialOverlay({
         preserveAspectRatio="none"
       >
         <path
-          d={cutout ? buildClipPath(vw, vh, cutout, 12) : `M0,0 H${vw} V${vh} H0 Z`}
+          d={
+            activeCutouts.length > 0
+              ? buildClipPath(vw, vh, activeCutouts, 12)
+              : `M0,0 H${vw} V${vh} H0 Z`
+          }
           fill="rgba(12, 10, 13, 0.85)"
-          fillRule="evenodd"
+          fillRule="nonzero"
           style={{ transition: "d 0.3s ease-out" }}
         />
       </svg>
 
-      {/* Click-capture overlay (blocks clicks outside cutout) */}
+      {/* Click-capture overlay — clipped away at cutout positions so UI beneath is clickable.
+           Explicit pointer-events: auto because the parent root has pointer-events: none. */}
       <div
         className="absolute inset-0"
         style={{
-          clipPath: cutout
-            ? `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% ${cutout.y}px, ${cutout.x}px ${cutout.y}px, ${cutout.x}px ${cutout.y + cutout.height}px, ${cutout.x + cutout.width}px ${cutout.y + cutout.height}px, ${cutout.x + cutout.width}px ${cutout.y}px, 0% ${cutout.y}px)`
-            : undefined,
+          pointerEvents: "auto",
+          clipPath:
+            activeCutouts.length > 0
+              ? `path("${buildClipPath(vw, vh, activeCutouts, 12)}")`
+              : undefined,
         }}
         onClick={handleOverlayClick}
       />
 
-      {/* Highlight ring on target */}
-      {cutout && (
+      {/* Highlight ring(s) on target(s) */}
+      {activeCutouts.map((r, i) => (
         <div
+          key={i}
           className="absolute tutorial-highlight rounded-xl"
           style={{
-            left: cutout.x,
-            top: cutout.y,
-            width: cutout.width,
-            height: cutout.height,
+            left: r.x,
+            top: r.y,
+            width: r.width,
+            height: r.height,
             transition: "left 0.3s, top 0.3s, width 0.3s, height 0.3s",
           }}
         />
-      )}
+      ))}
 
-      {/* Tooltip card */}
+      {/* Tooltip card — explicit pointer-events: auto because root has pointer-events: none */}
       <div
         key={animKey}
         ref={tooltipRef}
         className="animate-tutorial-tooltip z-[72]"
-        style={tooltipStyle}
+        style={{ pointerEvents: "auto", ...tooltipStyle }}
       >
         <div className="bg-goshiwon-surface border border-goshiwon-border rounded-xl shadow-2xl p-4 flex flex-col gap-3">
           {/* Header line */}
@@ -262,13 +326,24 @@ export default function TutorialOverlay({
             {step.description}
           </p>
 
-          {/* Interaction hint */}
-          {isInteract && step.interactionHint && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
-              <span className="text-goshiwon-yellow text-xs">&#9758;</span>
-              <span className="text-xs text-goshiwon-yellow">
-                {step.interactionHint}
-              </span>
+          {/* Interaction hint(s) */}
+          {isInteract && (step.interactionHint || step.secondaryInteractionHint) && (
+            <div className="flex flex-col gap-1">
+              {step.interactionHint && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
+                  <span className="text-goshiwon-yellow text-xs">&#9758;</span>
+                  <span className="text-xs text-goshiwon-yellow">{step.interactionHint}</span>
+                </div>
+              )}
+              {step.secondaryInteractionHint && (
+                <>
+                  <p className="text-center text-[10px] text-goshiwon-text-muted">— or —</p>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
+                    <span className="text-goshiwon-yellow text-xs">&#9758;</span>
+                    <span className="text-xs text-goshiwon-yellow">{step.secondaryInteractionHint}</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
