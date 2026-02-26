@@ -19,20 +19,35 @@ interface Rect {
   height: number;
 }
 
-/** Counter-clockwise rounded-rect path string (punches a hole in evenodd/nonzero fill). */
+/** Clamp a spotlight rect so it never spills outside the visible viewport. */
+function clampRect(r: Rect): Rect {
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1000;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const x = Math.max(0, r.x);
+  const y = Math.max(0, r.y);
+  const right = Math.min(vw, r.x + r.width);
+  const bottom = Math.min(vh, r.y + r.height);
+  return { x, y, width: Math.max(0, right - x), height: Math.max(0, bottom - y) };
+}
+
+/**
+ * Counter-clockwise rounded-rect path — goes DOWN→RIGHT→UP→LEFT so that when combined
+ * with the clockwise outer rect under fillRule="nonzero", interior winding = +1−1 = 0
+ * (transparent hole). The original CW direction gave winding +2 → filled, not a hole.
+ */
 function buildHolePath(r: Rect, radius: number): string {
   const { x, y, width: w, height: h } = r;
   const cr = Math.min(radius, w / 2, h / 2);
   return [
-    `M${x + cr},${y}`,
-    `H${x + w - cr}`,
-    `Q${x + w},${y} ${x + w},${y + cr}`,
-    `V${y + h - cr}`,
-    `Q${x + w},${y + h} ${x + w - cr},${y + h}`,
-    `H${x + cr}`,
-    `Q${x},${y + h} ${x},${y + h - cr}`,
-    `V${y + cr}`,
-    `Q${x},${y} ${x + cr},${y}`,
+    `M${x},${y + cr}`,                              // left edge, just below top-left
+    `V${y + h - cr}`,                               // DOWN along left edge
+    `Q${x},${y + h} ${x + cr},${y + h}`,            // curve bottom-left → going RIGHT
+    `H${x + w - cr}`,                               // RIGHT along bottom edge
+    `Q${x + w},${y + h} ${x + w},${y + h - cr}`,   // curve bottom-right → going UP
+    `V${y + cr}`,                                   // UP along right edge
+    `Q${x + w},${y} ${x + w - cr},${y}`,            // curve top-right → going LEFT
+    `H${x + cr}`,                                   // LEFT along top edge
+    `Q${x},${y} ${x},${y + cr}`,                    // curve top-left → going DOWN (back to start)
     "Z",
   ].join(" ");
 }
@@ -64,6 +79,33 @@ export default function TutorialOverlay({
   // Compute cutout rect(s) from target elements
   const computeCutout = useCallback(() => {
     const pad = step.spotlightPadding ?? 8;
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+
+    /**
+     * Build a spotlight rect that keeps the element vertically centered inside
+     * the ring even when the element is flush with a viewport edge.
+     *
+     * If the element sits at the bottom of the viewport (bottomSpace < pad),
+     * we can't extend the hole past vh, so we shrink the TOP padding to match
+     * the available bottom space — keeping equal breathing room on both sides.
+     */
+    function spotlightRect(r: DOMRect): Rect {
+      const bottomSpace = Math.max(0, vh - r.bottom);
+      const topSpace    = Math.max(0, r.top);
+      const vertPad = Math.min(pad, bottomSpace, topSpace);
+
+      const rightSpace = Math.max(0, vw - r.right);
+      const leftSpace  = Math.max(0, r.left);
+      const horizPad = Math.min(pad, rightSpace, leftSpace);
+
+      return clampRect({
+        x: r.left  - horizPad,
+        y: r.top   - vertPad,
+        width:  r.width  + horizPad * 2,
+        height: r.height + vertPad  * 2,
+      });
+    }
 
     if (!step.targetSelector) {
       setCutout(null);
@@ -81,16 +123,11 @@ export default function TutorialOverlay({
         if (el2) {
           el2.scrollIntoView({ behavior: "smooth", block: "nearest" });
           const rect2 = el2.getBoundingClientRect();
-          const fallback: Rect = {
-            x: rect2.left - pad,
-            y: rect2.top - pad,
-            width: rect2.width + pad * 2,
-            height: rect2.height + pad * 2,
-          };
+          const fallback = spotlightRect(rect2);
           setCutout(fallback);
           setCutout2(null);
           const spaceAbove = rect2.top;
-          const spaceBelow = window.innerHeight - rect2.bottom;
+          const spaceBelow = vh - rect2.bottom;
           setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
           return;
         }
@@ -105,13 +142,7 @@ export default function TutorialOverlay({
     el.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
     const rect = el.getBoundingClientRect();
-    const primary: Rect = {
-      x: rect.left - pad,
-      y: rect.top - pad,
-      width: rect.width + pad * 2,
-      height: rect.height + pad * 2,
-    };
-    setCutout(primary);
+    setCutout(spotlightRect(rect));
 
     // Secondary target
     let secondary: Rect | null = null;
@@ -119,12 +150,7 @@ export default function TutorialOverlay({
       const el2 = document.querySelector(step.secondaryTargetSelector);
       if (el2) {
         const rect2 = el2.getBoundingClientRect();
-        secondary = {
-          x: rect2.left - pad,
-          y: rect2.top - pad,
-          width: rect2.width + pad * 2,
-          height: rect2.height + pad * 2,
-        };
+        secondary = spotlightRect(rect2);
       }
     }
     setCutout2(secondary);
@@ -134,7 +160,7 @@ export default function TutorialOverlay({
       setTooltipPos("bottom"); // will be overridden to "between" in render
     } else {
       const spaceAbove = rect.top;
-      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceBelow = vh - rect.bottom;
       setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
     }
   }, [step.targetSelector, step.secondaryTargetSelector, step.spotlightPadding]);
@@ -214,17 +240,44 @@ export default function TutorialOverlay({
 
   const isInteract = step.type === "interact";
 
-  const inRect = (r: Rect, cx: number, cy: number) =>
-    cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height;
+  // Refs keep the window listener current without re-registration on every render.
+  // (CSS clip-path: path() does not reliably exclude pointer-events in Chromium, so
+  //  we intercept at the window capture phase instead.)
+  const activeCutoutsRef = useRef<Rect[]>(activeCutouts);
+  activeCutoutsRef.current = activeCutouts;
+  const isInteractRef = useRef(isInteract);
+  isInteractRef.current = isInteract;
+  const onNextRef = useRef(onNext);
+  onNextRef.current = onNext;
 
-  // Handle overlay click — advance on observe steps
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (tooltipRef.current?.contains(e.target as Node)) return;
-    if (isInteract) return;
-    const { clientX: cx, clientY: cy } = e;
-    if (activeCutouts.some((r) => inRect(r, cx, cy))) return;
-    onNext();
-  };
+  useEffect(() => {
+    const inside = (r: Rect, cx: number, cy: number) =>
+      cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height;
+
+    const handle = (e: Event) => {
+      const me = e as MouseEvent;
+      // Tooltip card: always let events through
+      if (tooltipRef.current?.contains(me.target as Node)) return;
+      const { clientX: cx, clientY: cy } = me;
+      // Spotlight holes: let events reach the underlying UI
+      if (activeCutoutsRef.current.some((r) => inside(r, cx, cy))) return;
+      // Dark area: block event from reaching underlying elements
+      e.stopPropagation();
+      e.preventDefault();
+      // Advance on observe steps (interact steps wait for the real UI interaction)
+      if (e.type === "click" && !isInteractRef.current) {
+        onNextRef.current();
+      }
+    };
+
+    window.addEventListener("pointerdown", handle, { capture: true });
+    window.addEventListener("click", handle, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", handle, { capture: true });
+      window.removeEventListener("click", handle, { capture: true });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty — all reactive values are accessed via refs above
 
   return (
     <div
@@ -247,40 +300,38 @@ export default function TutorialOverlay({
               ? buildClipPath(vw, vh, activeCutouts, 12)
               : `M0,0 H${vw} V${vh} H0 Z`
           }
-          fill="rgba(12, 10, 13, 0.85)"
+          fill="rgba(12, 10, 13, 0.75)"
           fillRule="nonzero"
           style={{ transition: "d 0.3s ease-out" }}
         />
       </svg>
 
-      {/* Click-capture overlay — clipped away at cutout positions so UI beneath is clickable.
-           Explicit pointer-events: auto because the parent root has pointer-events: none. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          pointerEvents: "auto",
-          clipPath:
-            activeCutouts.length > 0
-              ? `path("${buildClipPath(vw, vh, activeCutouts, 12)}")`
-              : undefined,
-        }}
-        onClick={handleOverlayClick}
-      />
+      {/* No click-capture div — pointer events are handled by the window capture listener above.
+           CSS clip-path: path() does not reliably exclude pointer-events in Chromium. */}
 
       {/* Highlight ring(s) on target(s) */}
-      {activeCutouts.map((r, i) => (
-        <div
-          key={i}
-          className="absolute tutorial-highlight rounded-xl"
-          style={{
-            left: r.x,
-            top: r.y,
-            width: r.width,
-            height: r.height,
-            transition: "left 0.3s, top 0.3s, width 0.3s, height 0.3s",
-          }}
-        />
-      ))}
+      {activeCutouts.map((r, i) => {
+        // The box-shadow ring extends 2 px *outside* the div.
+        // If the div reaches the viewport edge the ring overflows and gets
+        // clipped.  Shrink the ring div by RING px on any side that is flush
+        // with the viewport so the shadow lands exactly at the edge.
+        const RING = 2;
+        const ringW = Math.max(0, Math.min(r.width,  vw - r.x - RING));
+        const ringH = Math.max(0, Math.min(r.height, vh - r.y - RING));
+        return (
+          <div
+            key={i}
+            className="absolute tutorial-highlight rounded-xl"
+            style={{
+              left: r.x,
+              top: r.y,
+              width: ringW,
+              height: ringH,
+              transition: "left 0.3s, top 0.3s, width 0.3s, height 0.3s",
+            }}
+          />
+        );
+      })}
 
       {/* Tooltip card — explicit pointer-events: auto because root has pointer-events: none */}
       <div

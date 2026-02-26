@@ -331,7 +331,8 @@ button:not(:disabled),
 }
 
 .safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Always keep at least 8px of bottom breathing room; add safe-area on top for notch devices */
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 /* Tutorial tooltip entry */
@@ -353,10 +354,12 @@ button:not(:disabled),
 /* Tutorial spotlight highlight ring */
 @keyframes tutorial-ring-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 2px rgba(212, 168, 67, 0.3);
+    box-shadow: 0 0 0 2px rgba(212, 168, 67, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.5), 0 0 12px rgba(212, 168, 67, 0.15);
+    box-shadow:
+      0 0 0 3px rgba(212, 168, 67, 0.65),
+      0 0 22px rgba(212, 168, 67, 0.22);
   }
 }
 
