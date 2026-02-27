@@ -117,10 +117,9 @@ afterAll(() => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe("B. Error Information Leakage", () => {
-  // B1: Connection-refused error exposes internal network topology
+  // B1: Connection-refused error must NOT expose internal network topology
   it("B1: ECONNREFUSED errors must not leak internal IP/port to client", async () => {
-    // DOCUMENTED WEAKNESS: the catch block forwards error.message verbatim,
-    // so a connection error from Ollama exposes the internal address.
+    // FIX VERIFIED: the catch block now returns a generic message.
     vi.mocked(streamText).mockImplementation(() => {
       throw new Error("connect ECONNREFUSED 127.0.0.1:11434");
     });
@@ -129,13 +128,13 @@ describe("B. Error Information Leakage", () => {
     expect(res.status).toBe(500);
 
     const body = await res.json();
-    // FINDING: Both the IP address and ECONNREFUSED token are leaked to the
-    // client, revealing that the backend connects to localhost:11434.
-    expect(body.error).toContain("ECONNREFUSED");
-    expect(body.error).toContain("127.0.0.1");
+    // The generic message must NOT contain the internal address or error type.
+    expect(body.error).toBe("An unexpected error occurred");
+    expect(body.error).not.toContain("ECONNREFUSED");
+    expect(body.error).not.toContain("127.0.0.1");
   });
 
-  // B2: Malformed JSON reveals parser internals
+  // B2: Malformed JSON must NOT reveal parser internals
   it("B2: malformed JSON body must not leak parser internals to client", async () => {
     const req = new Request("http://localhost:3000/api/chat", {
       method: "POST",
@@ -146,18 +145,13 @@ describe("B. Error Information Leakage", () => {
     expect(res.status).toBe(500);
 
     const body = await res.json();
-    // FINDING: The raw SyntaxError message is forwarded. In V8 this typically
-    // reads "Unexpected token { in JSON at position 1" — exposing parser details.
-    expect(body.error).toBeDefined();
-    const lower = body.error.toLowerCase();
-    expect(
-      lower.includes("unexpected token") || lower.includes("json")
-    ).toBe(true);
+    // FIX VERIFIED: generic message returned, no parser details leaked.
+    expect(body.error).toBe("An unexpected error occurred");
   });
 
-  // B3: Model-not-found error reveals model name and filesystem paths
+  // B3: Model-not-found error must NOT reveal model name or filesystem paths
   it("B3: model-not-found errors must not leak model name or file paths", async () => {
-    // DOCUMENTED WEAKNESS: error.message is passed through without redaction.
+    // FIX VERIFIED: error.message is no longer forwarded to the client.
     vi.mocked(streamText).mockImplementation(() => {
       throw new Error(
         "Model exaone3.5:7.8b not found at /home/user/models/"
@@ -168,17 +162,14 @@ describe("B. Error Information Leakage", () => {
     expect(res.status).toBe(500);
 
     const body = await res.json();
-    // FINDING: The model identifier and server-side filesystem path are both
-    // sent to the client verbatim.
-    expect(body.error).toContain("exaone3.5:7.8b");
-    expect(body.error).toContain("/home/user/models/");
+    expect(body.error).toBe("An unexpected error occurred");
+    expect(body.error).not.toContain("exaone3.5:7.8b");
+    expect(body.error).not.toContain("/home/user/models/");
   });
 
-  // B4: Error with stack trace attached to message
+  // B4: Error with stack trace must NOT leak stack to client
   it("B4: errors with stack traces must not leak stack to client", async () => {
     const err = new Error("something failed");
-    // Simulate a scenario where the stack is embedded in the message field
-    // (some libraries do this, e.g. by concatenating message + stack).
     err.message = `something failed\n    at POST (D:\\Tich\\src\\app\\api\\chat\\route.ts:42:7)\n    at runtime (node:internal/process/task_queues:95:5)`;
     vi.mocked(streamText).mockImplementation(() => {
       throw err;
@@ -188,10 +179,10 @@ describe("B. Error Information Leakage", () => {
     expect(res.status).toBe(500);
 
     const body = await res.json();
-    // FINDING: If an error message accidentally includes stack frames, the
-    // route forwards the entire string — including file paths and line numbers.
-    expect(body.error).toContain("route.ts:42:7");
-    expect(body.error).toContain("node:internal");
+    // FIX VERIFIED: generic message returned, no stack frames leaked.
+    expect(body.error).toBe("An unexpected error occurred");
+    expect(body.error).not.toContain("route.ts:42:7");
+    expect(body.error).not.toContain("node:internal");
   });
 
   // B5: All 500 error responses have Content-Type application/json
@@ -467,11 +458,8 @@ describe("C. Prompt Injection Surface Documentation", () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    // FINDING: The response leaks a TypeError message like
-    // "msg.parts.filter is not a function" — revealing internal code structure.
-    expect(body.error).toBeDefined();
-    expect(typeof body.error).toBe("string");
-    expect(body.error.length).toBeGreaterThan(0);
+    // FIX VERIFIED: TypeError is caught and a generic message is returned.
+    expect(body.error).toBe("An unexpected error occurred");
   });
 
   // C8: parts items missing the `type` field are filtered out

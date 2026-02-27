@@ -77,14 +77,12 @@ export async function POST(req: Request) {
 
     return result.toUIMessageStreamResponse();
   } catch (error) {
+    // Log full error server-side only; never leak internals to the client
     console.error("[chat route error]", error);
 
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
-
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unexpected error occurred" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

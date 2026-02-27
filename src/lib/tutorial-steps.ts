@@ -49,9 +49,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     moonjoSays: "준비됐나요? 주제를 고르거나... 아니면 그냥 말을 걸어도 돼요.",
     description:
       "Pick a guided topic above — each one teaches a different skill. Or skip straight to conversation and type anything below.",
-    type: "interact",
-    interactionHint: "Tap any topic above",
-    secondaryInteractionHint: "Or type a message below",
+    type: "observe",
     tooltipPosition: "bottom",
     spotlightPadding: 8,
   },
@@ -75,8 +73,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     moonjoSays: "한국어를 모르면... 이 키보드를 쓰세요.",
     description:
       "Don't have a Korean keyboard? Tap this button to open the built-in Hangul keyboard.",
-    type: "interact",
-    interactionHint: "Tap to open the keyboard",
+    type: "observe",
     tooltipPosition: "top",
     spotlightPadding: 8,
   },

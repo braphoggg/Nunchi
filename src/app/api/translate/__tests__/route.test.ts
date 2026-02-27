@@ -92,6 +92,7 @@ describe("POST /api/translate", () => {
     const response = await POST(req);
     expect(response.status).toBe(500);
     const body = await response.json();
-    expect(body.error).toContain("Model error");
+    // Error message is sanitized — no raw error details leaked
+    expect(body.error).toBe("An unexpected error occurred");
   });
 });

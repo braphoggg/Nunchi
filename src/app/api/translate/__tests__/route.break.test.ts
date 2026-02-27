@@ -201,11 +201,9 @@ describe("Error Leakage", () => {
     vi.clearAllMocks();
   });
 
-  // B2-translate: Malformed JSON body — documents error leakage
-  it("B2-translate — malformed JSON body LEAKS parser internals (DOCUMENTED WEAKNESS)", async () => {
-    // DOCUMENTED WEAKNESS #2: The catch block does
-    //   `error instanceof Error ? error.message : "An unexpected error occurred"`
-    // which forwards raw JSON parse errors to the client, revealing parser details.
+  // B2-translate: Malformed JSON body must NOT leak parser internals
+  it("B2-translate — malformed JSON body must not leak parser internals", async () => {
+    // FIX VERIFIED: The catch block now returns a generic error message.
     const req = new Request("http://localhost:3000/api/translate", {
       method: "POST",
       headers: {
@@ -219,31 +217,21 @@ describe("Error Leakage", () => {
     expect(response.status).toBe(500);
 
     const body = await response.json();
+    expect(body.error).toBe("An unexpected error occurred");
 
-    // FINDING: The raw JSON parse error IS leaked to the client.
-    // The error message contains parser internals like "position" and
-    // "Expected property name" which reveal the server uses JSON.parse
-    // and expose the exact parse failure location.
-    expect(body.error).toBeDefined();
-    expect(typeof body.error).toBe("string");
-
-    // Document the leakage: at least one parser-internal pattern is present
+    // Verify no parser internals are leaked
     const leakedPatterns = [
       "Unexpected token",
       "Expected property name",
       "position",
-      "JSON",
     ];
     const hasLeakage = leakedPatterns.some((p) => body.error.includes(p));
-    expect(hasLeakage).toBe(true);
-    // ^^^ This test PASSES when the vulnerability exists.
-    // If the route is fixed to return a generic error, this assertion should
-    // be inverted to verify the fix.
+    expect(hasLeakage).toBe(false);
   });
 
   // Additional B2 variant: completely empty body
-  it("B2-translate — empty body LEAKS parser internals (DOCUMENTED WEAKNESS)", async () => {
-    // DOCUMENTED WEAKNESS #2: Same error leakage pattern with empty body.
+  it("B2-translate — empty body must not leak parser internals", async () => {
+    // FIX VERIFIED: Same generic message for empty body.
     const req = new Request("http://localhost:3000/api/translate", {
       method: "POST",
       headers: {
@@ -257,11 +245,6 @@ describe("Error Leakage", () => {
     expect(response.status).toBe(500);
 
     const body = await response.json();
-
-    // FINDING: The error message contains "Unexpected end of JSON input"
-    // which reveals the server attempted JSON.parse on empty input.
-    expect(body.error).toBeDefined();
-    const hasLeakage = body.error.includes("Unexpected end") || body.error.includes("JSON");
-    expect(hasLeakage).toBe(true);
+    expect(body.error).toBe("An unexpected error occurred");
   });
 });

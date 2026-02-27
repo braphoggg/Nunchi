@@ -193,6 +193,27 @@ export default function TutorialOverlay({
     return () => observers.forEach((obs) => obs?.disconnect());
   }, [step.targetSelector, step.secondaryTargetSelector, computeCutout]);
 
+  // Watch for target element appearing in DOM (e.g. keyboard auto-opening on step entry).
+  // Delay measurement so entrance animations (e.g. translateY slide-up, 250ms) settle first.
+  useEffect(() => {
+    if (!step.targetSelector) return;
+    if (document.querySelector(step.targetSelector)) return;
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const observer = new MutationObserver(() => {
+      if (document.querySelector(step.targetSelector!)) {
+        observer.disconnect();
+        timer = setTimeout(computeCutout, 300);
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [step.targetSelector, computeCutout]);
+
   const vw = typeof window !== "undefined" ? window.innerWidth : 1000;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
 

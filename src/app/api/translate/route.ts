@@ -59,14 +59,12 @@ export async function POST(req: Request) {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // Log full error server-side only; never leak internals to the client
     console.error("[translate route error]", error);
 
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
-
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "An unexpected error occurred" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

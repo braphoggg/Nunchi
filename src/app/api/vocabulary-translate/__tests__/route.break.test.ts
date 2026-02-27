@@ -244,20 +244,9 @@ describe("BREAK B-vocab — Error leakage from generateText failure", () => {
     const body = await response.json();
     const errorText = body.error as string;
 
-    // DOCUMENTED WEAKNESS: The catch block at line 111-112 of the route
-    // does `error instanceof Error ? error.message : "..."` and returns
-    // the raw error message to the client. This leaks:
-    //   1. The internal IP address (127.0.0.1)
-    //   2. The port number (11434) revealing Ollama is the backend
-    //   3. The connection error type (ECONNREFUSED) revealing infra details
-    //
-    // A production route should return a generic message like
-    // "Translation service unavailable" instead.
-
-    // FINDING: Both ECONNREFUSED and the IP address are leaked.
-    // These assertions document the vulnerability — they will FAIL if the
-    // route is later fixed to sanitize error messages (which is the goal).
-    expect(errorText).toContain("ECONNREFUSED");
-    expect(errorText).toContain("127.0.0.1");
+    // FIX VERIFIED: Generic message returned, no internal details leaked.
+    expect(errorText).toBe("An unexpected error occurred");
+    expect(errorText).not.toContain("ECONNREFUSED");
+    expect(errorText).not.toContain("127.0.0.1");
   });
 });
