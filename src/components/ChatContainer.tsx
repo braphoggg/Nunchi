@@ -31,6 +31,7 @@ import { useLessonHistory } from "@/hooks/useLessonHistory";
 import { resetTimestampCounter } from "@/lib/timestamps";
 import { getTextContent } from "@/lib/message-utils";
 import { computeKoreanRatio, getMoodLevel } from "@/lib/mood-engine";
+import { LESSON_TOPICS } from "@/lib/lesson-topics";
 import type { ResidentRank } from "@/types";
 
 const VISITED_TOPICS_KEY = "nunchi-visited-topics";
@@ -58,6 +59,9 @@ const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string }
 };
 
 export default function ChatContainer() {
+  // Active lesson topic (set when user picks a topic from WelcomeScreen)
+  const [activeTopic, setActiveTopic] = useState<{ id: string; titleKr: string } | null>(null);
+
   const { messages, sendMessage, status, error, setMessages } = useChat();
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
@@ -100,6 +104,7 @@ export default function ChatContainer() {
     panelOpen,
     addWords,
     removeWord,
+    updateWord,
     isWordSaved,
     togglePanel,
     closePanel,
@@ -137,6 +142,29 @@ export default function ChatContainer() {
     recordWordSaved,
   } = useGamification(wordCount);
 
+  // Build context for the system prompt (sent with each chat request)
+  const savedWordsKorean = useMemo(() => words.map((w) => w.korean), [words]);
+  const chatContextRef = useRef({
+    rankKorean: rank.korean,
+    rankEnglish: rank.english,
+    totalXP,
+    vocabCount: wordCount,
+    streakDays: currentStreak,
+    activeTopic: activeTopic?.id,
+    activeTopicKr: activeTopic?.titleKr,
+    savedWords: savedWordsKorean,
+  });
+  chatContextRef.current = {
+    rankKorean: rank.korean,
+    rankEnglish: rank.english,
+    totalXP,
+    vocabCount: wordCount,
+    streakDays: currentStreak,
+    activeTopic: activeTopic?.id,
+    activeTopicKr: activeTopic?.titleKr,
+    savedWords: savedWordsKorean,
+  };
+
   // Auto-open keyboard for tutorial step "hangul-keys"
   useEffect(() => {
     if (tutorial.isActive && tutorial.currentStep?.id === "hangul-keys" && !keyboardVisible) {
@@ -152,7 +180,7 @@ export default function ChatContainer() {
       sound.playMessageSend();
       setInput("");
       recordMessage(text);
-      sendMessage({ text });
+      sendMessage({ text }, { body: { context: chatContextRef.current } });
     }
   }, [isLoading, sendMessage, recordMessage, sound]);
 
@@ -400,6 +428,7 @@ export default function ChatContainer() {
       setMessages([]);
       setShowFarewell(false);
       setInput("");
+      setActiveTopic(null);
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
@@ -413,8 +442,13 @@ export default function ChatContainer() {
     sound.playTopicSelect();
     tutorial.notifyInteraction("topics");
     markTopicVisited(topicId);
+    // Track active topic for system prompt context
+    const topic = LESSON_TOPICS.find((t) => t.id === topicId);
+    if (topic) {
+      setActiveTopic({ id: topic.id, titleKr: topic.titleKr });
+    }
     recordMessage(message);
-    sendMessage({ text: message });
+    sendMessage({ text: message }, { body: { context: chatContextRef.current } });
   }, [sendMessage, markTopicVisited, recordMessage, tutorial, sound]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -425,7 +459,7 @@ export default function ChatContainer() {
     tutorial.notifyInteraction("topics");
     setInput("");
     recordMessage(text);
-    sendMessage({ text });
+    sendMessage({ text }, { body: { context: chatContextRef.current } });
   };
 
   // Wrap addWords to also record XP for saved words
@@ -525,6 +559,7 @@ export default function ChatContainer() {
         <VocabularyPanel
           words={words}
           onRemoveWord={removeWord}
+          onUpdateWord={updateWord}
           onClose={closePanel}
           onStartStudy={startFlashcards}
           studyableCount={studyableCount}

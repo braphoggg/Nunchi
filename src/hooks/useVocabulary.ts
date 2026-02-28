@@ -41,14 +41,16 @@ function loadFromStorage(): VocabularyItem[] {
     if (!Array.isArray(parsed)) return [];
     // Validate each item and discard malformed entries
     const validated = parsed.filter(isValidVocabularyItem);
-    // Migrate: apply romanization corrections to previously-saved items
-    // that may have been saved with incorrect LLM-generated romanizations
+    // Migrate: apply romanization corrections and normalize capitalization
+    // for previously-saved items
     let migrated = false;
     const corrected = validated.map((item) => {
-      const fixed = correctRomanization(item.korean, item.romanization);
-      if (fixed !== item.romanization) {
+      const fixedRom = correctRomanization(item.korean, item.romanization);
+      const normalRom = fixedRom.toLowerCase();
+      const normalEng = item.english.toLowerCase();
+      if (normalRom !== item.romanization || normalEng !== item.english) {
         migrated = true;
-        return { ...item, romanization: fixed };
+        return { ...item, romanization: normalRom, english: normalEng };
       }
       return item;
     });
@@ -111,8 +113,8 @@ export function useVocabulary() {
           .map((w) => ({
             id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
             korean: stripHtml(w.korean),
-            romanization: stripHtml(w.romanization),
-            english: stripHtml(w.english),
+            romanization: stripHtml(w.romanization).toLowerCase(),
+            english: stripHtml(w.english).toLowerCase(),
             savedAt: new Date().toISOString(),
           }));
 
@@ -130,6 +132,17 @@ export function useVocabulary() {
   const removeWord = useCallback((id: string) => {
     setWords((prev) => prev.filter((w) => w.id !== id));
   }, []);
+
+  const updateWord = useCallback(
+    (id: string, updates: Partial<Pick<VocabularyItem, "english">>) => {
+      setWords((prev) =>
+        prev.map((w) =>
+          w.id === id ? { ...w, ...updates } : w
+        )
+      );
+    },
+    []
+  );
 
   const isWordSaved = useCallback(
     (korean: string) => words.some((w) => w.korean === korean),
@@ -155,6 +168,7 @@ export function useVocabulary() {
     panelOpen,
     addWords,
     removeWord,
+    updateWord,
     isWordSaved,
     togglePanel,
     closePanel,

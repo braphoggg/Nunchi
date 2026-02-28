@@ -68,13 +68,14 @@ export async function POST(req: Request) {
       model: google("gemini-2.5-flash"),
       system:
         "You are a Korean-English dictionary. For each Korean word or phrase given, " +
-        "provide ONLY its English translation. " +
+        "provide ONLY its concise English translation (1-5 words, lowercase). " +
+        "You MUST provide a translation for EVERY word — do not skip any. " +
         "Respond with one translation per line, numbered to match the input. " +
-        "Keep translations concise (1-5 words). " +
         "Format: NUMBER. english translation\n" +
-        "Example input:\n1. 안녕하세요\n2. 감사합니다\n" +
-        "Example output:\n1. hello\n2. thank you\n" +
-        "Output ONLY the numbered translations, nothing else.",
+        "Example input:\n1. 안녕하세요\n2. 감사합니다\n3. 복도\n" +
+        "Example output:\n1. hello\n2. thank you\n3. hallway\n" +
+        "Output ONLY the numbered translations, nothing else. " +
+        "All translations must be lowercase.",
       prompt: wordList,
       temperature: 0.2,
       maxOutputTokens: 500,
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       const lineMatch = line.match(/^\s*(\d+)[.)]\s*(.+)/);
       if (lineMatch) {
         const idx = parseInt(lineMatch[1], 10) - 1;
-        const translation = lineMatch[2].trim().replace(/[.!?,;:]+$/, "");
+        const translation = lineMatch[2].trim().replace(/[.!?,;:]+$/, "").toLowerCase();
         if (idx >= 0 && idx < validWords.length && translation) {
           translations[validWords[idx]] = translation;
         }

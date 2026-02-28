@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { streamText, convertToModelMessages, UIMessage } from "ai";
-import { MOONJO_SYSTEM_PROMPT } from "@/lib/system-prompt";
+import { buildSystemPrompt } from "@/lib/system-prompt";
 import { validateMessages, checkRateLimit } from "@/lib/security";
 import { generateMoodSystemAddendum } from "@/lib/mood-engine";
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { messages } = body;
+    const { messages, context } = body;
 
     // Input validation
     const validation = validateMessages(messages);
@@ -64,12 +64,29 @@ export async function POST(req: Request) {
     }));
     const moodAddendum = generateMoodSystemAddendum(simpleMessages);
 
+    // Build full system prompt with dynamic context
+    // Context is optional — the prompt works without it (backward compatible)
+    const safeContext = context && typeof context === "object" ? context : {};
+    const systemPrompt = buildSystemPrompt({
+      moodAddendum,
+      rankKorean: typeof safeContext.rankKorean === "string" ? safeContext.rankKorean : undefined,
+      rankEnglish: typeof safeContext.rankEnglish === "string" ? safeContext.rankEnglish : undefined,
+      totalXP: typeof safeContext.totalXP === "number" ? safeContext.totalXP : undefined,
+      vocabCount: typeof safeContext.vocabCount === "number" ? safeContext.vocabCount : undefined,
+      streakDays: typeof safeContext.streakDays === "number" ? safeContext.streakDays : undefined,
+      activeTopic: typeof safeContext.activeTopic === "string" ? safeContext.activeTopic : undefined,
+      activeTopicKr: typeof safeContext.activeTopicKr === "string" ? safeContext.activeTopicKr : undefined,
+      savedWords: Array.isArray(safeContext.savedWords)
+        ? safeContext.savedWords.filter((w: unknown) => typeof w === "string").slice(0, 50)
+        : undefined,
+    });
+
     // Convert UIMessages to ModelMessages (critical for AI SDK v6 compatibility)
     const modelMessages = await convertToModelMessages(cleanedMessages);
 
     const result = streamText({
       model: google("gemini-2.5-flash"),
-      system: MOONJO_SYSTEM_PROMPT + moodAddendum,
+      system: systemPrompt,
       messages: modelMessages,
       temperature: 0.7,
       maxOutputTokens: 1000,

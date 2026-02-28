@@ -6,6 +6,7 @@ import type { VocabularyItem } from "@/types";
 interface VocabularyPanelProps {
   words: VocabularyItem[];
   onRemoveWord: (id: string) => void;
+  onUpdateWord?: (id: string, updates: Partial<Pick<VocabularyItem, "english">>) => void;
   onClose: () => void;
   onStartStudy?: () => void;
   studyableCount?: number;
@@ -14,6 +15,7 @@ interface VocabularyPanelProps {
 export default function VocabularyPanel({
   words,
   onRemoveWord,
+  onUpdateWord,
   onClose,
   onStartStudy,
   studyableCount = 0,
@@ -50,6 +52,39 @@ export default function VocabularyPanel({
     setSpeakingId(word.id);
   }, [speakingId]);
 
+  // Retry translation for words with missing english
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+  const untranslatedWords = words.filter((w) => !w.english);
+
+  const handleRetryTranslation = useCallback(async (targetWords: VocabularyItem[]) => {
+    if (!onUpdateWord || targetWords.length === 0) return;
+    const ids = new Set(targetWords.map((w) => w.id));
+    setRetryingIds(ids);
+    try {
+      // Batch up to 20 words per API call
+      const koreanWords = targetWords.map((w) => w.korean).slice(0, 20);
+      const res = await fetch("/api/vocabulary-translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ words: koreanWords }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const translations: Record<string, string> = data.translations ?? {};
+        for (const word of targetWords) {
+          const english = translations[word.korean];
+          if (english) {
+            onUpdateWord(word.id, { english: english.toLowerCase() });
+          }
+        }
+      }
+    } catch {
+      // Silently fail — user can try again
+    } finally {
+      setRetryingIds(new Set());
+    }
+  }, [onUpdateWord]);
+
   return (
     <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
       {/* Header */}
@@ -64,6 +99,16 @@ export default function VocabularyPanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {onUpdateWord && untranslatedWords.length > 0 && (
+            <button
+              onClick={() => handleRetryTranslation(untranslatedWords)}
+              disabled={retryingIds.size > 0}
+              aria-label="Retry translations for untranslated words"
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 hover:text-goshiwon-yellow transition-colors disabled:opacity-50"
+            >
+              {retryingIds.size > 0 ? "Translating..." : `Translate ${untranslatedWords.length}`}
+            </button>
+          )}
           {onStartStudy && studyableCount >= 2 && (
             <button
               onClick={onStartStudy}
@@ -129,8 +174,17 @@ export default function VocabularyPanel({
                     {word.english}
                   </p>
                 ) : (
-                  <p className="text-goshiwon-text-muted text-xs mt-0.5 italic">
-                    translation unavailable
+                  <p className="text-goshiwon-text-muted text-xs mt-0.5 italic flex items-center gap-1.5">
+                    <span>translation unavailable</span>
+                    {onUpdateWord && (
+                      <button
+                        onClick={() => handleRetryTranslation([word])}
+                        disabled={retryingIds.has(word.id)}
+                        className="text-[10px] text-goshiwon-yellow/70 hover:text-goshiwon-yellow underline transition-colors disabled:opacity-50"
+                      >
+                        {retryingIds.has(word.id) ? "..." : "retry"}
+                      </button>
+                    )}
                   </p>
                 )}
               </div>

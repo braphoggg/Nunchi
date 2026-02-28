@@ -89,12 +89,13 @@ describe("mood-engine", () => {
   });
 
   describe("generateMoodSystemAddendum", () => {
-    it("returns a string containing the mood header", () => {
+    it("returns a string containing the mood_state XML tag", () => {
       const msgs: SimpleMessage[] = [
         { role: "user", content: "hello" },
       ];
       const addendum = generateMoodSystemAddendum(msgs);
-      expect(addendum).toContain("## CURRENT MOOD STATE");
+      expect(addendum).toContain("<mood_state>");
+      expect(addendum).toContain("</mood_state>");
     });
 
     it("includes Korean usage percentage", () => {
