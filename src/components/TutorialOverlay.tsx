@@ -168,10 +168,20 @@ export default function TutorialOverlay({
   // Recompute on step change
   useEffect(() => {
     setAnimKey((k) => k + 1);
+
+    // For steps with no target, immediately snap to center position
+    // to avoid a flash at the previous step's location during the delay.
+    if (!step.targetSelector) {
+      setCutout(null);
+      setCutout2(null);
+      setTooltipPos("center");
+      return;
+    }
+
     // Small delay for scroll-into-view to settle
     const timer = setTimeout(computeCutout, 50);
     return () => clearTimeout(timer);
-  }, [computeCutout, stepIndex]);
+  }, [computeCutout, stepIndex, step.targetSelector]);
 
   // Recompute on resize
   useEffect(() => {
@@ -217,12 +227,19 @@ export default function TutorialOverlay({
   const vw = typeof window !== "undefined" ? window.innerWidth : 1000;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
 
+  // For steps with no target, override stale state synchronously during render.
+  // Effects run *after* paint, so without this the first frame would show the
+  // tooltip at the previous step's position before the effect corrects it.
+  const effectiveCutout = step.targetSelector ? cutout : null;
+  const effectiveCutout2 = step.targetSelector ? cutout2 : null;
+  const effectiveTooltipPos = step.targetSelector ? tooltipPos : "center";
+
   // Collect all active cutouts
-  const activeCutouts = [cutout, cutout2].filter(Boolean) as Rect[];
+  const activeCutouts = [effectiveCutout, effectiveCutout2].filter(Boolean) as Rect[];
 
   // Tooltip positioning
   let tooltipStyle: React.CSSProperties = {};
-  if (tooltipPos === "center" || !cutout) {
+  if (effectiveTooltipPos === "center" || !effectiveCutout) {
     tooltipStyle = {
       position: "absolute",
       top: "50%",
@@ -231,29 +248,29 @@ export default function TutorialOverlay({
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
     };
-  } else if (cutout && cutout2) {
+  } else if (effectiveCutout && effectiveCutout2) {
     // Two cutouts: position tooltip in the gap between them
-    const gapTop = cutout.y + cutout.height + 12;
+    const gapTop = effectiveCutout.y + effectiveCutout.height + 12;
     tooltipStyle = {
       position: "absolute",
       top: gapTop,
-      left: Math.max(16, Math.min(cutout.x, vw - 376)),
+      left: Math.max(16, Math.min(effectiveCutout.x, vw - 376)),
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
     };
-  } else if (tooltipPos === "bottom" && cutout) {
+  } else if (effectiveTooltipPos === "bottom" && effectiveCutout) {
     tooltipStyle = {
       position: "absolute",
-      top: cutout.y + cutout.height + 12,
-      left: Math.max(16, Math.min(cutout.x, vw - 376)),
+      top: effectiveCutout.y + effectiveCutout.height + 12,
+      left: Math.max(16, Math.min(effectiveCutout.x, vw - 376)),
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
     };
-  } else if (tooltipPos === "top" && cutout) {
+  } else if (effectiveTooltipPos === "top" && effectiveCutout) {
     tooltipStyle = {
       position: "absolute",
-      bottom: vh - cutout.y + 12,
-      left: Math.max(16, Math.min(cutout.x, vw - 376)),
+      bottom: vh - effectiveCutout.y + 12,
+      left: Math.max(16, Math.min(effectiveCutout.x, vw - 376)),
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
     };

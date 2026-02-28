@@ -1,66 +1,329 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { getAudioContext, getMasterGain, setMasterMuted, disposeAudioContext } from "@/lib/sound/audio-context";
+import { AmbientEngine, type MoodLevel } from "@/lib/sound/ambient-engine";
+import {
+  startTypingSequence,
+  playMessageSend,
+  playMessageReceive,
+  playJamoPress,
+  playSpecialKey,
+  playCardFlip,
+  playFlashcardGrade,
+  playSessionComplete,
+  playXPDing,
+  playRankUp,
+  playWordSaved,
+  playTranslationToggle,
+  playCopyConfirm,
+  playTopicSelect,
+  playPanelTransition,
+  playKeyboardToggle,
+  playTutorialStep,
+  playFarewell,
+  playMuteAcknowledge,
+  playGoshiwonEvent,
+  type TypingSequence,
+} from "@/lib/sound/sfx-library";
+
+const MUTE_KEY = "nunchi-sound-muted";
+
+/** Max concurrent SFX to prevent node overload. */
+const MAX_CONCURRENT = 12;
 
 export function useSoundEngine() {
-  const ctxRef = useRef<AudioContext | null>(null);
-  const [muted, setMuted] = useState(false);
+  const ambientRef = useRef<AmbientEngine | null>(null);
+  const typingRef = useRef<TypingSequence | null>(null);
+  const concurrentRef = useRef(0);
+  const jamoLastRef = useRef(0);
 
-  const getCtx = useCallback(() => {
-    if (!ctxRef.current) {
-      ctxRef.current = new AudioContext();
+  const [muted, setMuted] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(MUTE_KEY) === "1";
+  });
+
+  // Apply mute state to master gain whenever it changes
+  useEffect(() => {
+    setMasterMuted(muted);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
     }
-    return ctxRef.current;
-  }, []);
+  }, [muted]);
 
-  const playKeyClick = useCallback(() => {
-    if (muted) return;
-    try {
-      const ctx = getCtx();
-      const duration = 0.04;
-      const bufferSize = Math.floor(ctx.sampleRate * duration);
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * 0.03;
-      }
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 800;
-      source.connect(filter).connect(ctx.destination);
-      source.start();
-    } catch {
-      // Silently fail if audio context isn't available
-    }
-  }, [muted, getCtx]);
-
-  const playAmbientHum = useCallback(() => {
-    if (muted) return;
-    try {
-      const ctx = getCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 60;
-      gain.gain.value = 0.015;
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 2);
-    } catch {
-      // Silently fail if audio context isn't available
-    }
-  }, [muted, getCtx]);
-
-  const toggleMute = useCallback(() => setMuted((m) => !m), []);
-
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      ctxRef.current?.close();
+      typingRef.current?.stop();
+      ambientRef.current?.dispose();
+      disposeAudioContext();
     };
   }, []);
 
-  return { playKeyClick, playAmbientHum, muted, toggleMute };
+  // ─── Helpers ──────────────────────────────────────────────────────
+
+  /** Guard: skip SFX when muted or at polyphony cap. */
+  const canPlay = useCallback(() => {
+    if (muted) return false;
+    if (concurrentRef.current >= MAX_CONCURRENT) return false;
+    return true;
+  }, [muted]);
+
+  /** Track a short SFX's lifetime for polyphony counting. */
+  const trackSfx = useCallback((durationMs: number) => {
+    concurrentRef.current++;
+    setTimeout(() => { concurrentRef.current = Math.max(0, concurrentRef.current - 1); }, durationMs);
+  }, []);
+
+  const getCtxAndOutput = useCallback(() => {
+    const ctx = getAudioContext();
+    const output = getMasterGain();
+    return { ctx, output };
+  }, []);
+
+  // ─── Ambient ──────────────────────────────────────────────────────
+
+  const startAmbient = useCallback(() => {
+    if (ambientRef.current) return;
+    const { ctx, output } = getCtxAndOutput();
+    ambientRef.current = new AmbientEngine(ctx, output);
+    ambientRef.current.start();
+  }, [getCtxAndOutput]);
+
+  const stopAmbient = useCallback(() => {
+    ambientRef.current?.stop();
+    ambientRef.current = null;
+  }, []);
+
+  const setNightStage = useCallback((stage: number) => {
+    ambientRef.current?.setNightStage(stage);
+  }, []);
+
+  const setMoodLevel = useCallback((mood: MoodLevel) => {
+    ambientRef.current?.setMoodLevel(mood);
+  }, []);
+
+  // ─── Typing Sequence ──────────────────────────────────────────────
+
+  const startTyping = useCallback(() => {
+    if (muted || typingRef.current) return;
+    const { ctx, output } = getCtxAndOutput();
+    typingRef.current = startTypingSequence(ctx, output);
+  }, [muted, getCtxAndOutput]);
+
+  const stopTyping = useCallback(() => {
+    typingRef.current?.stop();
+    typingRef.current = null;
+  }, []);
+
+  // ─── Chat Sounds ──────────────────────────────────────────────────
+
+  const playSend = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playMessageSend(ctx, output);
+    trackSfx(150);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playReceive = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playMessageReceive(ctx, output);
+    trackSfx(150);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  // ─── Hangul Keyboard ─────────────────────────────────────────────
+
+  const playJamo = useCallback(() => {
+    if (!canPlay()) return;
+    // 30ms debounce
+    const now = Date.now();
+    if (now - jamoLastRef.current < 30) return;
+    jamoLastRef.current = now;
+    const { ctx, output } = getCtxAndOutput();
+    playJamoPress(ctx, output);
+    trackSfx(50);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playSpecial = useCallback((type: "space" | "enter" | "backspace" | "shift") => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playSpecialKey(ctx, output, type);
+    trackSfx(100);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playKbToggle = useCallback((opening: boolean) => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playKeyboardToggle(ctx, output, opening);
+    trackSfx(150);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  // ─── Flashcards ───────────────────────────────────────────────────
+
+  const playFlip = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playCardFlip(ctx, output);
+    trackSfx(200);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playGrade = useCallback((grade: "again" | "good" | "easy") => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playFlashcardGrade(ctx, output, grade);
+    trackSfx(200);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playComplete = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playSessionComplete(ctx, output);
+    trackSfx(600);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  // ─── Gamification ─────────────────────────────────────────────────
+
+  const playXP = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playXPDing(ctx, output);
+    trackSfx(100);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playRankUpSound = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playRankUp(ctx, output);
+    trackSfx(2500);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playWordSavedSound = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playWordSaved(ctx, output);
+    trackSfx(100);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  // ─── UI Feedback ──────────────────────────────────────────────────
+
+  const playTransToggle = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playTranslationToggle(ctx, output);
+    trackSfx(50);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playCopy = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playCopyConfirm(ctx, output);
+    trackSfx(50);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playTopic = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playTopicSelect(ctx, output);
+    trackSfx(100);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playPanel = useCallback((direction: "open" | "close") => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playPanelTransition(ctx, output, direction);
+    trackSfx(200);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playTutorial = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playTutorialStep(ctx, output);
+    trackSfx(100);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  // ─── Special Events ───────────────────────────────────────────────
+
+  const playFarewellSound = useCallback(() => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playFarewell(ctx, output);
+    trackSfx(2500);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  const playGoshiwon = useCallback((eventEnglish: string) => {
+    if (!canPlay()) return;
+    const { ctx, output } = getCtxAndOutput();
+    playGoshiwonEvent(ctx, output, eventEnglish, ambientRef.current ?? undefined);
+    trackSfx(3000);
+  }, [canPlay, getCtxAndOutput, trackSfx]);
+
+  // ─── Mute Toggle ──────────────────────────────────────────────────
+
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      // Play acknowledge sound (bypasses master gain)
+      try {
+        const ctx = getAudioContext();
+        playMuteAcknowledge(ctx, next);
+      } catch { /* ok */ }
+      return next;
+    });
+  }, []);
+
+  // ─── Backward-compatible aliases ──────────────────────────────────
+
+  const playKeyClick = playJamo;
+  const playAmbientHum = useCallback(() => {
+    // Legacy: no longer used separately; ambient is handled by startAmbient/typing
+  }, []);
+
+  return {
+    // Legacy API (backward compat)
+    playKeyClick,
+    playAmbientHum,
+    muted,
+    toggleMute,
+
+    // Ambient
+    startAmbient,
+    stopAmbient,
+    setNightStage,
+    setMoodLevel,
+
+    // Typing
+    startTyping,
+    stopTyping,
+
+    // Chat
+    playMessageSend: playSend,
+    playMessageReceive: playReceive,
+
+    // Hangul keyboard
+    playJamoPress: playJamo,
+    playSpecialKey: playSpecial,
+    playKeyboardToggle: playKbToggle,
+
+    // Flashcards
+    playCardFlip: playFlip,
+    playFlashcardGrade: playGrade,
+    playSessionComplete: playComplete,
+
+    // Gamification
+    playXPDing: playXP,
+    playRankUp: playRankUpSound,
+    playWordSaved: playWordSavedSound,
+
+    // UI feedback
+    playTranslationToggle: playTransToggle,
+    playCopyConfirm: playCopy,
+    playTopicSelect: playTopic,
+    playPanelTransition: playPanel,
+    playTutorialStep: playTutorial,
+
+    // Special events
+    playFarewell: playFarewellSound,
+    playGoshiwonEvent: playGoshiwon,
+  };
 }

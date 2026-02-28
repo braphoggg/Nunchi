@@ -335,20 +335,16 @@ button:not(:disabled),
   padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
-/* Tutorial tooltip entry */
+/* Tutorial tooltip entry — only animate opacity so the keyframes never
+   fight with the inline positioning transform (e.g. translate(-50%,-50%)
+   for centered tooltips). */
 @keyframes tutorial-tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .animate-tutorial-tooltip {
-  animation: tutorial-tooltip-in 0.3s ease-out;
+  animation: tutorial-tooltip-in 0.25s ease-out;
 }
 
 /* Tutorial spotlight highlight ring */

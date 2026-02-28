@@ -8,6 +8,9 @@ interface FlashcardModeProps {
   words: VocabularyItem[];
   onClose: () => void;
   onSessionComplete?: (summary: FlashcardSummary) => void;
+  onFlipSound?: () => void;
+  onGradeSound?: (grade: "again" | "good" | "easy") => void;
+  onCompleteSound?: () => void;
 }
 
 /** Moon-jo feedback quotes based on performance */
@@ -30,7 +33,7 @@ function getMoonjoFeedback(goodAndEasyPct: number): { korean: string; english: s
   };
 }
 
-export default function FlashcardMode({ words, onClose, onSessionComplete }: FlashcardModeProps) {
+export default function FlashcardMode({ words, onClose, onSessionComplete, onFlipSound, onGradeSound, onCompleteSound }: FlashcardModeProps) {
   const {
     startSession,
     endSession,
@@ -59,12 +62,13 @@ export default function FlashcardMode({ words, onClose, onSessionComplete }: Fla
   useEffect(() => {
     if (isComplete && !sessionReported.current) {
       sessionReported.current = true;
+      onCompleteSound?.();
       onSessionComplete?.(summary);
     }
     if (!isComplete) {
       sessionReported.current = false;
     }
-  }, [isComplete, summary, onSessionComplete]);
+  }, [isComplete, summary, onSessionComplete, onCompleteSound]);
 
   // TTS state
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -253,8 +257,8 @@ export default function FlashcardMode({ words, onClose, onSessionComplete }: Fla
             className="flashcard-container w-full max-w-sm animate-card-slide-in"
           >
             <div
-              onClick={flip}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } }}
+              onClick={() => { onFlipSound?.(); flip(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onFlipSound?.(); flip(); } }}
               role="button"
               tabIndex={0}
               aria-label={flipped ? "Flip card to front" : "Flip card to back"}
@@ -307,7 +311,7 @@ export default function FlashcardMode({ words, onClose, onSessionComplete }: Fla
         {flipped && (
           <div className="flex items-center justify-center gap-2 animate-message-in">
             <button
-              onClick={() => grade("again")}
+              onClick={() => { onGradeSound?.("again"); grade("again"); }}
               aria-label="Grade: Again"
               className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-accent/20 text-goshiwon-accent-light border border-goshiwon-accent/40 hover:bg-goshiwon-accent/30 transition-colors flex flex-col items-center gap-0.5"
             >
@@ -315,7 +319,7 @@ export default function FlashcardMode({ words, onClose, onSessionComplete }: Fla
               <span className="text-[10px] opacity-60">다시</span>
             </button>
             <button
-              onClick={() => grade("good")}
+              onClick={() => { onGradeSound?.("good"); grade("good"); }}
               aria-label="Grade: Good"
               className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-surface text-goshiwon-text border border-goshiwon-border hover:bg-goshiwon-surface-hover transition-colors flex flex-col items-center gap-0.5"
             >
@@ -323,7 +327,7 @@ export default function FlashcardMode({ words, onClose, onSessionComplete }: Fla
               <span className="text-[10px] opacity-60">좋아요</span>
             </button>
             <button
-              onClick={() => grade("easy")}
+              onClick={() => { onGradeSound?.("easy"); grade("easy"); }}
               aria-label="Grade: Easy"
               className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-yellow/15 text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors flex flex-col items-center gap-0.5"
             >

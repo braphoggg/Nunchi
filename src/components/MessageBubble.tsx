@@ -13,9 +13,12 @@ interface MessageBubbleProps {
   onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
   isWordSaved?: (korean: string) => boolean;
   onTranslateUsed?: () => void;
+  onTranslationToggleSound?: () => void;
+  onCopySound?: () => void;
+  onWordSavedSound?: () => void;
 }
 
-export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: MessageBubbleProps) {
+export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed, onTranslationToggleSound, onCopySound, onWordSavedSound }: MessageBubbleProps) {
   const isAssistant = message.role === "assistant";
   const content = getTextContent(message);
 
@@ -71,15 +74,17 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     }
 
     onSaveWords(vocabItems);
+    onWordSavedSound?.();
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
-  }, [content, onSaveWords, saved, saving, allWordsSaved]);
+  }, [content, onSaveWords, saved, saving, allWordsSaved, onWordSavedSound]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const timestamp = useMemo(() => getAtmosphericTimestamp(), []);
 
   async function handleTranslate() {
     if (!isAssistant || translating) return;
+    onTranslationToggleSound?.();
 
     // Toggle back to original
     if (showTranslation) {
@@ -117,6 +122,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(content);
+      onCopySound?.();
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

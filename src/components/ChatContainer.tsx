@@ -70,24 +70,27 @@ export default function ChatContainer() {
 
   const isLoading = status === "submitted" || status === "streaming";
 
+  // Sound engine
+  const sound = useSoundEngine();
+
   // Interactive tutorial
   const tutorial = useTutorial();
 
   // Hangul keyboard
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const toggleKeyboard = useCallback(() => {
-    setKeyboardVisible((v) => !v);
+    setKeyboardVisible((v) => {
+      sound.playKeyboardToggle(!v);
+      return !v;
+    });
     tutorial.notifyInteraction("keyboard");
-  }, [tutorial]);
+  }, [tutorial, sound]);
   const handleKeyboardInput = useCallback((text: string) => {
     setInput((prev) => prev + text);
   }, []);
   const handleKeyboardDelete = useCallback(() => {
     setInput((prev) => prev.slice(0, -1));
   }, []);
-
-  // Sound engine
-  const { playKeyClick, playAmbientHum, muted, toggleMute } = useSoundEngine();
 
   // Vocabulary tracker
   const {
@@ -115,7 +118,7 @@ export default function ChatContainer() {
   const { activeEvent, dismissEvent } = useGoshiwonEvents(assistantMsgCount);
 
   // Night mode progression
-  const { styleOverrides } = useNightProgression(messages.length);
+  const { stage: nightStage, styleOverrides } = useNightProgression(messages.length);
 
   // Gamification
   const {
@@ -146,20 +149,22 @@ export default function ChatContainer() {
   const handleKeyboardSubmit = useCallback(() => {
     const text = inputRef.current.trim();
     if (text && !isLoading && sendMessage) {
+      sound.playMessageSend();
       setInput("");
       recordMessage(text);
       sendMessage({ text });
     }
-  }, [isLoading, sendMessage, recordMessage]);
+  }, [isLoading, sendMessage, recordMessage, sound]);
 
   // Stats panel
   const [statsOpen, setStatsOpen] = useState(false);
   const toggleStats = useCallback(() => {
     setStatsOpen((o) => {
+      sound.playPanelTransition(!o ? "open" : "close");
       if (!o) closePanel();
       return !o;
     });
-  }, [closePanel]);
+  }, [closePanel, sound]);
   const closeStats = useCallback(() => setStatsOpen(false), []);
 
   // Lesson history
@@ -176,27 +181,30 @@ export default function ChatContainer() {
   } = useLessonHistory();
 
   const handleToggleHistory = useCallback(() => {
+    sound.playPanelTransition(historyOpen ? "close" : "open");
     closePanel();
     closeStats();
     toggleHistory();
-  }, [closePanel, closeStats, toggleHistory]);
+  }, [closePanel, closeStats, toggleHistory, sound, historyOpen]);
 
   const handleToggleVocabulary = useCallback(() => {
+    sound.playPanelTransition(panelOpen ? "close" : "open");
     closeStats();
     togglePanel();
-  }, [closeStats, togglePanel]);
+  }, [closeStats, togglePanel, sound, panelOpen]);
 
   // Help modal
   const [helpOpen, setHelpOpen] = useState(false);
   const toggleHelp = useCallback(() => {
     setHelpOpen((o) => {
+      sound.playPanelTransition(!o ? "open" : "close");
       if (!o) {
         closePanel();
         closeStats();
       }
       return !o;
     });
-  }, [closePanel, closeStats]);
+  }, [closePanel, closeStats, sound]);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
 
   // Onboarding overlay — show once per browser
@@ -266,10 +274,13 @@ export default function ChatContainer() {
   useEffect(() => {
     if (prevRankRef.current !== rank.id && prevRankRef.current !== undefined) {
       const msg = RANK_UP_MESSAGES[rank.id];
-      if (msg) setRankUpMessage(msg);
+      if (msg) {
+        setRankUpMessage(msg);
+        sound.playRankUp();
+      }
     }
     prevRankRef.current = rank.id;
-  }, [rank.id]);
+  }, [rank.id, sound]);
 
   useEffect(() => {
     if (!rankUpMessage) return;
@@ -287,19 +298,74 @@ export default function ChatContainer() {
   // Transition state
   const [transitioning, setTransitioning] = useState(false);
 
+  // Compute current mood from message history
+  const currentMood = useMemo(() => {
+    if (messages.length === 0) return "neutral" as const;
+    const simpleMessages = messages.map((m) => ({
+      role: m.role,
+      content: getTextContent(m),
+    }));
+    return getMoodLevel(computeKoreanRatio(simpleMessages));
+  }, [messages]);
+
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Sound effects when Moon-jo is typing
+  // Ambient soundscape — start on mount, stop on unmount
+  useEffect(() => {
+    sound.startAmbient();
+    return () => sound.stopAmbient();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync night stage with ambient engine
+  useEffect(() => {
+    sound.setNightStage(nightStage);
+  }, [nightStage, sound]);
+
+  // Sync mood level with ambient engine
+  useEffect(() => {
+    sound.setMoodLevel(currentMood);
+  }, [currentMood, sound]);
+
+  // Moon-jo typing sequence (replaces old hum+click interval)
   useEffect(() => {
     if (isLoading) {
-      playAmbientHum();
-      const interval = setInterval(playKeyClick, 300 + Math.random() * 200);
-      return () => clearInterval(interval);
+      sound.startTyping();
+      return () => sound.stopTyping();
     }
-  }, [isLoading, playAmbientHum, playKeyClick]);
+  }, [isLoading, sound]);
+
+  // Message receive sound — fires when assistant finishes a message
+  const prevMsgLenRef = useRef(messages.length);
+  useEffect(() => {
+    if (messages.length > prevMsgLenRef.current && !isLoading) {
+      const last = messages[messages.length - 1];
+      if (last?.role === "assistant") {
+        sound.playMessageReceive();
+      }
+    }
+    prevMsgLenRef.current = messages.length;
+  }, [messages.length, isLoading, messages, sound]);
+
+  // XP ding sound
+  useEffect(() => {
+    if (recentXPGain) sound.playXPDing();
+  }, [recentXPGain, sound]);
+
+  // Goshiwon event sound
+  useEffect(() => {
+    if (activeEvent) sound.playGoshiwonEvent(activeEvent.english);
+  }, [activeEvent, sound]);
+
+  // Tutorial step sound
+  useEffect(() => {
+    if (tutorial.isActive && tutorial.currentStepIndex > 0) {
+      sound.playTutorialStep();
+    }
+  }, [tutorial.isActive, tutorial.currentStepIndex, sound]);
 
   // Crossfade transition when first message appears
   useEffect(() => {
@@ -316,16 +382,6 @@ export default function ChatContainer() {
     if (error) setErrorDismissed(false);
   }, [error]);
 
-  // Compute current mood from message history
-  const currentMood = useMemo(() => {
-    if (messages.length === 0) return "neutral" as const;
-    const simpleMessages = messages.map((m) => ({
-      role: m.role,
-      content: getTextContent(m),
-    }));
-    return getMoodLevel(computeKoreanRatio(simpleMessages));
-  }, [messages]);
-
   // Reset conversation
   const handleReset = useCallback(() => {
     setConfirmLeave(false);
@@ -339,6 +395,7 @@ export default function ChatContainer() {
       );
     }
     setShowFarewell(true);
+    sound.playFarewell();
     setTimeout(() => {
       setMessages([]);
       setShowFarewell(false);
@@ -346,23 +403,25 @@ export default function ChatContainer() {
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
-  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, saveConversation]);
+  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, saveConversation, sound]);
 
   const handleTopicSelect = useCallback((message: string, topicId: string) => {
     if (!sendMessage) {
       console.error("[ChatContainer] sendMessage not available");
       return;
     }
+    sound.playTopicSelect();
     tutorial.notifyInteraction("topics");
     markTopicVisited(topicId);
     recordMessage(message);
     sendMessage({ text: message });
-  }, [sendMessage, markTopicVisited, recordMessage, tutorial]);
+  }, [sendMessage, markTopicVisited, recordMessage, tutorial, sound]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || isLoading || !sendMessage) return;
+    sound.playMessageSend();
     tutorial.notifyInteraction("topics");
     setInput("");
     recordMessage(text);
@@ -382,8 +441,8 @@ export default function ChatContainer() {
     <div style={styleOverrides} className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border night-transition">
       <TopBar
         onReset={messages.length > 0 ? promptLeave : undefined}
-        onToggleMute={toggleMute}
-        isMuted={muted}
+        onToggleMute={sound.toggleMute}
+        isMuted={sound.muted}
         onToggleHistory={handleToggleHistory}
         onShare={messages.length > 0 ? handleShare : undefined}
         shareDisabled={shareExporting}
@@ -477,6 +536,9 @@ export default function ChatContainer() {
           words={words}
           onClose={endFlashcards}
           onSessionComplete={recordFlashcardComplete}
+          onFlipSound={sound.playCardFlip}
+          onGradeSound={sound.playFlashcardGrade}
+          onCompleteSound={sound.playSessionComplete}
         />
       )}
 
@@ -507,6 +569,9 @@ export default function ChatContainer() {
                   onSaveWords={handleSaveWords}
                   isWordSaved={isWordSaved}
                   onTranslateUsed={recordTranslation}
+                  onTranslationToggleSound={sound.playTranslationToggle}
+                  onCopySound={sound.playCopyConfirm}
+                  onWordSavedSound={sound.playWordSaved}
                 />
               </div>
             ))}
@@ -584,6 +649,8 @@ export default function ChatContainer() {
         onDeleteChar={handleKeyboardDelete}
         onSubmit={handleKeyboardSubmit}
         visible={keyboardVisible}
+        onJamoPress={sound.playJamoPress}
+        onSpecialKey={sound.playSpecialKey}
       />
 
       <ChatInput

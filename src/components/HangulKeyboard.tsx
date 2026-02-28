@@ -18,6 +18,9 @@ interface HangulKeyboardProps {
   /** Called when Enter is pressed on the keyboard */
   onSubmit: () => void;
   visible: boolean;
+  /** Sound callbacks */
+  onJamoPress?: () => void;
+  onSpecialKey?: (type: "space" | "enter" | "backspace" | "shift") => void;
 }
 
 // Standard Korean 2-set (두벌식) keyboard layout
@@ -33,7 +36,7 @@ const ROWS_SHIFT = [
   ["ㅋ","ㅌ","ㅊ","ㅍ","ㅠ","ㅜ","ㅡ"],
 ];
 
-export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visible }: HangulKeyboardProps) {
+export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visible, onJamoPress, onSpecialKey }: HangulKeyboardProps) {
   const [shifted, setShifted] = useState(false);
   // Use a ref for composition state to avoid React strict mode double-invocation
   // of setState callbacks causing duplicate side effects (onInput called twice).
@@ -46,6 +49,7 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
   const rows = shifted ? ROWS_SHIFT : ROWS_NORMAL;
 
   const handleKey = useCallback((jamo: string) => {
+    onJamoPress?.();
     const prev = compRef.current;
     const next = feedJamo(prev, jamo);
     compRef.current = next;
@@ -59,9 +63,10 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
 
     rerender();
     if (shifted) setShifted(false);
-  }, [shifted, onInput, rerender]);
+  }, [shifted, onInput, rerender, onJamoPress]);
 
   const handleBackspace = useCallback(() => {
+    onSpecialKey?.("backspace");
     const prev = compRef.current;
     const next = feedBackspace(prev);
     compRef.current = next;
@@ -78,9 +83,10 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
     }
 
     rerender();
-  }, [rerender, onDeleteChar]);
+  }, [rerender, onDeleteChar, onSpecialKey]);
 
   const handleSpace = useCallback(() => {
+    onSpecialKey?.("space");
     const prev = compRef.current;
     const text = commitAll(prev);
 
@@ -95,7 +101,7 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
     prevCommittedLenRef.current = 0;
     setShifted(false);
     rerender();
-  }, [onInput, rerender]);
+  }, [onInput, rerender, onSpecialKey]);
 
   const handleCommitComposing = useCallback(() => {
     const prev = compRef.current;
@@ -110,6 +116,7 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
   }, [onInput, rerender]);
 
   const handleEnter = useCallback(() => {
+    onSpecialKey?.("enter");
     const prev = compRef.current;
     const text = commitAll(prev);
 
@@ -125,7 +132,7 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
 
     // Delay submit slightly so onInput fires first
     setTimeout(onSubmit, 10);
-  }, [onInput, onSubmit, rerender]);
+  }, [onInput, onSubmit, rerender, onSpecialKey]);
 
   // Get the currently composing character for preview
   const comp = compRef.current;
@@ -155,7 +162,7 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
           {/* Shift key on row 3 */}
           {rowIdx === 2 && (
             <button
-              onClick={() => setShifted((s) => !s)}
+              onClick={() => { onSpecialKey?.("shift"); setShifted((s) => !s); }}
               className={`min-w-[40px] h-9 rounded text-xs font-medium transition-colors ${
                 shifted
                   ? "bg-goshiwon-yellow/20 text-goshiwon-yellow border border-goshiwon-yellow/40"
