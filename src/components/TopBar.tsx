@@ -100,9 +100,6 @@ export default function TopBar({
         <h1 className="font-medium text-goshiwon-text text-sm leading-tight truncate">
           서문조 (Seo Moon-jo)
         </h1>
-        <p className="text-xs text-goshiwon-text-muted leading-tight truncate">
-          Room 203{rank ? <span title={`${rank.english} — ${rank.description}`}> · {rank.korean}</span> : " · Eden Goshiwon"}
-        </p>
       </div>
 
       <div data-tutorial="topbar-tools" className="flex items-center gap-0.5">

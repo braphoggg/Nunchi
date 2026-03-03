@@ -61,8 +61,8 @@ export default function StatsBar({
 
       {/* Rank + progress + chevron */}
       <div className="flex items-center gap-2">
-        <span className="text-goshiwon-yellow text-[11px]" title={`${rank.english} — ${rank.description}`}>
-          {rank.korean}
+        <span className="text-goshiwon-yellow text-[11px]" title={rank.description}>
+          {rank.korean} ({rank.english})
         </span>
         <div
           className="w-12 h-[3px] bg-goshiwon-border rounded-full overflow-hidden"

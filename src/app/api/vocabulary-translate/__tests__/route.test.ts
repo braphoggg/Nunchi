@@ -5,8 +5,8 @@ vi.mock("@/lib/security", () => ({
   checkRateLimit: vi.fn(() => ({ allowed: true })),
 }));
 
-vi.mock("@ai-sdk/google", () => ({
-  google: vi.fn(() => "mocked-model"),
+vi.mock("@/lib/ai-model", () => ({
+  getModel: vi.fn(() => "mocked-model"),
 }));
 
 vi.mock("ai", async () => {

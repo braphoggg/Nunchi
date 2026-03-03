@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the AI SDK modules before importing the route
-vi.mock("@ai-sdk/google", () => ({
-  google: vi.fn(() => "mocked-model"),
+// Mock the AI model helper before importing the route
+vi.mock("@/lib/ai-model", () => ({
+  getModel: vi.fn(() => "mocked-model"),
 }));
 
 vi.mock("ai", async () => {

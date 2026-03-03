@@ -1,5 +1,5 @@
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai-model";
 import { checkRateLimit } from "@/lib/security";
 
 /** Maximum words per request */
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       .join("\n");
 
     const result = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: getModel(),
       system:
         "You are a Korean-English dictionary. For each Korean word or phrase given, " +
         "provide ONLY its concise English translation (1-5 words, lowercase). " +

@@ -1,5 +1,5 @@
-import { google } from "@ai-sdk/google";
 import { streamText, convertToModelMessages, UIMessage } from "ai";
+import { getModel } from "@/lib/ai-model";
 import { buildSystemPrompt } from "@/lib/system-prompt";
 import { validateMessages, checkRateLimit } from "@/lib/security";
 import { generateMoodSystemAddendum } from "@/lib/mood-engine";
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     const modelMessages = await convertToModelMessages(cleanedMessages);
 
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: getModel(),
       system: systemPrompt,
       messages: modelMessages,
       temperature: 0.7,

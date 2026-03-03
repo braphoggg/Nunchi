@@ -62,12 +62,13 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics }: We
                 isLast && isOddCount ? "col-span-2" : ""
               }`}
             >
-              {/* Visited dot */}
+              {/* Visited label */}
               {visited && (
                 <span
-                  className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-goshiwon-yellow/60"
-                  title="Previously studied"
-                />
+                  className="absolute top-1.5 right-2 text-[9px] text-goshiwon-yellow/60 italic"
+                >
+                  studied
+                </span>
               )}
               <div className="flex items-center gap-3">
                 <span className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-goshiwon-accent/10 border border-goshiwon-accent/20 text-lg text-goshiwon-yellow/70 group-hover:text-goshiwon-yellow group-hover:bg-goshiwon-accent/20 transition-all duration-300 shrink-0">

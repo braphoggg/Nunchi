@@ -1,5 +1,5 @@
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai-model";
 import { checkRateLimit } from "@/lib/security";
 
 export async function POST(req: Request) {
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     const result = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: getModel(),
       system:
         "You are a Korean-to-English translator. Translate the user's message into English. " +
         "Rules: " +
