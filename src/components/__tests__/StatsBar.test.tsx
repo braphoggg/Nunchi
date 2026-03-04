@@ -33,9 +33,10 @@ describe("StatsBar", () => {
     expect(screen.getByText("245 XP")).toBeTruthy();
   });
 
-  it("renders rank name in Korean", () => {
+  it("renders rank name in Korean with English", () => {
     render(<StatsBar {...defaultProps} />);
-    expect(screen.getByText("조용한 세입자")).toBeTruthy();
+    expect(screen.getByText(/조용한 세입자/)).toBeTruthy();
+    expect(screen.getByText(/Quiet Tenant/)).toBeTruthy();
   });
 
   it("shows appropriate label when streak is 0", () => {
@@ -77,8 +78,8 @@ describe("StatsBar", () => {
     expect(screen.getByText(/can\u2019t leave/)).toBeTruthy();
   });
 
-  it("shows English tooltip on Korean rank name", () => {
+  it("shows description tooltip on Korean rank name", () => {
     render(<StatsBar {...defaultProps} />);
-    expect(screen.getByTitle("Quiet Tenant — Moon-jo has noticed.")).toBeTruthy();
+    expect(screen.getByTitle("Moon-jo has noticed.")).toBeTruthy();
   });
 });

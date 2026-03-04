@@ -11,6 +11,7 @@ interface FlashcardModeProps {
   onFlipSound?: () => void;
   onGradeSound?: (grade: "again" | "good" | "easy") => void;
   onCompleteSound?: () => void;
+  showRomanization?: boolean;
 }
 
 /** Moon-jo feedback quotes based on performance */
@@ -33,7 +34,7 @@ function getMoonjoFeedback(goodAndEasyPct: number): { korean: string; english: s
   };
 }
 
-export default function FlashcardMode({ words, onClose, onSessionComplete, onFlipSound, onGradeSound, onCompleteSound }: FlashcardModeProps) {
+export default function FlashcardMode({ words, onClose, onSessionComplete, onFlipSound, onGradeSound, onCompleteSound, showRomanization = true }: FlashcardModeProps) {
   const {
     startSession,
     endSession,
@@ -292,9 +293,11 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onFli
                 </div>
                 {/* Back face */}
                 <div className="flashcard-back bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 flex flex-col items-center justify-center">
-                  <span className="text-goshiwon-text-muted text-sm mb-2">
-                    {currentCard.romanization}
-                  </span>
+                  {showRomanization && (
+                    <span className="text-goshiwon-text-muted text-sm mb-2">
+                      {currentCard.romanization}
+                    </span>
+                  )}
                   <span className="text-goshiwon-text text-lg font-medium">
                     {currentCard.english}
                   </span>

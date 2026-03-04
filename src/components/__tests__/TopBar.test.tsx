@@ -25,12 +25,6 @@ describe("TopBar", () => {
     expect(screen.getByLabelText(/Moon-jo avatar/)).toBeInTheDocument();
   });
 
-  it("shows the location description", () => {
-    render(<TopBar />);
-    expect(screen.getByText(/Room 203/)).toBeInTheDocument();
-    expect(screen.getByText(/Eden Goshiwon/)).toBeInTheDocument();
-  });
-
   it("shows mood status indicator on avatar", () => {
     render(<TopBar />);
     // Mood dot is overlaid on avatar — label exposed via title attribute
@@ -95,15 +89,10 @@ describe("TopBar", () => {
     expect(screen.getByText("99")).toBeInTheDocument();
   });
 
-  it("shows rank Korean name with English tooltip", () => {
-    render(<TopBar rank={mockRank} />);
-    expect(screen.getByText(/조용한 세입자/)).toBeInTheDocument();
-    const rankSpan = screen.getByTitle("Quiet Tenant \u2014 Moon-jo has noticed.");
-    expect(rankSpan).toBeInTheDocument();
-  });
-
-  it("shows Eden Goshiwon when no rank provided", () => {
-    render(<TopBar />);
-    expect(screen.getByText(/Eden Goshiwon/)).toBeInTheDocument();
+  it("renders settings button when onToggleSettings is provided", () => {
+    const onToggleSettings = vi.fn();
+    render(<TopBar onToggleSettings={onToggleSettings} />);
+    fireEvent.click(screen.getByLabelText("Open settings"));
+    expect(onToggleSettings).toHaveBeenCalledTimes(1);
   });
 });

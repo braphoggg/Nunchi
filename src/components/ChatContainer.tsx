@@ -18,9 +18,11 @@ import LessonHistory from "./LessonHistory";
 import LessonReview from "./LessonReview";
 import OnboardingOverlay from "./OnboardingOverlay";
 import TutorialOverlay from "./TutorialOverlay";
+import SettingsPanel from "./SettingsPanel";
 import { useShareConversation } from "./ShareButton";
 import HangulKeyboard from "./HangulKeyboard";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
+import { useSettings } from "@/hooks/useSettings";
 import { useTutorial } from "@/hooks/useTutorial";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
@@ -36,6 +38,22 @@ import type { ResidentRank } from "@/types";
 
 const VISITED_TOPICS_KEY = "nunchi-visited-topics";
 const ONBOARDED_KEY = "nunchi-onboarded";
+
+/** Light theme color overrides — warm parchment tones */
+const LIGHT_THEME: Record<string, string> = {
+  "--color-goshiwon-bg": "#f0ece4",
+  "--color-goshiwon-surface": "#e6e0d6",
+  "--color-goshiwon-surface-hover": "#ddd6ca",
+  "--color-goshiwon-border": "#c8bfb0",
+  "--color-goshiwon-accent": "#8b1a1a",
+  "--color-goshiwon-accent-light": "#a83232",
+  "--color-goshiwon-yellow": "#9a7a20",
+  "--color-goshiwon-text": "#1a1520",
+  "--color-goshiwon-text-secondary": "#5a5060",
+  "--color-goshiwon-text-muted": "#8a8090",
+  "--color-goshiwon-input": "#ebe5db",
+  "--color-goshiwon-user-bubble": "#e0d9cd",
+};
 
 /** Rank-up atmospheric messages from Moon-jo */
 const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string } | null> = {
@@ -76,6 +94,9 @@ export default function ChatContainer() {
 
   // Sound engine
   const sound = useSoundEngine();
+
+  // Accessibility settings
+  const { settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization } = useSettings();
 
   // Interactive tutorial
   const tutorial = useTutorial();
@@ -235,6 +256,17 @@ export default function ChatContainer() {
   }, [closePanel, closeStats, sound]);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
 
+  // Settings panel
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const toggleSettings = useCallback(() => {
+    setSettingsOpen((o) => {
+      sound.playPanelTransition(!o ? "open" : "close");
+      if (!o) { closePanel(); closeStats(); closeHelp(); }
+      return !o;
+    });
+  }, [closePanel, closeStats, closeHelp, sound]);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+
   // Onboarding overlay — show once per browser
   const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
@@ -283,6 +315,7 @@ export default function ChatContainer() {
         if (tutorial.isActive) { tutorial.skipTutorial(); return; }
         if (confirmLeave) { cancelLeave(); return; }
         if (helpOpen) { closeHelp(); return; }
+        if (settingsOpen) { closeSettings(); return; }
         if (reviewingConversation) { closeReview(); return; }
         if (historyOpen) { closeHistory(); return; }
         if (statsOpen) { closeStats(); return; }
@@ -293,7 +326,7 @@ export default function ChatContainer() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tutorial, confirmLeave, helpOpen, reviewingConversation, historyOpen, statsOpen, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeReview, closeHistory, closeStats, endFlashcards, closePanel]);
+  }, [tutorial, confirmLeave, helpOpen, settingsOpen, reviewingConversation, historyOpen, statsOpen, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeSettings, closeReview, closeHistory, closeStats, endFlashcards, closePanel]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -417,6 +450,7 @@ export default function ChatContainer() {
     closePanel();
     closeStats();
     closeHistory();
+    closeSettings();
     if (messages.length > 0) {
       saveConversation(
         messages.map((m) => ({ role: m.role, text: getTextContent(m) }))
@@ -432,7 +466,7 @@ export default function ChatContainer() {
       resetTimestampCounter();
       prevMessageCountRef.current = 0;
     }, 2000);
-  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, saveConversation, sound]);
+  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, closeSettings, saveConversation, sound]);
 
   const handleTopicSelect = useCallback((message: string, topicId: string) => {
     if (!sendMessage) {
@@ -472,7 +506,11 @@ export default function ChatContainer() {
   );
 
   return (
-    <div style={styleOverrides} className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border night-transition">
+    <div
+      style={{ ...(settings.theme === "light" ? LIGHT_THEME : styleOverrides), zoom: settings.fontScale }}
+      data-reduce-motion={settings.reduceAnimations ? "true" : "false"}
+      className="relative flex flex-col h-screen max-w-2xl mx-auto border-x border-goshiwon-border night-transition bg-goshiwon-bg"
+    >
       <TopBar
         onReset={messages.length > 0 ? promptLeave : undefined}
         onToggleMute={sound.toggleMute}
@@ -482,6 +520,7 @@ export default function ChatContainer() {
         shareDisabled={shareExporting}
         onToggleVocabulary={handleToggleVocabulary}
         onToggleHelp={toggleHelp}
+        onToggleSettings={toggleSettings}
         vocabularyCount={unseenCount}
         rank={rank}
         mood={currentMood}
@@ -555,6 +594,18 @@ export default function ChatContainer() {
         />
       )}
 
+      {/* Settings panel */}
+      {settingsOpen && (
+        <SettingsPanel
+          settings={settings}
+          onSetTheme={setTheme}
+          onSetFontScale={setFontScale}
+          onSetReduceAnimations={setReduceAnimations}
+          onSetShowRomanization={setShowRomanization}
+          onClose={closeSettings}
+        />
+      )}
+
       {panelOpen && !flashcardActive && (
         <VocabularyPanel
           words={words}
@@ -563,6 +614,7 @@ export default function ChatContainer() {
           onClose={closePanel}
           onStartStudy={startFlashcards}
           studyableCount={studyableCount}
+          showRomanization={settings.showRomanization}
         />
       )}
 
@@ -574,6 +626,7 @@ export default function ChatContainer() {
           onFlipSound={sound.playCardFlip}
           onGradeSound={sound.playFlashcardGrade}
           onCompleteSound={sound.playSessionComplete}
+          showRomanization={settings.showRomanization}
         />
       )}
 
@@ -607,6 +660,7 @@ export default function ChatContainer() {
                   onTranslationToggleSound={sound.playTranslationToggle}
                   onCopySound={sound.playCopyConfirm}
                   onWordSavedSound={sound.playWordSaved}
+                  showRomanization={settings.showRomanization}
                 />
               </div>
             ))}

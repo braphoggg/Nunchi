@@ -10,6 +10,7 @@ interface VocabularyPanelProps {
   onClose: () => void;
   onStartStudy?: () => void;
   studyableCount?: number;
+  showRomanization?: boolean;
 }
 
 export default function VocabularyPanel({
@@ -19,6 +20,7 @@ export default function VocabularyPanel({
   onClose,
   onStartStudy,
   studyableCount = 0,
+  showRomanization = true,
 }: VocabularyPanelProps) {
   const sortedWords = [...words].sort(
     (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
@@ -165,9 +167,11 @@ export default function VocabularyPanel({
                   <span className="text-[#d4a843] font-semibold text-sm">
                     {word.korean}
                   </span>
-                  <span className="text-goshiwon-text-muted text-xs">
-                    ({word.romanization})
-                  </span>
+                  {showRomanization && (
+                    <span className="text-goshiwon-text-muted text-xs">
+                      ({word.romanization})
+                    </span>
+                  )}
                 </div>
                 {word.english ? (
                   <p className="text-goshiwon-text-secondary text-xs mt-0.5">

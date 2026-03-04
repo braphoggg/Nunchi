@@ -8,6 +8,11 @@ import { parseVocabulary, hasVocabulary } from "@/lib/parse-vocabulary";
 import type { VocabularyItem } from "@/types";
 import { getTextContent } from "@/lib/message-utils";
 
+/** Strip romanization parentheticals from text, e.g. " (annyeonghaseyo)" */
+function stripRomanization(text: string): string {
+  return text.replace(/\s*\([a-zA-Z][a-zA-Z\s\-''.]*\)/g, "");
+}
+
 interface MessageBubbleProps {
   message: UIMessage;
   onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
@@ -16,9 +21,10 @@ interface MessageBubbleProps {
   onTranslationToggleSound?: () => void;
   onCopySound?: () => void;
   onWordSavedSound?: () => void;
+  showRomanization?: boolean;
 }
 
-export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed, onTranslationToggleSound, onCopySound, onWordSavedSound }: MessageBubbleProps) {
+export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed, onTranslationToggleSound, onCopySound, onWordSavedSound, showRomanization = true }: MessageBubbleProps) {
   const isAssistant = message.role === "assistant";
   const content = getTextContent(message);
 
@@ -130,8 +136,12 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     }
   }
 
-  const displayContent =
+  const rawDisplayContent =
     showTranslation && translation ? translation : content;
+  const displayContent =
+    !showRomanization && isAssistant && !showTranslation
+      ? stripRomanization(rawDisplayContent)
+      : rawDisplayContent;
 
   return (
     <div

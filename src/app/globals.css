@@ -37,12 +37,12 @@ button:not(:disabled),
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2533;
+  background: var(--color-goshiwon-border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3543;
+  background: var(--color-goshiwon-surface-hover);
 }
 
 /* Message fade-in animation */
@@ -362,4 +362,24 @@ button:not(:disabled),
 .tutorial-highlight {
   animation: tutorial-ring-pulse 2s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* Reduce animations — manual toggle via data attribute */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Reduce animations — OS-level preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
