@@ -46,6 +46,12 @@ Create `.env.local` and add your API key:
 GOOGLE_GENERATIVE_AI_API_KEY=your_key_here
 ```
 
+Optionally configure the Gemini model (defaults to `gemini-2.5-flash`):
+
+```bash
+GEMINI_MODEL=gemini-2.5-flash
+```
+
 Start the dev server:
 
 ```bash
@@ -54,6 +60,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Pick a topic. Moon-jo is waiting.
 
+The app is PWA-enabled — install it to your home screen for an app-like experience with offline vocabulary review.
+
 ---
 
 ## Features
@@ -61,10 +69,24 @@ Open [http://localhost:3000](http://localhost:3000). Pick a topic. Moon-jo is wa
 ### Conversation & Learning
 
 - **7 structured lessons** — Greetings, Survival Phrases, Numbers & Counting, Ordering Food, Describing Feelings, Polite vs Casual speech, and Free Conversation
+- **Lesson progression** — Topics are tiered by difficulty (beginner / intermediate / advanced) and soft-locked behind rank requirements. Beginners can't jump to advanced grammar without earning it first
 - **Korean-first teaching** — Moon-jo teaches in bold Korean with romanization (`**한글** (hangeul)`). No English in his messages — you discover meaning through context and the translate button
+- **Error correction** — When you make mistakes, Moon-jo corrects them inline: ~~your mistake~~ → **corrected version** with brief explanations
 - **Click-to-translate** — Globe icon on any message toggles between Korean and English. Translations are cached for instant switching
-- **Text-to-speech** — Hear any message or vocabulary word pronounced in Korean
+- **Text-to-speech** — Listen button on every assistant message reads Korean text aloud. Individual vocabulary words also have TTS playback
 - **Mood system** — Moon-jo's personality adapts to your effort. Write mostly in Korean and he becomes warm, even possessive. Barely try and he turns cold and clinical
+- **Daily focus** — "Today's Focus" card on the welcome screen suggests what to practice based on unvisited topics, review schedule, and your rank
+
+### Vocabulary & Study
+
+- **Smart extraction** — Korean vocabulary is automatically detected from Moon-jo's messages
+- **Personal dictionary** (나의 단어장) — Save words with Korean, romanization, and English translation
+- **Spaced Repetition (SRS)** — SM-2 algorithm tracks ease factor, review interval, and repetition count for every word. Due words are prioritized in study sessions
+- **Flashcard study** — 3D flip cards with self-assessment (Again / Good / Easy) that feeds directly into the SRS scheduler. Shows next review date on each card
+- **Listen mode** — Toggle in flashcards that hides Korean text and shows only a play button. Train your ear, then flip to check
+- **Multiple-choice quizzes** — Korean → English and English → Korean MCQs generated from your saved vocabulary. 4 options per question, score summary with Moon-jo feedback
+- **Batch translation** — Words missing English translations are auto-translated via the vocabulary API, with manual retry for failures
+- **Unseen badge** — Notification dot shows new unsaved vocabulary
 
 ### Gamification
 
@@ -74,10 +96,11 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 
 | Action | XP |
 |--------|-----|
-| Send a message in Korean | 5–15 |
+| Send a message with Korean | 5–15 |
 | Save a vocabulary word | 3 |
 | Complete a flashcard session | 20 |
-| Perfect flashcard session | +10 bonus |
+| Perfect flashcard session (0 Again) | +10 bonus |
+| Perfect quiz (100% correct) | 25 |
 | Avoid using translate (5 messages) | 8 bonus |
 
 **5 Resident Ranks** — Dual thresholds require both XP *and* vocabulary:
@@ -91,19 +114,10 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 | Floor Senior | 층 선배 | 5,000 | 150 |
 
 - **Daily streak** — Automatic midnight reset. Moon-jo notices when you don't visit
-- **Stats panel** — Total XP, streak history, messages sent, flashcard sessions, translations used
+- **Progress analytics** — SRS vocabulary breakdown (mastered / learning / new) with color-coded bar chart, Korean immersion percentage with circular progress display
 - **XP toasts** — Real-time notifications when you earn points
-- **Rank tooltips** — Hover over Korean rank names to see the English translation
+- **Rank-up events** — Moon-jo delivers atmospheric rank-up messages in Korean when you advance
 - **Progress bars** — Visual display showing both XP and word count toward next rank
-
-### Vocabulary & Flashcards
-
-- **Smart extraction** — Korean vocabulary is automatically detected from Moon-jo's messages
-- **Personal dictionary** (나의 단어장) — Save words with Korean, romanization, and English translation
-- **Flashcard study mode** — 3D flip cards (Korean front → English back) with self-assessment: Again / Good / Easy
-- **Batch translation** — Words missing English translations are auto-translated via the vocabulary API
-- **Perfect session bonus** — Extra XP for getting every card right
-- **Unseen badge** — Notification dot shows new unsaved vocabulary
 
 ### Hangul Keyboard
 
@@ -113,22 +127,31 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 - **Backspace decomposition** — Deleting correctly breaks syllables back into components
 - **Composing preview** — Live preview of the character being built above the keyboard
 
-### Lesson History
+### Lesson History & Search
 
 - **Auto-save** — Conversations are saved automatically when you leave Room 203
+- **Search** — Filter saved conversations by keyword with real-time results
 - **Browse past lessons** — View saved conversations with date, preview text, and message count
 - **Lesson review** — Read-only playback of any saved conversation
 - **Storage management** — Delete old conversations to free space (max 20 saved)
 
-### Share as Image
+### Sharing
 
-- **Export as PNG** — Branded image with the goshiwon dark theme
-- **Full formatting** — Header with app name, user and assistant messages, bold vocabulary highlighted in gold, footer with attribution
+- **Export as PNG** — Branded image with the goshiwon dark theme, bold vocabulary highlighted in gold
+- **Copy as text** — Copies the full conversation to clipboard in plain-text format
+- **Web Share** — Native share dialog on supported devices (mobile, etc.) with clipboard fallback
+
+### Data & Settings
+
+- **Data backup/restore** — Export all progress as a JSON file, import it on another device. Validated and sanitized on restore
+- **Settings panel** — Theme (dark / light), font scale, reduce animations, show/hide romanization, sound volume, mute toggle
+- **PWA support** — Installable progressive web app with service worker for offline static asset caching
+- **Onboarding** — First-visit overlay with optional interactive tutorial that walks through every feature
 
 ### Atmosphere
 
 - **Night progression** — The UI gradually darkens across 4 stages as the conversation grows deeper. Colors shift toward black and deep red
-- **Ambient sound** — Low 60Hz electrical hum when Moon-jo types, filtered key click sounds as you type (toggleable via mute button)
+- **Ambient sound** — Low 60Hz electrical hum when Moon-jo types, filtered key click sounds as you type
 - **Goshiwon events** — 15 random atmospheric interruptions between messages:
   - *A sound from Room 313...*
   - *The hallway light flickers.*
@@ -139,10 +162,15 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Send message |
-| `Escape` | Close current overlay (layered: flashcards → vocab → main) |
+| Key | Context | Action |
+|-----|---------|--------|
+| `Enter` | Chat | Send message |
+| `Space` | Flashcards | Flip card |
+| `1` / `2` / `3` | Flashcards (flipped) | Grade: Again / Good / Easy |
+| `←` / `→` | Flashcards | Previous / next card |
+| `1`–`4` | Quiz | Select answer |
+| `Enter` / `Space` | Quiz (answered) | Next question |
+| `Escape` | Any overlay | Close current overlay (layered) |
 
 ---
 
@@ -150,13 +178,15 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 
 ### Architecture
 
-Single-page Next.js application with three API routes, all powered by Google Gemini 2.5 Flash:
+Single-page Next.js application with three API routes, all powered by Google Gemini:
 
 | Route | Purpose | Temperature |
 |-------|---------|-------------|
 | `/api/chat` | Streaming conversation with Moon-jo's system prompt + mood addendum | 0.7 |
 | `/api/translate` | On-demand Korean → English translation | 0.3 |
 | `/api/vocabulary-translate` | Batch translate vocabulary words for the dictionary | 0.2 |
+
+The app is a PWA with a service worker (`public/sw.js`) that uses cache-first for static assets and network-first for HTML pages.
 
 ### Moon-jo's Character
 
@@ -166,6 +196,7 @@ A ~2KB system prompt defines Moon-jo with strict rules:
 - **Character boundaries** — Refuses non-Korean topics, never breaks character, no emojis
 - **Speech style** — Formal 존댓말 with soft endings (~거든요, ~잖아요, ~죠?), forced intimacy with "우리" (we/our)
 - **Personality** — Calm, charming, possessive, perceptive. Dentist metaphors. Contempt for other residents. Asks your name, then uses it with 씨 (honorific) throughout
+- **Error correction** — Inline corrections using ~~strikethrough~~ → **corrected** format with brief Korean explanations
 - **Teaching method** — 3–5 new words per exchange, progressive difficulty, cultural context through goshiwon life
 
 ### Mood Engine
@@ -178,6 +209,17 @@ The mood engine analyzes the Hangul ratio across all user messages and dynamical
 | 20–49% | Neutral | Baseline — polite, attentive, gently unsettling |
 | 50–79% | Warm | Pleased, affectionate, more possessive |
 | ≥ 80% | Impressed | Reverent, intense warmth — "You belong here" |
+
+### Spaced Repetition
+
+The SRS engine implements the **SM-2 algorithm**:
+
+- **Ease factor** — Starts at 2.5, adjusts based on self-assessment quality (min 1.3)
+- **Intervals** — Day 1 → Day 6 → growing by ease factor. "Again" resets to Day 1
+- **Due scheduling** — Words due for review are shuffled to the front of flashcard sessions
+- **Grade mapping** — Again (quality 1), Good (quality 3), Easy (quality 5)
+
+SRS state is stored on each vocabulary item and persists across sessions.
 
 ### Hangul Composition Engine
 
@@ -196,10 +238,16 @@ All progress stays in your browser's localStorage:
 | Key | Contents | Limit |
 |-----|----------|-------|
 | `nunchi-gamification` | XP, streaks, session stats | 500 KB |
-| `nunchi-vocabulary` | Saved words | 1 MB / 5,000 words |
+| `nunchi-vocabulary` | Saved words + SRS state | 1 MB / 5,000 words |
 | `nunchi-lesson-history` | Saved conversations | 20 conversations |
+| `nunchi-settings` | Theme, font scale, romanization, animations | — |
+| `nunchi-visited-topics` | Which lessons have been started | — |
+| `nunchi-tutorial-completed` | Tutorial completion flag | — |
+| `nunchi-onboarded` | Onboarding completion flag | — |
+| `nunchi-sound-muted` | Sound mute state | — |
+| `nunchi-sound-volume` | Sound volume level | — |
 
-Corrupted data auto-resets to safe defaults. XP has anti-tampering validation (max events per minute, max amount per event, total ceiling).
+Corrupted data auto-resets to safe defaults. XP has anti-tampering validation (max events per minute, max amount per event, total ceiling). Data backup/restore exports all 9 keys as validated JSON.
 
 ### Security
 
@@ -207,6 +255,7 @@ Corrupted data auto-resets to safe defaults. XP has anti-tampering validation (m
 - **Input validation** — Message count (≤50), content length (≤2,000 chars), role validation
 - **Content sanitization** — HTML tags stripped, control characters removed, null byte filtering
 - **Anti-tampering** — XP history validated for burst rate, max amounts, and total ceiling (999,999)
+- **Backup validation** — Imported data checked for valid structure, only known keys are restored
 - **Security headers** — `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, `Referrer-Policy`
 
 ---
@@ -222,12 +271,13 @@ Corrupted data auto-resets to safe defaults. XP has anti-tampering validation (m
 | Styling | [Tailwind CSS v4](https://tailwindcss.com) with custom goshiwon theme |
 | Image Export | [html-to-image](https://github.com/bubkoo/html-to-image) |
 | Audio | Web Audio API + Web Speech API |
+| PWA | Service Worker + Web App Manifest |
 | Testing | [Vitest](https://vitest.dev) + [React Testing Library](https://testing-library.com) |
 | Fonts | Inter + Noto Sans KR (Google Fonts) |
 
 ### Theme
 
-Custom dark palette defined in Tailwind v4:
+Custom dark palette defined in Tailwind v4 (with a warm-parchment light mode):
 
 | Token | Hex | Usage |
 |-------|-----|-------|
@@ -250,13 +300,13 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-**600 tests** across 47 test files covering:
+**677 tests** across 51 test files covering:
 
 - **API routes** — Chat streaming, translation, vocabulary batch, error handling, rate limiting
 - **Components** — All UI components including overlays, message rendering, input handling
-- **Hooks** — Gamification state, vocabulary management, flashcards, sound engine, night progression, goshiwon events
-- **Libraries** — Hangul composition/decomposition, vocabulary parsing (bold patterns, romanization), mood calculation, XP/rank logic, security validation, timestamps
-- **Edge cases** — Race conditions, localStorage corruption, streak midnight rollover, anti-tampering detection
+- **Hooks** — Gamification state, vocabulary management, flashcards, SRS integration, sound engine, night progression, goshiwon events, settings, tutorial
+- **Libraries** — Hangul composition/decomposition, vocabulary parsing, mood calculation, XP/rank logic, SRS algorithm, quiz generation, daily planner, data backup/restore, security validation, timestamps, message formatting
+- **Edge cases** — Race conditions, localStorage corruption, streak midnight rollover, anti-tampering detection, SRS interval boundaries
 
 Tests run with Vitest in a jsdom environment with React Testing Library. TypeScript strict mode enforced.
 
@@ -272,30 +322,37 @@ src/
 │   │   ├── translate/             # Korean → English translation
 │   │   └── vocabulary-translate/  # Batch vocabulary translation
 │   ├── globals.css                # Goshiwon theme + 12 animations
-│   ├── layout.tsx                 # Root layout, fonts, metadata
+│   ├── layout.tsx                 # Root layout, fonts, metadata, PWA tags
+│   ├── manifest.ts                # PWA web app manifest
 │   └── page.tsx                   # Home → ChatContainer
 ├── components/
 │   ├── ChatContainer.tsx          # Main orchestrator (hooks, overlays, state)
 │   ├── ChatInput.tsx              # Auto-growing textarea
-│   ├── MessageBubble.tsx          # Messages + translate/copy/save actions
+│   ├── MessageBubble.tsx          # Messages + translate/copy/listen/save actions
 │   ├── TopBar.tsx                 # Header bar + all action buttons
-│   ├── WelcomeScreen.tsx          # Lesson topic cards + onboarding
+│   ├── WelcomeScreen.tsx          # Lesson topics + daily focus + difficulty badges
 │   ├── StatsBar.tsx               # Compact XP / streak / rank display
-│   ├── StatsPanel.tsx             # Detailed stats overlay
+│   ├── StatsPanel.tsx             # Detailed stats + SRS breakdown + immersion chart
 │   ├── VocabularyPanel.tsx        # Saved words list (나의 단어장)
-│   ├── FlashcardMode.tsx          # Flashcard study interface
+│   ├── FlashcardMode.tsx          # Flashcard study + listen mode + SRS grading
+│   ├── QuizMode.tsx               # Multiple-choice quiz interface
 │   ├── HangulKeyboard.tsx         # On-screen Korean keyboard
-│   ├── LessonHistory.tsx          # Browse saved conversations
+│   ├── LessonHistory.tsx          # Browse + search saved conversations
 │   ├── LessonReview.tsx           # Read-only conversation replay
-│   ├── ShareButton.tsx            # Export conversation as PNG
+│   ├── SettingsPanel.tsx          # Theme, font, romanization, sound, data backup
+│   ├── ShareButton.tsx            # Export as PNG / text / Web Share
 │   ├── HelpModal.tsx              # Comprehensive feature guide
+│   ├── OnboardingOverlay.tsx      # First-visit welcome overlay
+│   ├── TutorialOverlay.tsx        # Interactive step-by-step tutorial
 │   ├── GoshiwonEventBubble.tsx    # Atmospheric event notifications
 │   ├── XPToast.tsx                # XP gain popup
 │   └── TypingIndicator.tsx        # Animated typing dots
 ├── hooks/
-│   ├── useGamification.ts         # XP, streaks, ranks, stats
-│   ├── useVocabulary.ts           # Word management + localStorage
-│   ├── useFlashcards.ts           # Study session state machine
+│   ├── useGamification.ts         # XP, streaks, ranks, stats, quiz rewards
+│   ├── useVocabulary.ts           # Word management + SRS migration + localStorage
+│   ├── useFlashcards.ts           # Study session state machine + SRS ordering
+│   ├── useSettings.ts             # Theme, font scale, romanization, animations
+│   ├── useTutorial.ts             # Interactive tutorial state machine
 │   ├── useSoundEngine.ts          # Ambient hum + key click synthesis
 │   ├── useGoshiwonEvents.ts       # Random atmospheric interruptions
 │   ├── useNightProgression.ts     # UI darkening over conversation length
@@ -303,18 +360,28 @@ src/
 ├── lib/
 │   ├── system-prompt.ts           # Moon-jo's 2KB character definition
 │   ├── gamification.ts            # XP values, 5 rank definitions
+│   ├── srs.ts                     # SM-2 spaced repetition algorithm
+│   ├── quiz-generator.ts          # Multiple-choice question generator
+│   ├── daily-planner.ts           # Today's Focus suggestions + daily quotes
+│   ├── data-backup.ts             # JSON export/import for all app data
 │   ├── hangul-compose.ts          # Jamo → syllable composition engine
 │   ├── mood-engine.ts             # Hangul ratio → mood level
 │   ├── parse-vocabulary.ts        # Extract vocab from bold patterns
-│   ├── lesson-topics.ts           # 7 lesson definitions with starters
+│   ├── lesson-topics.ts           # 7 lessons with difficulty tiers + rank gates
+│   ├── format-message.ts          # Tokenizer for bold/strikethrough/arrow rendering
 │   ├── goshiwon-events.ts         # 15 atmospheric event descriptions
 │   ├── security.ts                # Rate limiting, validation, sanitization
-│   ├── format-message.ts          # Bold/italic text parsing
+│   ├── ai-model.ts                # Configurable Gemini model loader
+│   ├── tutorial-steps.ts          # Tutorial step definitions
 │   ├── timestamps.ts              # 1–3 AM timestamp generator
 │   └── message-utils.ts           # UIMessage text extraction
 ├── types/
 │   └── index.ts                   # All TypeScript interfaces
 └── middleware.ts                   # Security headers for API routes
+
+public/
+├── sw.js                          # Service worker (offline caching)
+└── icon.svg                       # PWA app icon
 ```
 
 ---
@@ -326,7 +393,7 @@ src/
 | `npm run dev` | Start development server |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
-| `npm test` | Run all 600 tests |
+| `npm test` | Run all 677 tests |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run test:coverage` | Tests with coverage report |
 | `npm run lint` | ESLint check |
