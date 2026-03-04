@@ -55,7 +55,7 @@ describe("FlashcardMode", () => {
 
   it("shows 'tap to flip' hint on card front", () => {
     render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
-    expect(screen.getByText("tap to flip")).toBeInTheDocument();
+    expect(screen.getByText("tap or press space to flip")).toBeInTheDocument();
   });
 
   it("flips card on click and shows romanization and english", () => {

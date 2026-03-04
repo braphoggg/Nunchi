@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import type { SavedConversation } from "@/types";
 
 interface LessonHistoryProps {
@@ -29,6 +30,20 @@ export default function LessonHistory({
   onDelete,
   onClose,
 }: LessonHistoryProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter conversations by search query (searches preview and message text)
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return conversations;
+    const q = searchQuery.toLowerCase();
+    return conversations.filter((c) => {
+      // Search in preview
+      if (c.preview?.toLowerCase().includes(q)) return true;
+      // Search in messages
+      return c.messages?.some((m) => m.text.toLowerCase().includes(q));
+    });
+  }, [conversations, searchQuery]);
+
   return (
     <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
       {/* Header */}
@@ -60,6 +75,50 @@ export default function LessonHistory({
         </button>
       </div>
 
+      {/* Search bar */}
+      {conversations.length > 0 && (
+        <div className="px-3 pt-3">
+          <div className="relative">
+            <svg
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-goshiwon-text-muted pointer-events-none"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search conversations..."
+              aria-label="Search conversations"
+              className="w-full pl-8 pr-3 py-2 text-xs bg-goshiwon-surface border border-goshiwon-border rounded-lg text-goshiwon-text placeholder:text-goshiwon-text-muted/50 focus:outline-none focus:border-goshiwon-yellow/40 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-[10px] text-goshiwon-text-muted mt-1.5">
+              {filtered.length} {filtered.length === 1 ? "result" : "results"}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {conversations.length === 0 ? (
@@ -83,8 +142,14 @@ export default function LessonHistory({
               Conversations are saved when you leave the room.
             </p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-sm text-goshiwon-text-secondary">
+              No conversations match &ldquo;{searchQuery}&rdquo;
+            </p>
+          </div>
         ) : (
-          conversations.map((c) => (
+          filtered.map((c) => (
             <div
               key={c.id}
               role="button"

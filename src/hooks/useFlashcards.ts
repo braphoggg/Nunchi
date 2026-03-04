@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { VocabularyItem } from "@/types";
+import { isDueForReview } from "@/lib/srs";
 
 export type FlashcardGrade = "again" | "good" | "easy";
 
@@ -36,10 +37,27 @@ export function useFlashcards(words: VocabularyItem[]) {
     [words]
   );
 
+  // Count words due for review
+  const dueCount = useMemo(
+    () => {
+      const now = new Date();
+      return words.filter(
+        (w) => w.english.trim() !== "" && isDueForReview(w, now),
+      ).length;
+    },
+    [words],
+  );
+
   const startSession = useCallback(() => {
     const studyable = words.filter((w) => w.english.trim() !== "");
     if (studyable.length < 2) return;
-    setDeck(shuffle(studyable));
+
+    // SRS ordering: due words first (shuffled), then not-due (shuffled)
+    const now = new Date();
+    const due = studyable.filter((w) => isDueForReview(w, now));
+    const notDue = studyable.filter((w) => !isDueForReview(w, now));
+    setDeck([...shuffle(due), ...shuffle(notDue)]);
+
     setCurrentIndex(0);
     setFlipped(false);
     setGrades(new Map());
@@ -139,5 +157,8 @@ export function useFlashcards(words: VocabularyItem[]) {
 
     // Studyable count
     studyableCount,
+
+    // SRS due count
+    dueCount,
   };
 }

@@ -7,6 +7,7 @@ const ACTION_LABELS: Record<XPAction, string> = {
   message_full_korean: "Full Korean!",
   flashcard_session: "Flashcards done",
   flashcard_perfect: "Perfect session!",
+  quiz_perfect: "Perfect quiz!",
   word_saved: "Words saved",
   no_translate: "No-translate streak",
 };

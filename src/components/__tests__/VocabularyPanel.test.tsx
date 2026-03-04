@@ -92,7 +92,7 @@ describe("VocabularyPanel", () => {
     render(
       <VocabularyPanel words={[]} onRemoveWord={vi.fn()} onClose={vi.fn()} />
     );
-    expect(screen.getByText("No words saved yet.")).toBeInTheDocument();
+    expect(screen.getByText("Your dictionary is empty.")).toBeInTheDocument();
   });
 
   it("calls onRemoveWord with correct id when delete button is clicked", () => {

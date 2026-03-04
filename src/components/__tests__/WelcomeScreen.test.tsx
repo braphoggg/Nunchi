@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WelcomeScreen from "../WelcomeScreen";
-import { LESSON_TOPICS } from "@/lib/lesson-topics";
+import { LESSON_TOPICS, meetsRankRequirement } from "@/lib/lesson-topics";
 import type { RankInfo } from "@/types";
 
 describe("WelcomeScreen", () => {
@@ -37,11 +37,39 @@ describe("WelcomeScreen", () => {
     expect(handler).toHaveBeenCalledWith(greetingsTopic.starterMessage, greetingsTopic.id);
   });
 
-  it("renders each topic icon", () => {
+  it("renders icons for unlocked topics and lock for locked ones", () => {
     render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
     for (const topic of LESSON_TOPICS) {
-      expect(screen.getByText(topic.icon)).toBeInTheDocument();
+      const unlocked = meetsRankRequirement("new_resident", topic.requiredRank);
+      if (unlocked) {
+        expect(screen.getByText(topic.icon)).toBeInTheDocument();
+      } else {
+        // Locked topics show required rank name instead of icon
+        expect(screen.getByLabelText(new RegExp(`Start lesson: ${topic.title}`))).toBeInTheDocument();
+      }
     }
+  });
+
+  it("shows difficulty badges on all topics", () => {
+    render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+    // All beginner topics show 초급 badge
+    const beginnerBadges = screen.getAllByText("초급");
+    expect(beginnerBadges.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("unlocks intermediate topics for quiet_tenant rank", () => {
+    const rank: RankInfo = {
+      id: "quiet_tenant",
+      korean: "조용한 세입자",
+      english: "Quiet Tenant",
+      description: "Moon-jo has noticed.",
+      minXP: 100,
+      minVocab: 10,
+    };
+    render(<WelcomeScreen onSelectTopic={onSelectTopic} rank={rank} />);
+    // "Ordering Food" should now show its icon instead of a lock
+    expect(screen.getByText("식")).toBeInTheDocument();
+    expect(screen.getByText("감")).toBeInTheDocument();
   });
 
   it("shows the footer hint text", () => {

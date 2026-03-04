@@ -15,6 +15,7 @@ interface TopBarProps {
   onToggleVocabulary?: () => void;
   onToggleHelp?: () => void;
   onShare?: () => void;
+  onShareText?: () => void;
   shareDisabled?: boolean;
   vocabularyCount?: number;
   rank?: RankInfo;
@@ -65,6 +66,7 @@ export default function TopBar({
   onToggleVocabulary,
   onToggleHelp,
   onShare,
+  onShareText,
   shareDisabled,
   vocabularyCount,
   rank,
@@ -116,19 +118,34 @@ export default function TopBar({
           </NavButton>
         )}
 
-        {/* Share conversation */}
+        {/* Share conversation — image */}
         {onShare && (
           <NavButton
             onClick={onShare}
             disabled={shareDisabled}
-            title="Share conversation"
+            title="Share conversation as image"
             ariaLabel="Share conversation as image"
-            label="Share"
+            label="Image"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
               <polyline points="16 6 12 2 8 6" />
               <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          </NavButton>
+        )}
+
+        {/* Share conversation — text/clipboard */}
+        {onShareText && (
+          <NavButton
+            onClick={onShareText}
+            title="Copy conversation as text"
+            ariaLabel="Copy conversation as text"
+            label="Copy"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </NavButton>
         )}

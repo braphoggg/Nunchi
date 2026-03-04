@@ -164,6 +164,55 @@ export default function ShareButton({ messages }: ShareButtonProps) {
   return { handleShare, exporting, done };
 }
 
+/**
+ * Export conversation as plain text.
+ */
+function exportConversationText(messages: UIMessage[]): string {
+  const header = "── Room 203 | Korean with Moon-jo ──\n\n";
+  const body = messages
+    .map((msg) => {
+      const text = getTextContent(msg);
+      if (!text) return "";
+      const role = msg.role === "assistant" ? "서문조 (Moon-jo)" : "You";
+      return `[${role}]\n${text}`;
+    })
+    .filter(Boolean)
+    .join("\n\n");
+  const footer = "\n\n── nunchi — Korean immersion learning ──";
+  return header + body + footer;
+}
+
+/**
+ * Copy text to clipboard.
+ */
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Use Web Share API if available, fall back to copy.
+ */
+async function shareViaWebShare(text: string): Promise<boolean> {
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share({
+        title: "Room 203 — Korean with Moon-jo",
+        text,
+      });
+      return true;
+    } catch {
+      // User cancelled or share failed
+      return false;
+    }
+  }
+  return false;
+}
+
 /** Hook wrapper for use in ChatContainer */
 export function useShareConversation(messages: UIMessage[]) {
   const [exporting, setExporting] = useState(false);
@@ -184,5 +233,23 @@ export function useShareConversation(messages: UIMessage[]) {
     }
   }, [messages, exporting]);
 
-  return { handleShare, exporting, done };
+  const handleShareText = useCallback(async () => {
+    if (messages.length === 0) return;
+    const text = exportConversationText(messages);
+
+    // Try Web Share API first, fall back to clipboard
+    const shared = await shareViaWebShare(text);
+    if (!shared) {
+      const copied = await copyToClipboard(text);
+      if (copied) {
+        setDone(true);
+        setTimeout(() => setDone(false), 2000);
+      }
+    } else {
+      setDone(true);
+      setTimeout(() => setDone(false), 2000);
+    }
+  }, [messages]);
+
+  return { handleShare, handleShareText, exporting, done };
 }

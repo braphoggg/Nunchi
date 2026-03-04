@@ -1,6 +1,13 @@
 "use client";
 
+import { useState, useRef, useCallback } from "react";
 import type { AppSettings } from "@/hooks/useSettings";
+import {
+  createBackup,
+  downloadBackup,
+  readBackupFile,
+  restoreBackup,
+} from "@/lib/data-backup";
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -48,6 +55,96 @@ const FONT_SCALES = [
   { value: 1.15, label: "Large" },
   { value: 1.3, label: "X-Large" },
 ] as const;
+
+function DataBackupSection() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importStatus, setImportStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const handleExport = useCallback(() => {
+    const backup = createBackup();
+    downloadBackup(backup);
+  }, []);
+
+  const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const result = await readBackupFile(file);
+    if (!result.valid) {
+      setImportStatus({ type: "error", message: result.error });
+      return;
+    }
+
+    const count = restoreBackup(result.backup);
+    setImportStatus({
+      type: "success",
+      message: `Restored ${count} data entries. Reloading...`,
+    });
+
+    // Reload after a brief delay so user sees the message
+    setTimeout(() => window.location.reload(), 1200);
+
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  return (
+    <section>
+      <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
+        데이터 (Data)
+      </h3>
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-goshiwon-border bg-goshiwon-surface text-sm text-goshiwon-text-secondary hover:border-goshiwon-text-muted transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-goshiwon-border bg-goshiwon-surface text-sm text-goshiwon-text-secondary hover:border-goshiwon-text-muted transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Import
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            className="hidden"
+            aria-label="Import backup file"
+          />
+        </div>
+        <p className="text-[10px] text-goshiwon-text-muted">
+          Export saves all progress, vocabulary, and settings as a JSON file.
+        </p>
+        {importStatus && (
+          <p className={`text-xs ${
+            importStatus.type === "success"
+              ? "text-emerald-400"
+              : "text-goshiwon-accent-light"
+          }`}>
+            {importStatus.message}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default function SettingsPanel({
   settings,
@@ -183,6 +280,9 @@ export default function SettingsPanel({
             />
           </div>
         </section>
+
+        {/* Data Backup */}
+        <DataBackupSection />
 
         {/* Sound */}
         <section>

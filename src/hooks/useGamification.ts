@@ -212,6 +212,21 @@ export function useGamification(vocabCount: number) {
     [addXPEvent, showXPToast]
   );
 
+  const recordQuizComplete = useCallback(
+    (correct: number, total: number) => {
+      if (total <= 0) return;
+      setData((prev) => {
+        if (correct === total) {
+          const updated = addXPEvent("quiz_perfect", XP_VALUES.quiz_perfect, prev);
+          showXPToast(XP_VALUES.quiz_perfect, "quiz_perfect");
+          return updated;
+        }
+        return prev;
+      });
+    },
+    [addXPEvent, showXPToast]
+  );
+
   // ─── Derived values ─────────────────────────────────────────────
 
   const rank: RankInfo = useMemo(
@@ -251,6 +266,7 @@ export function useGamification(vocabCount: number) {
     recordMessage,
     recordTranslation,
     recordFlashcardComplete,
+    recordQuizComplete,
     recordWordSaved,
   };
 }

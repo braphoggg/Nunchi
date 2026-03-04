@@ -63,7 +63,13 @@ describe("useVocabulary", () => {
 
     const { result } = renderHook(() => useVocabulary());
     // useEffect runs after render, words load asynchronously
-    expect(result.current.words).toEqual(saved);
+    expect(result.current.words).toHaveLength(1);
+    expect(result.current.words[0].korean).toBe("안녕");
+    expect(result.current.words[0].english).toBe("hello");
+    // SRS fields are migrated automatically
+    expect(result.current.words[0].easeFactor).toBe(2.5);
+    expect(result.current.words[0].interval).toBe(0);
+    expect(result.current.words[0].repetitions).toBe(0);
     expect(result.current.wordCount).toBe(1);
   });
 

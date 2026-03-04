@@ -9,6 +9,7 @@ import TypingIndicator from "./TypingIndicator";
 import WelcomeScreen from "./WelcomeScreen";
 import VocabularyPanel from "./VocabularyPanel";
 import FlashcardMode from "./FlashcardMode";
+import QuizMode from "./QuizMode";
 import GoshiwonEventBubble from "./GoshiwonEventBubble";
 import StatsBar from "./StatsBar";
 import StatsPanel from "./StatsPanel";
@@ -35,6 +36,9 @@ import { getTextContent } from "@/lib/message-utils";
 import { computeKoreanRatio, getMoodLevel } from "@/lib/mood-engine";
 import { LESSON_TOPICS } from "@/lib/lesson-topics";
 import type { ResidentRank } from "@/types";
+import { computeNextSRS, getSRSState } from "@/lib/srs";
+import { MIN_QUIZ_WORDS } from "@/lib/quiz-generator";
+import type { FlashcardGrade } from "@/hooks/useFlashcards";
 
 const VISITED_TOPICS_KEY = "nunchi-visited-topics";
 const ONBOARDED_KEY = "nunchi-onboarded";
@@ -80,7 +84,7 @@ export default function ChatContainer() {
   // Active lesson topic (set when user picks a topic from WelcomeScreen)
   const [activeTopic, setActiveTopic] = useState<{ id: string; titleKr: string } | null>(null);
 
-  const { messages, sendMessage, status, error, setMessages } = useChat();
+  const { messages, sendMessage, reload, status, error, setMessages } = useChat();
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
   inputRef.current = input;
@@ -88,7 +92,7 @@ export default function ChatContainer() {
   const prevMessageCountRef = useRef(0);
 
   // Share conversation as image
-  const { handleShare, exporting: shareExporting } = useShareConversation(messages);
+  const { handleShare, handleShareText, exporting: shareExporting } = useShareConversation(messages);
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -137,7 +141,29 @@ export default function ChatContainer() {
     endSession: endFlashcards,
     isActive: flashcardActive,
     studyableCount,
+    dueCount,
   } = useFlashcards(words);
+
+  // Quiz mode
+  const [quizActive, setQuizActive] = useState(false);
+  const quizReady = useMemo(
+    () => words.filter((w) => w.english?.trim()).length >= MIN_QUIZ_WORDS,
+    [words],
+  );
+  const startQuiz = useCallback(() => setQuizActive(true), []);
+  const endQuiz = useCallback(() => setQuizActive(false), []);
+
+  // SRS: update word after flashcard grading
+  const handleWordGraded = useCallback(
+    (wordId: string, grade: FlashcardGrade) => {
+      const word = words.find((w) => w.id === wordId);
+      if (!word) return;
+      const current = getSRSState(word);
+      const next = computeNextSRS(current, grade);
+      updateWord(wordId, next);
+    },
+    [words, updateWord],
+  );
 
   // Goshiwon atmospheric events
   const assistantMsgCount = messages.filter((m) => m.role === "assistant").length;
@@ -160,8 +186,17 @@ export default function ChatContainer() {
     recordMessage,
     recordTranslation,
     recordFlashcardComplete,
+    recordQuizComplete,
     recordWordSaved,
   } = useGamification(wordCount);
+
+  // Quiz completion handler
+  const handleQuizComplete = useCallback(
+    (result: { correct: number; total: number }) => {
+      recordQuizComplete(result.correct, result.total);
+    },
+    [recordQuizComplete],
+  );
 
   // Build context for the system prompt (sent with each chat request)
   const savedWordsKorean = useMemo(() => words.map((w) => w.korean), [words]);
@@ -319,6 +354,7 @@ export default function ChatContainer() {
         if (reviewingConversation) { closeReview(); return; }
         if (historyOpen) { closeHistory(); return; }
         if (statsOpen) { closeStats(); return; }
+        if (quizActive) { endQuiz(); return; }
         if (flashcardActive) { endFlashcards(); return; }
         if (panelOpen) { closePanel(); return; }
         if (keyboardVisible) { setKeyboardVisible(false); return; }
@@ -326,7 +362,7 @@ export default function ChatContainer() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tutorial, confirmLeave, helpOpen, settingsOpen, reviewingConversation, historyOpen, statsOpen, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeSettings, closeReview, closeHistory, closeStats, endFlashcards, closePanel]);
+  }, [tutorial, confirmLeave, helpOpen, settingsOpen, reviewingConversation, historyOpen, statsOpen, quizActive, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeSettings, closeReview, closeHistory, closeStats, endQuiz, endFlashcards, closePanel]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -446,6 +482,7 @@ export default function ChatContainer() {
   // Reset conversation
   const handleReset = useCallback(() => {
     setConfirmLeave(false);
+    endQuiz();
     endFlashcards();
     closePanel();
     closeStats();
@@ -515,6 +552,7 @@ export default function ChatContainer() {
         onReset={messages.length > 0 ? promptLeave : undefined}
         onToggleHistory={handleToggleHistory}
         onShare={messages.length > 0 ? handleShare : undefined}
+        onShareText={messages.length > 0 ? handleShareText : undefined}
         shareDisabled={shareExporting}
         onToggleVocabulary={handleToggleVocabulary}
         onToggleHelp={toggleHelp}
@@ -588,6 +626,7 @@ export default function ChatContainer() {
           longestStreak={longestStreak}
           stats={stats}
           vocabCount={wordCount}
+          words={words}
           onClose={closeStats}
         />
       )}
@@ -608,27 +647,42 @@ export default function ChatContainer() {
         />
       )}
 
-      {panelOpen && !flashcardActive && (
+      {panelOpen && !flashcardActive && !quizActive && (
         <VocabularyPanel
           words={words}
           onRemoveWord={removeWord}
           onUpdateWord={updateWord}
           onClose={closePanel}
           onStartStudy={startFlashcards}
+          onStartQuiz={startQuiz}
           studyableCount={studyableCount}
+          quizReady={quizReady}
+          dueCount={dueCount}
           showRomanization={settings.showRomanization}
         />
       )}
 
-      {panelOpen && flashcardActive && (
+      {panelOpen && flashcardActive && !quizActive && (
         <FlashcardMode
           words={words}
           onClose={endFlashcards}
           onSessionComplete={recordFlashcardComplete}
+          onWordGraded={handleWordGraded}
           onFlipSound={sound.playCardFlip}
           onGradeSound={sound.playFlashcardGrade}
           onCompleteSound={sound.playSessionComplete}
           showRomanization={settings.showRomanization}
+        />
+      )}
+
+      {panelOpen && quizActive && (
+        <QuizMode
+          words={words}
+          onClose={endQuiz}
+          onQuizComplete={handleQuizComplete}
+          onCorrectSound={sound.playWordSaved}
+          onWrongSound={() => sound.playFlashcardGrade("again")}
+          onCompleteSound={sound.playSessionComplete}
         />
       )}
 
@@ -648,6 +702,8 @@ export default function ChatContainer() {
               onSelectTopic={handleTopicSelect}
               rank={rank}
               visitedTopics={visitedTopics}
+              dueCount={dueCount}
+              onStartStudy={() => { togglePanel(); startFlashcards(); }}
             />
           </div>
         ) : !showFarewell ? (
@@ -710,8 +766,14 @@ export default function ChatContainer() {
               Something went wrong
             </p>
             <p className="mt-1 text-goshiwon-text-secondary text-xs">
-              {error.message || "An unexpected error occurred. Please try again."}
+              {error.message || "An unexpected error occurred."}
             </p>
+            <button
+              onClick={() => { setErrorDismissed(true); reload(); }}
+              className="mt-2 px-3 py-1 text-xs font-medium rounded-full bg-goshiwon-accent/30 text-goshiwon-accent-light hover:bg-goshiwon-accent/40 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         )}
 

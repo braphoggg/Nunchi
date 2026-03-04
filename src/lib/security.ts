@@ -9,6 +9,7 @@ const VALID_XP_ACTIONS: XPAction[] = [
   "message_full_korean",
   "flashcard_session",
   "flashcard_perfect",
+  "quiz_perfect",
   "word_saved",
   "no_translate",
 ];

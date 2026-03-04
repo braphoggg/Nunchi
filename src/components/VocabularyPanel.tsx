@@ -6,10 +6,13 @@ import type { VocabularyItem } from "@/types";
 interface VocabularyPanelProps {
   words: VocabularyItem[];
   onRemoveWord: (id: string) => void;
-  onUpdateWord?: (id: string, updates: Partial<Pick<VocabularyItem, "english">>) => void;
+  onUpdateWord?: (id: string, updates: Partial<Omit<VocabularyItem, "id" | "korean" | "romanization" | "savedAt">>) => void;
   onClose: () => void;
   onStartStudy?: () => void;
+  onStartQuiz?: () => void;
   studyableCount?: number;
+  quizReady?: boolean;
+  dueCount?: number;
   showRomanization?: boolean;
 }
 
@@ -19,7 +22,10 @@ export default function VocabularyPanel({
   onUpdateWord,
   onClose,
   onStartStudy,
+  onStartQuiz,
   studyableCount = 0,
+  quizReady = false,
+  dueCount = 0,
   showRomanization = true,
 }: VocabularyPanelProps) {
   const sortedWords = [...words].sort(
@@ -111,6 +117,20 @@ export default function VocabularyPanel({
               {retryingIds.size > 0 ? "Translating..." : `Translate ${untranslatedWords.length}`}
             </button>
           )}
+          {onStartQuiz && quizReady && (
+            <button
+              onClick={onStartQuiz}
+              aria-label="Take a quiz"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 transition-colors"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              Quiz
+            </button>
+          )}
           {onStartStudy && studyableCount >= 2 && (
             <button
               onClick={onStartStudy}
@@ -123,6 +143,11 @@ export default function VocabularyPanel({
                 <line x1="12" y1="17" x2="12" y2="21" />
               </svg>
               Study
+              {dueCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-px text-[10px] font-bold rounded-full bg-goshiwon-accent/40 text-goshiwon-accent-light">
+                  {dueCount}
+                </span>
+              )}
             </button>
           )}
         <button
@@ -147,13 +172,22 @@ export default function VocabularyPanel({
       {/* Word list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {sortedWords.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-16 px-6 text-center">
+            {/* Book icon */}
+            <svg className="w-10 h-10 text-goshiwon-text-muted/40 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+              <path d="M8 7h8M8 11h6" />
+            </svg>
             <p className="text-goshiwon-text-secondary text-sm">
-              No words saved yet.
+              Your dictionary is empty.
             </p>
-            <p className="text-goshiwon-text-muted text-xs mt-1">
-              Save vocabulary from Moon-jo&rsquo;s messages to build your
-              dictionary.
+            <p className="text-goshiwon-text-muted text-xs mt-2 max-w-[240px] leading-relaxed">
+              Tap the <span className="text-[#d4a843]">golden Korean words</span> in
+              Moon-jo&rsquo;s messages to save them here.
+            </p>
+            <p className="text-goshiwon-text-muted/50 text-[10px] italic mt-4">
+              &ldquo;단어를 모으세요... 제가 가르쳐 드릴게요.&rdquo;
             </p>
           </div>
         ) : (

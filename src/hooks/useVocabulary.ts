@@ -3,6 +3,7 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import type { VocabularyItem } from "@/types";
 import { correctRomanization } from "@/lib/parse-vocabulary";
+import { SRS_DEFAULTS } from "@/lib/srs";
 
 const STORAGE_KEY = "nunchi-vocabulary";
 const MAX_WORDS = 5000;
@@ -41,18 +42,35 @@ function loadFromStorage(): VocabularyItem[] {
     if (!Array.isArray(parsed)) return [];
     // Validate each item and discard malformed entries
     const validated = parsed.filter(isValidVocabularyItem);
-    // Migrate: apply romanization corrections and normalize capitalization
-    // for previously-saved items
+    // Migrate: apply romanization corrections, normalize capitalization,
+    // and add SRS fields for previously-saved items
     let migrated = false;
     const corrected = validated.map((item) => {
+      let updated = item;
+
+      // Romanization + capitalization fix
       const fixedRom = correctRomanization(item.korean, item.romanization);
       const normalRom = fixedRom.toLowerCase();
       const normalEng = item.english.toLowerCase();
       if (normalRom !== item.romanization || normalEng !== item.english) {
         migrated = true;
-        return { ...item, romanization: normalRom, english: normalEng };
+        updated = { ...updated, romanization: normalRom, english: normalEng };
       }
-      return item;
+
+      // SRS field migration — add defaults if missing
+      if (updated.easeFactor === undefined) {
+        migrated = true;
+        updated = {
+          ...updated,
+          easeFactor: SRS_DEFAULTS.easeFactor,
+          interval: SRS_DEFAULTS.interval,
+          repetitions: SRS_DEFAULTS.repetitions,
+          nextReview: SRS_DEFAULTS.nextReview,
+          lastGrade: SRS_DEFAULTS.lastGrade,
+        };
+      }
+
+      return updated;
     });
     // Persist the corrected data if any changes were made
     if (migrated) {
@@ -116,6 +134,12 @@ export function useVocabulary() {
             romanization: stripHtml(w.romanization).toLowerCase(),
             english: stripHtml(w.english).toLowerCase(),
             savedAt: new Date().toISOString(),
+            // SRS defaults — new words are immediately due for review
+            easeFactor: SRS_DEFAULTS.easeFactor,
+            interval: SRS_DEFAULTS.interval,
+            repetitions: SRS_DEFAULTS.repetitions,
+            nextReview: SRS_DEFAULTS.nextReview,
+            lastGrade: SRS_DEFAULTS.lastGrade,
           }));
 
         if (toAdd.length === 0) return prev;
@@ -134,7 +158,7 @@ export function useVocabulary() {
   }, []);
 
   const updateWord = useCallback(
-    (id: string, updates: Partial<Pick<VocabularyItem, "english">>) => {
+    (id: string, updates: Partial<Omit<VocabularyItem, "id" | "korean" | "romanization" | "savedAt">>) => {
       setWords((prev) =>
         prev.map((w) =>
           w.id === id ? { ...w, ...updates } : w

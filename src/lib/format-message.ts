@@ -1,40 +1,107 @@
 import React from "react";
 
+/**
+ * Tokenize message content into typed segments for rendering.
+ * Supported patterns:
+ *   **bold**           → golden vocabulary word (clickable if onVocabClick)
+ *   ~~strikethrough~~  → error correction (red strikethrough)
+ *   →                  → correction arrow separator
+ *   plain text         → normal text
+ */
+type Token =
+  | { type: "bold"; text: string }
+  | { type: "strike"; text: string }
+  | { type: "arrow" }
+  | { type: "text"; text: string };
+
+function tokenize(content: string): Token[] {
+  // Match **bold**, ~~strike~~, or → arrow in one pass
+  const pattern = /(\*\*[^*]+\*\*|~~[^~]+~~|→)/g;
+  const tokens: Token[] = [];
+  let lastIndex = 0;
+
+  let match;
+  while ((match = pattern.exec(content)) !== null) {
+    // Text before the match
+    if (match.index > lastIndex) {
+      tokens.push({ type: "text", text: content.slice(lastIndex, match.index) });
+    }
+
+    const segment = match[0];
+    if (segment.startsWith("**") && segment.endsWith("**")) {
+      tokens.push({ type: "bold", text: segment.slice(2, -2) });
+    } else if (segment.startsWith("~~") && segment.endsWith("~~")) {
+      tokens.push({ type: "strike", text: segment.slice(2, -2) });
+    } else if (segment === "→") {
+      tokens.push({ type: "arrow" });
+    }
+
+    lastIndex = match.index + segment.length;
+  }
+
+  // Trailing text
+  if (lastIndex < content.length) {
+    tokens.push({ type: "text", text: content.slice(lastIndex) });
+  }
+
+  return tokens;
+}
+
 export function formatMessage(
   content: string,
   options?: { onVocabClick?: () => void }
 ): React.ReactNode[] {
-  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+  const tokens = tokenize(content);
 
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      const text = part.slice(2, -2);
-
-      if (options?.onVocabClick) {
+  return tokens.map((token, i) => {
+    switch (token.type) {
+      case "bold":
+        if (options?.onVocabClick) {
+          return React.createElement(
+            "strong",
+            {
+              key: i,
+              className:
+                "text-[#d4a843] font-semibold cursor-pointer hover:underline underline-offset-2 decoration-[#d4a843]/50",
+              onClick: options.onVocabClick,
+              title: "Click to save all vocabulary from this message",
+              role: "button",
+              tabIndex: 0,
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") options.onVocabClick?.();
+              },
+            },
+            token.text
+          );
+        }
         return React.createElement(
           "strong",
+          { key: i, className: "text-[#d4a843] font-semibold" },
+          token.text
+        );
+
+      case "strike":
+        return React.createElement(
+          "span",
           {
             key: i,
-            className:
-              "text-[#d4a843] font-semibold cursor-pointer hover:underline underline-offset-2 decoration-[#d4a843]/50",
-            onClick: options.onVocabClick,
-            title: "Click to save all vocabulary from this message",
-            role: "button",
-            tabIndex: 0,
-            onKeyDown: (e: React.KeyboardEvent) => {
-              if (e.key === "Enter" || e.key === " ") options.onVocabClick?.();
-            },
+            className: "line-through text-goshiwon-accent-light/70 opacity-70",
           },
-          text
+          token.text
         );
-      }
 
-      return React.createElement(
-        "strong",
-        { key: i, className: "text-[#d4a843] font-semibold" },
-        text
-      );
+      case "arrow":
+        return React.createElement(
+          "span",
+          {
+            key: i,
+            className: "mx-1 text-goshiwon-text-muted",
+          },
+          "→"
+        );
+
+      case "text":
+        return React.createElement("span", { key: i }, token.text);
     }
-    return React.createElement("span", { key: i }, part);
   });
 }

@@ -20,6 +20,7 @@ export const XP_VALUES: Record<XPAction, number> = {
   message_full_korean: 15,
   flashcard_session: 20,
   flashcard_perfect: 10,
+  quiz_perfect: 25,
   word_saved: 3,
   no_translate: 8,
 };

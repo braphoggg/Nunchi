@@ -13,6 +13,23 @@ function stripRomanization(text: string): string {
   return text.replace(/\s*\([a-zA-Z][a-zA-Z\s\-''.]*\)/g, "");
 }
 
+/** Check if text contains Korean characters */
+function hasKorean(text: string): boolean {
+  return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text);
+}
+
+/** Extract Korean-only text for TTS (strips English/romanization) */
+function extractKoreanForTTS(text: string): string {
+  // Remove romanization parentheticals and English text, keep Korean + punctuation
+  const stripped = stripRomanization(text);
+  // Keep lines that have Korean characters
+  return stripped
+    .split("\n")
+    .filter((line) => hasKorean(line))
+    .join("\n")
+    .trim();
+}
+
 interface MessageBubbleProps {
   message: UIMessage;
   onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
@@ -35,6 +52,40 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+
+  // TTS for assistant Korean text
+  const koreanText = useMemo(
+    () => (isAssistant ? extractKoreanForTTS(content) : ""),
+    [isAssistant, content],
+  );
+  const canSpeak = isAssistant && hasKorean(content);
+
+  // Cancel speech on unmount
+  useEffect(() => {
+    return () => {
+      if (speaking && typeof speechSynthesis !== "undefined") {
+        speechSynthesis.cancel();
+      }
+    };
+  }, [speaking]);
+
+  const handleSpeak = useCallback(() => {
+    if (!canSpeak || typeof speechSynthesis === "undefined") return;
+    if (speaking) {
+      speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(koreanText);
+    utterance.lang = "ko-KR";
+    utterance.rate = 0.85;
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+    speechSynthesis.speak(utterance);
+    setSpeaking(true);
+  }, [canSpeak, speaking, koreanText]);
 
   // Check if all vocabulary in this message is already saved
   const allWordsSaved = useMemo(() => {
@@ -270,6 +321,39 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
                 </svg>
               )}
             </button>
+
+            {/* Listen (TTS) */}
+            {canSpeak && (
+              <button
+                onClick={handleSpeak}
+                title={speaking ? "Stop listening" : "Listen"}
+                aria-label={speaking ? "Stop listening to message" : "Listen to Korean text"}
+                className={`p-1.5 transition-colors rounded ${
+                  speaking
+                    ? "text-goshiwon-yellow hover:text-goshiwon-yellow/80"
+                    : "text-goshiwon-text-muted hover:text-goshiwon-text"
+                }`}
+              >
+                {speaking ? (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="6" width="12" height="12" rx="1" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-3.5 h-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.54 8.46a5 5 0 010 7.07" />
+                  </svg>
+                )}
+              </button>
+            )}
 
             {/* Save vocabulary */}
             {onSaveWords && hasVocabulary(content) && (

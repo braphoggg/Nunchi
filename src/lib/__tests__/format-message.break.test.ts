@@ -181,19 +181,15 @@ describe("BREAK: formatMessage — rendered content manipulation (#8)", () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
 
-    // DOCUMENTED WEAKNESS: "****" produces a <strong> element with empty
-    // content, which is incorrect behavior. The regex/startsWith check
-    // mismatch means 4 asterisks create an empty bold element.
+    // FIXED: The tokenizer regex requires at least one character between
+    // bold markers, so "****" is treated as plain text, not empty bold.
     const strongEls = result.filter((el) => elemType(el) === "strong");
-    expect(strongEls.length).toBe(1);
+    expect(strongEls.length).toBe(0);
 
-    // The content of the strong element is empty string
-    const strongContent = elemProps(strongEls[0]!)!.children;
-    expect(strongContent).toBe("");
-
-    // No <span> elements with "****" text since it was captured as bold
+    // "****" is passed through as a plain text span
     const spanEls = result.filter((el) => elemType(el) === "span");
-    expect(spanEls.length).toBe(0);
+    expect(spanEls.length).toBe(1);
+    expect(elemProps(spanEls[0]!)!.children).toBe("****");
   });
 
   // -------------------------------------------------------------------------
