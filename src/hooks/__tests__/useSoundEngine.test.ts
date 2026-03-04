@@ -64,8 +64,9 @@ vi.stubGlobal("AudioContext", MockAudioContext);
 
 // Clear singleton between tests by resetting the module
 beforeEach(async () => {
-  // Reset localStorage mute state
+  // Reset localStorage sound state
   localStorage.removeItem("nunchi-sound-muted");
+  localStorage.removeItem("nunchi-sound-volume");
   // Reset the audio-context singleton by re-importing
   const mod = await import("@/lib/sound/audio-context");
   mod.disposeAudioContext();
@@ -85,6 +86,8 @@ describe("useSoundEngine", () => {
     expect(typeof result.current.playCardFlip).toBe("function");
     expect(typeof result.current.playXPDing).toBe("function");
     expect(typeof result.current.playGoshiwonEvent).toBe("function");
+    expect(typeof result.current.volume).toBe("number");
+    expect(typeof result.current.setVolume).toBe("function");
   });
 
   it("starts unmuted", () => {
@@ -105,6 +108,31 @@ describe("useSoundEngine", () => {
       result.current.toggleMute();
     });
     expect(result.current.muted).toBe(false);
+  });
+
+  it("starts with default volume of 80", () => {
+    const { result } = renderHook(() => useSoundEngine());
+    expect(result.current.volume).toBe(80);
+  });
+
+  it("setVolume updates volume state", () => {
+    const { result } = renderHook(() => useSoundEngine());
+    act(() => {
+      result.current.setVolume(50);
+    });
+    expect(result.current.volume).toBe(50);
+  });
+
+  it("setVolume clamps to 0-100 range", () => {
+    const { result } = renderHook(() => useSoundEngine());
+    act(() => {
+      result.current.setVolume(150);
+    });
+    expect(result.current.volume).toBe(100);
+    act(() => {
+      result.current.setVolume(-10);
+    });
+    expect(result.current.volume).toBe(0);
   });
 
   it("playKeyClick does not throw", () => {

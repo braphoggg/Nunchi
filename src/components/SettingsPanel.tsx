@@ -8,6 +8,10 @@ interface SettingsPanelProps {
   onSetFontScale: (scale: number) => void;
   onSetReduceAnimations: (reduce: boolean) => void;
   onSetShowRomanization: (show: boolean) => void;
+  isMuted: boolean;
+  onToggleMute: () => void;
+  volume: number;
+  onSetVolume: (volume: number) => void;
   onClose: () => void;
 }
 
@@ -51,6 +55,10 @@ export default function SettingsPanel({
   onSetFontScale,
   onSetReduceAnimations,
   onSetShowRomanization,
+  isMuted,
+  onToggleMute,
+  volume,
+  onSetVolume,
   onClose,
 }: SettingsPanelProps) {
   return (
@@ -173,6 +181,66 @@ export default function SettingsPanel({
               onChange={onSetShowRomanization}
               label="Show romanization"
             />
+          </div>
+        </section>
+
+        {/* Sound */}
+        <section>
+          <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
+            소리 (Sound)
+          </h3>
+          <div className="space-y-4">
+            {/* Mute toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm text-goshiwon-text">Sound effects</h3>
+                <p className="text-xs text-goshiwon-text-muted mt-0.5">
+                  Ambient and interaction sounds
+                </p>
+              </div>
+              <Toggle
+                checked={!isMuted}
+                onChange={() => onToggleMute()}
+                label="Toggle sound"
+              />
+            </div>
+
+            {/* Volume slider */}
+            <div className={isMuted ? "opacity-40 pointer-events-none" : ""}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-goshiwon-text">Volume</span>
+                <span className="text-xs text-goshiwon-text-muted tabular-nums">
+                  {volume}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={volume}
+                onChange={(e) => onSetVolume(Number(e.target.value))}
+                aria-label="Volume"
+                disabled={isMuted}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer
+                  bg-goshiwon-border
+                  [&::-webkit-slider-thumb]:appearance-none
+                  [&::-webkit-slider-thumb]:w-4
+                  [&::-webkit-slider-thumb]:h-4
+                  [&::-webkit-slider-thumb]:rounded-full
+                  [&::-webkit-slider-thumb]:bg-goshiwon-accent-light
+                  [&::-webkit-slider-thumb]:border-2
+                  [&::-webkit-slider-thumb]:border-goshiwon-surface
+                  [&::-webkit-slider-thumb]:shadow-sm
+                  [&::-moz-range-thumb]:w-4
+                  [&::-moz-range-thumb]:h-4
+                  [&::-moz-range-thumb]:rounded-full
+                  [&::-moz-range-thumb]:bg-goshiwon-accent-light
+                  [&::-moz-range-thumb]:border-2
+                  [&::-moz-range-thumb]:border-goshiwon-surface
+                  disabled:cursor-default"
+              />
+            </div>
           </div>
         </section>
       </div>

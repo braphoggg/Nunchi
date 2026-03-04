@@ -41,6 +41,20 @@ export function setMasterMuted(muted: boolean): void {
   gain.gain.exponentialRampToValueAtTime(muted ? 0.0001 : 1.0, now + 0.05);
 }
 
+/**
+ * Set master gain from volume (0-100) and muted state.
+ * When muted, gain ramps to near-zero regardless of volume.
+ */
+export function setMasterVolume(volume: number, muted: boolean): void {
+  const audioCtx = getAudioContext();
+  const gain = getMasterGain();
+  const now = audioCtx.currentTime;
+  const target = muted ? 0.0001 : Math.max(volume / 100, 0.0001);
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.exponentialRampToValueAtTime(target, now + 0.05);
+}
+
 /** Tear down the context (e.g. on component unmount). */
 export function disposeAudioContext(): void {
   if (ctx) {

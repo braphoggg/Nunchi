@@ -513,8 +513,6 @@ export default function ChatContainer() {
     >
       <TopBar
         onReset={messages.length > 0 ? promptLeave : undefined}
-        onToggleMute={sound.toggleMute}
-        isMuted={sound.muted}
         onToggleHistory={handleToggleHistory}
         onShare={messages.length > 0 ? handleShare : undefined}
         shareDisabled={shareExporting}
@@ -602,6 +600,10 @@ export default function ChatContainer() {
           onSetFontScale={setFontScale}
           onSetReduceAnimations={setReduceAnimations}
           onSetShowRomanization={setShowRomanization}
+          isMuted={sound.muted}
+          onToggleMute={sound.toggleMute}
+          volume={sound.volume}
+          onSetVolume={sound.setVolume}
           onClose={closeSettings}
         />
       )}

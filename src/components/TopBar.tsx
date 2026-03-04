@@ -10,8 +10,6 @@ const MOOD_CONFIG: Record<MoodLevel, { dot: string; label: string }> = {
 
 interface TopBarProps {
   onReset?: () => void;
-  onToggleMute?: () => void;
-  isMuted?: boolean;
   onToggleHistory?: () => void;
   onToggleSettings?: () => void;
   onToggleVocabulary?: () => void;
@@ -62,8 +60,6 @@ function NavButton({
 
 export default function TopBar({
   onReset,
-  onToggleMute,
-  isMuted,
   onToggleSettings,
   onToggleHistory,
   onToggleVocabulary,
@@ -189,29 +185,6 @@ export default function TopBar({
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
-          </NavButton>
-        )}
-
-        {/* Mute toggle */}
-        {onToggleMute && (
-          <NavButton
-            onClick={onToggleMute}
-            title={isMuted ? "Unmute" : "Mute"}
-            ariaLabel={isMuted ? "Unmute sounds" : "Mute sounds"}
-            label={isMuted ? "Muted" : "Sound"}
-          >
-            {isMuted ? (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 5L6 9H2v6h4l5 4V5z" />
-                <line x1="23" y1="9" x2="17" y2="15" />
-                <line x1="17" y1="9" x2="23" y2="15" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 5L6 9H2v6h4l5 4V5z" />
-                <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
-              </svg>
-            )}
           </NavButton>
         )}
 

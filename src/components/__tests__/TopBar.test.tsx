@@ -38,18 +38,6 @@ describe("TopBar", () => {
     expect(onReset).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onToggleMute when mute button is clicked", () => {
-    const onToggleMute = vi.fn();
-    render(<TopBar onToggleMute={onToggleMute} isMuted={false} />);
-    fireEvent.click(screen.getByLabelText("Mute sounds"));
-    expect(onToggleMute).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows unmute label when muted", () => {
-    render(<TopBar onToggleMute={vi.fn()} isMuted={true} />);
-    expect(screen.getByLabelText("Unmute sounds")).toBeInTheDocument();
-  });
-
   it("does not render reset button when onReset is not provided", () => {
     render(<TopBar />);
     expect(screen.queryByLabelText("Leave Room 203")).not.toBeInTheDocument();

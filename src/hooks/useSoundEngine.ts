@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { getAudioContext, getMasterGain, setMasterMuted, disposeAudioContext } from "@/lib/sound/audio-context";
+import { getAudioContext, getMasterGain, setMasterMuted, setMasterVolume, disposeAudioContext } from "@/lib/sound/audio-context";
 import { AmbientEngine, type MoodLevel } from "@/lib/sound/ambient-engine";
 import {
   startTypingSequence,
@@ -28,6 +28,7 @@ import {
 } from "@/lib/sound/sfx-library";
 
 const MUTE_KEY = "nunchi-sound-muted";
+const VOLUME_KEY = "nunchi-sound-volume";
 
 /** Max concurrent SFX to prevent node overload. */
 const MAX_CONCURRENT = 12;
@@ -43,13 +44,24 @@ export function useSoundEngine() {
     return localStorage.getItem(MUTE_KEY) === "1";
   });
 
-  // Apply mute state to master gain whenever it changes
+  const [volume, setVolumeState] = useState(() => {
+    if (typeof window === "undefined") return 80;
+    const stored = localStorage.getItem(VOLUME_KEY);
+    if (stored !== null) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) return parsed;
+    }
+    return 80;
+  });
+
+  // Sync mute + volume to master gain and localStorage
   useEffect(() => {
-    setMasterMuted(muted);
+    setMasterVolume(volume, muted);
     if (typeof window !== "undefined") {
       localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+      localStorage.setItem(VOLUME_KEY, String(volume));
     }
-  }, [muted]);
+  }, [muted, volume]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -272,6 +284,10 @@ export function useSoundEngine() {
     });
   }, []);
 
+  const setVolume = useCallback((v: number) => {
+    setVolumeState(Math.max(0, Math.min(100, Math.round(v))));
+  }, []);
+
   // ─── Backward-compatible aliases ──────────────────────────────────
 
   const playKeyClick = playJamo;
@@ -285,6 +301,8 @@ export function useSoundEngine() {
     playAmbientHum,
     muted,
     toggleMute,
+    volume,
+    setVolume,
 
     // Ambient
     startAmbient,
