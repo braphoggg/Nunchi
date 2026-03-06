@@ -43,17 +43,19 @@ describe("HelpModal", () => {
     expect(screen.getByText(/Keyboard Shortcuts/)).toBeInTheDocument();
   });
 
-  it("shows Words tab with vocabulary and flashcard info", () => {
+  it("shows Words tab with vocabulary and study info", () => {
     render(<HelpModal onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/단어/));
     expect(screen.getByText(/Saving Vocabulary/)).toBeInTheDocument();
-    expect(screen.getByText(/Studying Flashcards/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Study All/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Quick Quiz/).length).toBeGreaterThan(0);
   });
 
   it("shows Tools tab with history, share, sound, leave info", () => {
     render(<HelpModal onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/도구/));
     expect(screen.getByText(/Lesson Topics/)).toBeInTheDocument();
+    expect(screen.getByText(/Today.s Focus/)).toBeInTheDocument();
     expect(screen.getByText(/Lesson History/)).toBeInTheDocument();
     expect(screen.getByText(/Share Conversation/)).toBeInTheDocument();
     expect(screen.getByText(/Sound/)).toBeInTheDocument();

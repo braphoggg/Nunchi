@@ -43,6 +43,7 @@ function shuffle<T>(arr: T[]): T[] {
 export function generateQuiz(
   words: VocabularyItem[],
   count: number = 10,
+  questionType?: QuizQuestionType,
 ): QuizQuestion[] {
   // Filter to words with translations
   const studyable = words.filter((w) => w.english?.trim());
@@ -53,9 +54,9 @@ export function generateQuiz(
   const questions: QuizQuestion[] = [];
 
   for (const word of selected) {
-    // Randomly choose question type
-    const type: QuizQuestionType =
-      Math.random() < 0.5 ? "korean_to_english" : "english_to_korean";
+    // Choose question type (use provided type or random 50/50)
+    const type: QuizQuestionType = questionType ??
+      (Math.random() < 0.5 ? "korean_to_english" : "english_to_korean");
 
     const prompt = type === "korean_to_english" ? word.korean : word.english;
     const correctAnswer = type === "korean_to_english" ? word.english : word.korean;

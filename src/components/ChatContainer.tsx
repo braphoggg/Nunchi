@@ -668,10 +668,9 @@ export default function ChatContainer() {
           onClose={endFlashcards}
           onSessionComplete={recordFlashcardComplete}
           onWordGraded={handleWordGraded}
-          onFlipSound={sound.playCardFlip}
-          onGradeSound={sound.playFlashcardGrade}
+          onCorrectSound={sound.playWordSaved}
+          onWrongSound={() => sound.playFlashcardGrade("again")}
           onCompleteSound={sound.playSessionComplete}
-          showRomanization={settings.showRomanization}
         />
       )}
 

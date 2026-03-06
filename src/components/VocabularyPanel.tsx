@@ -117,6 +117,24 @@ export default function VocabularyPanel({
               {retryingIds.size > 0 ? "Translating..." : `Translate ${untranslatedWords.length}`}
             </button>
           )}
+          {onStartStudy && studyableCount >= 4 && (
+            <button
+              onClick={onStartStudy}
+              aria-label="Study flashcards"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              Study All
+              {dueCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-px text-[10px] font-bold rounded-full bg-goshiwon-accent/40 text-goshiwon-accent-light">
+                  {dueCount}
+                </span>
+              )}
+            </button>
+          )}
           {onStartQuiz && quizReady && (
             <button
               onClick={onStartQuiz}
@@ -124,30 +142,9 @@ export default function VocabularyPanel({
               className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 transition-colors"
             >
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              Quiz
-            </button>
-          )}
-          {onStartStudy && studyableCount >= 2 && (
-            <button
-              onClick={onStartStudy}
-              aria-label="Study flashcards"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors"
-            >
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
-              Study
-              {dueCount > 0 && (
-                <span className="ml-0.5 px-1.5 py-px text-[10px] font-bold rounded-full bg-goshiwon-accent/40 text-goshiwon-accent-light">
-                  {dueCount}
-                </span>
-              )}
+              Quick Quiz
             </button>
           )}
         <button

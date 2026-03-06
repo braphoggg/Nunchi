@@ -185,8 +185,8 @@ function ProgressTab() {
         <ul className="text-xs text-goshiwon-text-secondary space-y-1">
           <li>• Send message in Korean: <span className="text-goshiwon-accent-light">5-15 XP</span></li>
           <li>• Save vocabulary words: <span className="text-goshiwon-accent-light">3 XP each</span></li>
-          <li>• Complete flashcard session: <span className="text-goshiwon-accent-light">20 XP</span></li>
-          <li>• Perfect flashcard session: <span className="text-goshiwon-accent-light">+10 XP bonus</span></li>
+          <li>• Complete study session: <span className="text-goshiwon-accent-light">20 XP</span></li>
+          <li>• Perfect study session (all correct): <span className="text-goshiwon-accent-light">+10 XP bonus</span></li>
           <li>• Avoid translations (5 messages): <span className="text-goshiwon-accent-light">8 XP bonus</span></li>
         </ul>
       </section>
@@ -267,7 +267,7 @@ function ChatTab() {
         <SectionTitle>Keyboard Shortcuts</SectionTitle>
         <ul className="text-xs text-goshiwon-text-secondary space-y-1">
           <li>• <kbd className="px-1 py-0.5 bg-goshiwon-surface rounded text-[10px]">Enter</kbd> — Send message</li>
-          <li>• <kbd className="px-1 py-0.5 bg-goshiwon-surface rounded text-[10px]">Escape</kbd> — Close overlays (stats, vocab, flashcards, help)</li>
+          <li>• <kbd className="px-1 py-0.5 bg-goshiwon-surface rounded text-[10px]">Escape</kbd> — Close overlays (stats, vocab, study, help)</li>
         </ul>
       </section>
     </>
@@ -297,12 +297,20 @@ function WordsTab() {
       </section>
 
       <section>
-        <SectionTitle>Studying Flashcards</SectionTitle>
+        <SectionTitle>Study All</SectionTitle>
         <Body>
-          Save 2+ words, then click &ldquo;Study&rdquo; in the vocabulary panel.
-          Each card shows Korean on the front — tap to flip and reveal the English meaning.
-          Self-assess: &ldquo;Know it&rdquo; or &ldquo;Still learning&rdquo;.
-          Perfect sessions (all &ldquo;Know it&rdquo;) earn a 10 XP bonus on top of the base 20 XP.
+          Save 4+ words, then click &ldquo;Study All&rdquo; in the vocabulary panel.
+          Each question shows a Korean word — pick the correct English translation from 4 choices.
+          Your answers update spaced repetition scheduling so difficult words appear more often.
+          Perfect sessions (all correct) earn a 10 XP bonus on top of the base 20 XP.
+        </Body>
+      </section>
+
+      <section>
+        <SectionTitle>Quick Quiz</SectionTitle>
+        <Body>
+          A fast 10-question quiz that tests you in both directions — Korean → English and English → Korean.
+          Great for a rapid review. Earn XP and see how well you know your saved words.
         </Body>
       </section>
     </>
@@ -317,7 +325,16 @@ function ToolsTab() {
         <SectionTitle>Lesson Topics</SectionTitle>
         <Body>
           On the welcome screen, choose from 7 guided topics: Greetings, Survival Phrases, Numbers, Ordering Food, Feelings, Polite vs Casual, and Free Conversation.
-          Each starts a focused lesson with Moon-jo. A dot marks topics you&rsquo;ve already visited.
+          Each starts a focused lesson with Moon-jo. Topics you&rsquo;ve already visited are marked &ldquo;studied.&rdquo;
+          Difficulty badges (Beginner, Intermediate, Advanced) show the level of each topic.
+        </Body>
+      </section>
+
+      <section>
+        <SectionTitle>Today&rsquo;s Focus</SectionTitle>
+        <Body>
+          Each day, Moon-jo suggests a study focus on the welcome screen — a topic to start or review, and words due for revision.
+          Follow his suggestions to stay on track with spaced repetition.
         </Body>
       </section>
 
@@ -359,7 +376,7 @@ function ToolsTab() {
         <SectionTitle>Learning Tips</SectionTitle>
         <ul className="text-xs text-goshiwon-text-secondary space-y-1">
           <li>• Try writing in Korean — even basic phrases earn XP</li>
-          <li>• Use flashcards regularly — repetition builds memory</li>
+          <li>• Use Study All regularly — spaced repetition builds memory</li>
           <li>• Avoid over-translating — challenge yourself</li>
           <li>• Ask Moon-jo to explain things again if confused</li>
           <li>• Hover over Korean rank names to see English meanings</li>

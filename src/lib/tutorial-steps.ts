@@ -103,11 +103,11 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "vocab-tools",
     targetSelector: '[data-tutorial="vocab-button"]',
-    title: "Vocabulary & Flashcards",
-    titleKr: "단어장과 플래시카드",
+    title: "Vocabulary & Study",
+    titleKr: "단어장과 학습",
     moonjoSays: "단어를 모으세요. 나중에 복습할 수 있어요.",
     description:
-      "Open your saved words here. Once you have 2+ words, a Study button appears to start flashcard review with spaced repetition.",
+      "Open your saved words here. Once you have 4+ words, two study modes appear: Study All — a quiz on every word with spaced repetition, and Quick Quiz — a fast 10-question test in both directions.",
     type: "observe",
     tooltipPosition: "bottom",
     spotlightPadding: 12,
@@ -131,7 +131,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     titleKr: "여기가 집이에요",
     moonjoSays: "준비됐나요? 복도 불이 깜빡이고 있어요... 시작하죠.",
     description:
-      "Earn XP by writing Korean (5-15 XP), saving words (3 XP), completing flashcards (20 XP), and avoiding translations (8 XP bonus). Rise through 5 ranks from New Resident to Floor Senior. As you chat, the room grows darker and Moon-jo grows... fonder. Good luck.",
+      "Earn XP by writing Korean (5-15 XP), saving words (3 XP), completing study sessions (20 XP), and avoiding translations (8 XP bonus). Rise through 5 ranks from New Resident to Floor Senior. As you chat, the room grows darker and Moon-jo grows... fonder. Good luck.",
     type: "observe",
     tooltipPosition: "center",
   },

@@ -182,14 +182,14 @@ describe("VocabularyPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows Study button when onStartStudy is provided and studyableCount >= 2", () => {
+  it("shows Study button when onStartStudy is provided and studyableCount >= 4", () => {
     render(
       <VocabularyPanel
         words={sampleWords}
         onRemoveWord={vi.fn()}
         onClose={vi.fn()}
         onStartStudy={vi.fn()}
-        studyableCount={2}
+        studyableCount={4}
       />
     );
     expect(
@@ -197,14 +197,14 @@ describe("VocabularyPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides Study button when studyableCount < 2", () => {
+  it("hides Study button when studyableCount < 4", () => {
     render(
       <VocabularyPanel
         words={sampleWords}
         onRemoveWord={vi.fn()}
         onClose={vi.fn()}
         onStartStudy={vi.fn()}
-        studyableCount={1}
+        studyableCount={3}
       />
     );
     expect(

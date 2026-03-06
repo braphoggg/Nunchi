@@ -33,15 +33,15 @@ const WELCOME_GREETINGS: Record<string, { korean: string; english: string }> = {
 /** Difficulty badge colors and labels */
 const DIFFICULTY_CONFIG: Record<LessonDifficulty, { label: string; className: string }> = {
   beginner: {
-    label: "초급",
+    label: "Beginner",
     className: "text-emerald-400/70 bg-emerald-400/10 border-emerald-400/20",
   },
   intermediate: {
-    label: "중급",
+    label: "Intermediate",
     className: "text-amber-400/70 bg-amber-400/10 border-amber-400/20",
   },
   advanced: {
-    label: "고급",
+    label: "Advanced",
     className: "text-red-400/70 bg-red-400/10 border-red-400/20",
   },
 };
@@ -80,21 +80,21 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
         </p>
       </div>
 
-      {/* Today's Focus */}
+      {/* Today's Focus — review words / suggested topic */}
       {(dailyFocus.suggestedTopic || dailyFocus.reviewReminder) && (
         <div className="w-full max-w-lg mb-4">
           <div className="bg-goshiwon-surface/80 border border-goshiwon-yellow/20 rounded-lg p-3 space-y-2">
             <p className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
-              오늘의 학습 &mdash; Today&apos;s Focus
+              Today&apos;s Focus
             </p>
             <p className="text-xs text-[#d4a843] italic">
-              &ldquo;{dailyFocus.dailyQuote.korean}&rdquo;
+              &ldquo;{dailyFocus.dailyQuote.english}&rdquo;
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               {dailyFocus.reviewReminder && onStartStudy && (
                 <button
                   onClick={onStartStudy}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors border border-goshiwon-accent/20"
                 >
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -112,9 +112,9 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                       dailyFocus.suggestedTopic!.id,
                     )
                   }
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 transition-colors border border-goshiwon-yellow/20"
                 >
-                  {dailyFocus.reason === "unvisited" ? "Start" : "Review"}: {dailyFocus.suggestedTopic.titleKr}
+                  {dailyFocus.reason === "unvisited" ? "Start" : "Review"}: {dailyFocus.suggestedTopic.title}
                 </button>
               )}
             </div>

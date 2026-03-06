@@ -64,8 +64,12 @@ describe("useFlashcards", () => {
     expect(result.current.currentIndex).toBe(0);
   });
 
-  it("startSession does nothing if fewer than 2 studyable words", () => {
-    const words = [makeWord({ id: "1" })];
+  it("startSession does nothing if fewer than 4 studyable words", () => {
+    const words = [
+      makeWord({ id: "1" }),
+      makeWord({ id: "2", korean: "방", english: "room" }),
+      makeWord({ id: "3", korean: "복도", english: "hallway" }),
+    ];
     const { result } = renderHook(() => useFlashcards(words));
     act(() => result.current.startSession());
     expect(result.current.isActive).toBe(false);
@@ -124,15 +128,15 @@ describe("useFlashcards", () => {
   });
 
   it("next does nothing on last card", () => {
-    const words = [
-      makeWord({ id: "1" }),
-      makeWord({ id: "2", korean: "방", english: "room" }),
-    ];
-    const { result } = renderHook(() => useFlashcards(words));
+    const { result } = renderHook(() => useFlashcards(sampleWords));
     act(() => result.current.startSession());
-    act(() => result.current.next()); // go to index 1 (last)
-    act(() => result.current.next()); // should stay at 1
-    expect(result.current.currentIndex).toBe(1);
+    // Navigate to last card
+    for (let i = 0; i < sampleWords.length - 1; i++) {
+      act(() => result.current.next());
+    }
+    const lastIndex = result.current.currentIndex;
+    act(() => result.current.next()); // should stay at last
+    expect(result.current.currentIndex).toBe(lastIndex);
   });
 
   it("prev goes back and unflips", () => {
@@ -163,14 +167,13 @@ describe("useFlashcards", () => {
   });
 
   it("grade on last card sets isComplete", () => {
-    const words = [
-      makeWord({ id: "1" }),
-      makeWord({ id: "2", korean: "방", english: "room" }),
-    ];
-    const { result } = renderHook(() => useFlashcards(words));
+    const { result } = renderHook(() => useFlashcards(sampleWords));
     act(() => result.current.startSession());
-    act(() => result.current.grade("easy")); // card 1 → advance to card 2
-    act(() => result.current.grade("again")); // card 2 → complete
+    // Grade all 4 cards
+    act(() => result.current.grade("easy"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("again")); // last card → complete
     expect(result.current.isComplete).toBe(true);
   });
 
@@ -209,12 +212,11 @@ describe("useFlashcards", () => {
   });
 
   it("grade does nothing when session is complete", () => {
-    const words = [
-      makeWord({ id: "1" }),
-      makeWord({ id: "2", korean: "방", english: "room" }),
-    ];
-    const { result } = renderHook(() => useFlashcards(words));
+    const { result } = renderHook(() => useFlashcards(sampleWords));
     act(() => result.current.startSession());
+    // Grade all 4 cards to complete
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
     act(() => result.current.grade("good"));
     act(() => result.current.grade("good")); // completes
     expect(result.current.isComplete).toBe(true);

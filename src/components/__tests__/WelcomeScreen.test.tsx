@@ -52,8 +52,8 @@ describe("WelcomeScreen", () => {
 
   it("shows difficulty badges on all topics", () => {
     render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
-    // All beginner topics show 초급 badge
-    const beginnerBadges = screen.getAllByText("초급");
+    // All beginner topics show Beginner badge
+    const beginnerBadges = screen.getAllByText("Beginner");
     expect(beginnerBadges.length).toBeGreaterThanOrEqual(1);
   });
 

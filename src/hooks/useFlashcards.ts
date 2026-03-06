@@ -50,7 +50,7 @@ export function useFlashcards(words: VocabularyItem[]) {
 
   const startSession = useCallback(() => {
     const studyable = words.filter((w) => w.english.trim() !== "");
-    if (studyable.length < 2) return;
+    if (studyable.length < 4) return;
 
     // SRS ordering: due words first (shuffled), then not-due (shuffled)
     const now = new Date();

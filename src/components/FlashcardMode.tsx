@@ -1,83 +1,101 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { VocabularyItem } from "@/types";
-import { useFlashcards, type FlashcardSummary, type FlashcardGrade } from "@/hooks/useFlashcards";
-import { formatNextReview } from "@/lib/srs";
+import type { FlashcardSummary } from "@/hooks/useFlashcards";
+import { generateQuiz, MIN_QUIZ_WORDS, type QuizQuestion } from "@/lib/quiz-generator";
 
 interface FlashcardModeProps {
   words: VocabularyItem[];
   onClose: () => void;
   onSessionComplete?: (summary: FlashcardSummary) => void;
-  onWordGraded?: (wordId: string, grade: FlashcardGrade) => void;
-  onFlipSound?: () => void;
-  onGradeSound?: (grade: "again" | "good" | "easy") => void;
+  onWordGraded?: (wordId: string, grade: "again" | "good" | "easy") => void;
+  onCorrectSound?: () => void;
+  onWrongSound?: () => void;
   onCompleteSound?: () => void;
-  showRomanization?: boolean;
 }
 
-/** Moon-jo feedback quotes based on performance */
-function getMoonjoFeedback(goodAndEasyPct: number): { korean: string; english: string } {
-  if (goodAndEasyPct >= 80) {
+/** Moon-jo study feedback based on score percentage */
+function getMoonjoFeedback(pct: number): { korean: string; english: string } {
+  if (pct === 100) {
     return {
-      korean: "아주 잘했어요... 역시 제가 가르친 사람이에요. 자랑스럽군요.",
-      english: "You did very well... as expected of my student. I'm proud.",
+      korean: "완벽하군요... 이 방은 당신에게 꼭 맞아요.",
+      english: "Perfect... This room suits you perfectly. Forever.",
     };
   }
-  if (goodAndEasyPct >= 50) {
+  if (pct >= 70) {
     return {
-      korean: "괜찮아요. 아직 시간이 있어요. 우리 함께 더 연습해요.",
-      english: "It's okay. There's still time. Let's practice together more.",
+      korean: "잘했어요. 하지만 이 복도에서 실수는 오래 기억돼요.",
+      english: "Well done. But mistakes linger long in this hallway.",
+    };
+  }
+  if (pct >= 40) {
+    return {
+      korean: "아직 부족해요... 걱정 마세요. 여기서 나갈 수 없으니까.",
+      english: "Still not enough... But don't worry. You can't leave here anyway.",
     };
   }
   return {
-    korean: "천천히 하세요... 서두르지 마세요. 저는 기다릴 수 있어요. 항상 여기 있을 거니까요.",
-    english: "Take it slow... don't rush. I can wait. I'll always be here.",
+    korean: "실망이에요... 다시 하세요. 시간은 많아요. 아주 많아요.",
+    english: "Disappointing... Try again. There's plenty of time. Plenty.",
   };
 }
 
-export default function FlashcardMode({ words, onClose, onSessionComplete, onWordGraded, onFlipSound, onGradeSound, onCompleteSound, showRomanization = true }: FlashcardModeProps) {
-  const {
-    startSession,
-    endSession,
-    isActive,
-    currentCard,
-    currentIndex,
-    totalCards,
-    flipped,
-    flip,
-    next,
-    prev,
-    grade,
-    isComplete,
-    summary,
-    studyableCount,
-  } = useFlashcards(words);
-
-  // Listen mode — hides Korean text, shows only audio play button
-  const [listenMode, setListenMode] = useState(false);
-
-  // Track card changes for slide animation
-  const [animKey, setAnimKey] = useState(0);
-  useEffect(() => {
-    setAnimKey((k) => k + 1);
-  }, [currentIndex]);
-
-  // Fire onSessionComplete once when session finishes
-  const sessionReported = useRef(false);
-  useEffect(() => {
-    if (isComplete && !sessionReported.current) {
-      sessionReported.current = true;
-      onCompleteSound?.();
-      onSessionComplete?.(summary);
-    }
-    if (!isComplete) {
-      sessionReported.current = false;
-    }
-  }, [isComplete, summary, onSessionComplete, onCompleteSound]);
+export default function FlashcardMode({
+  words,
+  onClose,
+  onSessionComplete,
+  onWordGraded,
+  onCorrectSound,
+  onWrongSound,
+  onCompleteSound,
+}: FlashcardModeProps) {
+  const studyable = useMemo(() => words.filter((w) => w.english?.trim()), [words]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [answers, setAnswers] = useState<Map<string, boolean>>(new Map());
+  const [isComplete, setIsComplete] = useState(false);
+  const completionReported = useRef(false);
 
   // TTS state
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Generate quiz on mount — all Korean→English, using all words
+  useEffect(() => {
+    if (studyable.length >= MIN_QUIZ_WORDS) {
+      setQuestions(generateQuiz(studyable, studyable.length, "korean_to_english"));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentQuestion = questions[currentIndex] ?? null;
+
+  // Compute results
+  const result = useMemo(() => {
+    const correct = [...answers.values()].filter(Boolean).length;
+    return {
+      total: answers.size,
+      correct,
+      wrong: answers.size - correct,
+    };
+  }, [answers]);
+
+  // Fire completion callback once
+  useEffect(() => {
+    if (isComplete && !completionReported.current) {
+      completionReported.current = true;
+      onCompleteSound?.();
+      // Map to FlashcardSummary: correct→good, wrong→again, easy=0
+      const summary: FlashcardSummary = {
+        again: result.wrong,
+        good: result.correct,
+        easy: 0,
+        total: questions.length,
+      };
+      onSessionComplete?.(summary);
+    }
+  }, [isComplete, result, questions.length, onSessionComplete, onCompleteSound]);
 
   // Cancel speech on unmount
   useEffect(() => {
@@ -88,7 +106,7 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
     };
   }, []);
 
-  // Cancel speech when card changes
+  // Cancel speech when question changes
   useEffect(() => {
     if (typeof speechSynthesis !== "undefined") {
       speechSynthesis.cancel();
@@ -97,62 +115,90 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
   }, [currentIndex]);
 
   const handleSpeak = useCallback(() => {
-    if (!currentCard) return;
+    if (!currentQuestion) return;
     if (isSpeaking) {
       speechSynthesis.cancel();
       setIsSpeaking(false);
       return;
     }
     speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(currentCard.korean);
+    const utterance = new SpeechSynthesisUtterance(currentQuestion.prompt);
     utterance.lang = "ko-KR";
     utterance.rate = 0.9;
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
     speechSynthesis.speak(utterance);
     setIsSpeaking(true);
-  }, [isSpeaking, currentCard]);
+  }, [isSpeaking, currentQuestion]);
 
-  // Keyboard shortcuts: Space = flip, 1 = Again, 2 = Good, 3 = Easy, ← = prev, → = next
+  const handleSelect = useCallback(
+    (option: string) => {
+      if (answered || !currentQuestion) return;
+      setSelectedOption(option);
+      setAnswered(true);
+      const isCorrect = option === currentQuestion.correctAnswer;
+      setAnswers((prev) => {
+        const next = new Map(prev);
+        next.set(currentQuestion.id, isCorrect);
+        return next;
+      });
+      // SRS update
+      onWordGraded?.(currentQuestion.wordId, isCorrect ? "good" : "again");
+      // Sound feedback
+      if (isCorrect) {
+        onCorrectSound?.();
+      } else {
+        onWrongSound?.();
+      }
+    },
+    [answered, currentQuestion, onCorrectSound, onWrongSound, onWordGraded],
+  );
+
+  const handleNext = useCallback(() => {
+    if (currentIndex >= questions.length - 1) {
+      setIsComplete(true);
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setSelectedOption(null);
+      setAnswered(false);
+    }
+  }, [currentIndex, questions.length]);
+
+  const handleRestart = useCallback(() => {
+    setQuestions(generateQuiz(studyable, studyable.length, "korean_to_english"));
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setAnswered(false);
+    setAnswers(new Map());
+    setIsComplete(false);
+    completionReported.current = false;
+  }, [studyable]);
+
+  // Keyboard shortcuts: 1-4 select options, Enter/Space advance
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (!isActive || isComplete) return;
-      if (e.key === " " && !flipped) {
-        e.preventDefault();
-        onFlipSound?.();
-        flip();
-      } else if (flipped && e.key === "1") {
-        onGradeSound?.("again");
-        if (currentCard) onWordGraded?.(currentCard.id, "again");
-        grade("again");
-      } else if (flipped && e.key === "2") {
-        onGradeSound?.("good");
-        if (currentCard) onWordGraded?.(currentCard.id, "good");
-        grade("good");
-      } else if (flipped && e.key === "3") {
-        onGradeSound?.("easy");
-        if (currentCard) onWordGraded?.(currentCard.id, "easy");
-        grade("easy");
-      } else if (e.key === "ArrowLeft") {
-        prev();
-      } else if (e.key === "ArrowRight") {
-        next();
+      if (isComplete) return;
+      if (!currentQuestion) return;
+
+      if (!answered) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= currentQuestion.options.length) {
+          e.preventDefault();
+          handleSelect(currentQuestion.options[num - 1]);
+        }
+      } else {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleNext();
+        }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, isComplete, flipped, flip, grade, prev, next, currentCard, onFlipSound, onGradeSound, onWordGraded]);
-
-  // Auto-start session on mount
-  useEffect(() => {
-    if (!isActive && studyableCount >= 2) {
-      startSession();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isComplete, answered, currentQuestion, handleSelect, handleNext]);
 
   // Not enough words
-  if (studyableCount < 2) {
+  if (studyable.length < MIN_QUIZ_WORDS) {
     return (
       <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
         <div className="flex items-center px-4 py-3 border-b border-goshiwon-border">
@@ -172,7 +218,7 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
             Not enough words to study.
           </p>
           <p className="text-goshiwon-text-muted text-xs mt-1">
-            Save at least 2 vocabulary words with translations to start a study session.
+            Save at least {MIN_QUIZ_WORDS} vocabulary words with translations to start studying.
           </p>
         </div>
       </div>
@@ -181,43 +227,60 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
 
   // Summary screen
   if (isComplete) {
-    const goodAndEasyPct = summary.total > 0
-      ? Math.round(((summary.good + summary.easy) / summary.total) * 100)
-      : 0;
-    const feedback = getMoonjoFeedback(goodAndEasyPct);
+    const pct = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0;
+    const feedback = getMoonjoFeedback(pct);
 
     return (
       <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
         <div className="flex items-center px-4 py-3 border-b border-goshiwon-border">
-          <h2 className="text-sm font-medium text-goshiwon-text">Session Complete</h2>
+          <h2 className="text-sm font-medium text-goshiwon-text">Study Complete</h2>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-6 animate-summary-in">
+          {/* Score circle */}
+          <div className="relative w-24 h-24 mb-6">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+              <circle
+                cx="18" cy="18" r="15.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-goshiwon-border"
+              />
+              <circle
+                cx="18" cy="18" r="15.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeDasharray={`${pct} ${100 - pct}`}
+                strokeLinecap="round"
+                className={pct === 100 ? "text-goshiwon-yellow" : pct >= 70 ? "text-emerald-400" : pct >= 40 ? "text-amber-400" : "text-goshiwon-accent-light"}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold text-goshiwon-text">{pct}%</span>
+              <span className="text-[9px] text-goshiwon-text-muted">{result.correct}/{result.total}</span>
+            </div>
+          </div>
+
           {/* Score breakdown */}
-          <div className="w-full max-w-xs space-y-3 mb-8">
+          <div className="w-full max-w-xs space-y-2 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <span className="text-sm text-goshiwon-text">Correct</span>
+              </div>
+              <span className="text-sm font-medium text-goshiwon-text" data-testid="correct-count">
+                {result.correct}
+              </span>
+            </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-goshiwon-accent" />
-                <span className="text-sm text-goshiwon-text">Again</span>
+                <span className="text-sm text-goshiwon-text">Wrong</span>
               </div>
-              <span className="text-sm font-medium text-goshiwon-text" data-testid="again-count">{summary.again}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-goshiwon-text-secondary" />
-                <span className="text-sm text-goshiwon-text">Good</span>
-              </div>
-              <span className="text-sm font-medium text-goshiwon-text" data-testid="good-count">{summary.good}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-goshiwon-yellow" />
-                <span className="text-sm text-goshiwon-text">Easy</span>
-              </div>
-              <span className="text-sm font-medium text-goshiwon-text" data-testid="easy-count">{summary.easy}</span>
-            </div>
-            <div className="border-t border-goshiwon-border pt-2 flex items-center justify-between">
-              <span className="text-xs text-goshiwon-text-muted">Total</span>
-              <span className="text-xs text-goshiwon-text-muted">{summary.total}</span>
+              <span className="text-sm font-medium text-goshiwon-text" data-testid="wrong-count">
+                {result.wrong}
+              </span>
             </div>
           </div>
 
@@ -234,14 +297,14 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => startSession()}
+              onClick={handleRestart}
               aria-label="Study again"
               className="px-4 py-2 text-xs font-medium rounded-lg bg-goshiwon-accent/20 text-goshiwon-accent-light border border-goshiwon-accent/40 hover:bg-goshiwon-accent/30 transition-colors"
             >
               Study Again
             </button>
             <button
-              onClick={() => { endSession(); onClose(); }}
+              onClick={onClose}
               aria-label="Done studying"
               className="px-4 py-2 text-xs font-medium rounded-lg bg-goshiwon-surface text-goshiwon-text border border-goshiwon-border hover:bg-goshiwon-surface-hover transition-colors"
             >
@@ -253,13 +316,13 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
     );
   }
 
-  // Study screen
+  // Study question screen
   return (
     <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-goshiwon-border">
         <button
-          onClick={() => { endSession(); onClose(); }}
+          onClick={onClose}
           aria-label="Back to vocabulary"
           className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
         >
@@ -268,199 +331,130 @@ export default function FlashcardMode({ words, onClose, onSessionComplete, onWor
           </svg>
         </button>
         <span className="text-xs text-goshiwon-text-muted">
-          {currentIndex + 1} / {totalCards}
+          {currentIndex + 1} / {questions.length}
         </span>
-        {/* Listen mode toggle */}
-        <button
-          onClick={() => setListenMode((v) => !v)}
-          title={listenMode ? "Switch to visual mode" : "Switch to listen mode"}
-          aria-label={listenMode ? "Switch to visual mode" : "Switch to listen mode"}
-          aria-pressed={listenMode}
-          className={`p-1.5 rounded transition-colors ${
-            listenMode
-              ? "text-goshiwon-yellow bg-goshiwon-yellow/10"
-              : "text-goshiwon-text-muted hover:text-goshiwon-text"
-          }`}
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <path d="M15.54 8.46a5 5 0 010 7.07" />
-          </svg>
-        </button>
+        <div className="w-7" />
       </div>
 
       {/* Progress bar */}
       <div className="h-0.5 bg-goshiwon-border">
         <div
           className="h-full bg-goshiwon-yellow transition-all duration-300 ease-out"
-          style={{ width: `${totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0}%` }}
+          style={{ width: `${questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0}%` }}
           role="progressbar"
           aria-valuenow={currentIndex + 1}
           aria-valuemin={1}
-          aria-valuemax={totalCards}
+          aria-valuemax={questions.length}
         />
       </div>
 
-      {/* Card area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        {currentCard && (
-          <div
-            key={animKey}
-            className="flashcard-container w-full max-w-sm animate-card-slide-in"
-          >
-            <div
-              onClick={() => { onFlipSound?.(); flip(); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onFlipSound?.(); flip(); } }}
-              role="button"
-              tabIndex={0}
-              aria-label={flipped ? "Flip card to front" : "Flip card to back"}
-              className="w-full cursor-pointer"
+      {/* Question area */}
+      {currentQuestion && (
+        <div className="flex-1 flex flex-col px-6 pt-8 pb-4">
+          {/* Question type badge */}
+          <div className="text-center mb-2">
+            <span className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
+              Korean → English
+            </span>
+          </div>
+
+          {/* Korean prompt */}
+          <div className="text-center mb-2">
+            <span className="text-[#d4a843] text-2xl font-bold leading-relaxed">
+              {currentQuestion.prompt}
+            </span>
+          </div>
+
+          {/* TTS speaker button */}
+          <div className="text-center mb-6">
+            <button
+              onClick={handleSpeak}
+              aria-label={isSpeaking ? "Stop listening" : "Listen to pronunciation"}
+              className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded-full"
             >
-              <div className={`flashcard-inner ${flipped ? "flashcard-flipped" : ""}`}>
-                {/* Front face */}
-                <div className="flashcard-front bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 flex flex-col items-center justify-center">
-                  {listenMode ? (
-                    <>
-                      {/* Listen mode: audio only, no text */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleSpeak(); }}
-                        aria-label={isSpeaking ? "Stop listening" : "Listen to pronunciation"}
-                        className="w-16 h-16 rounded-full bg-goshiwon-accent/20 border border-goshiwon-accent/40 flex items-center justify-center text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors"
-                      >
-                        {isSpeaking ? (
-                          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="6" y="6" width="12" height="12" rx="1" />
-                          </svg>
-                        ) : (
-                          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                            <path d="M15.54 8.46a5 5 0 010 7.07" />
-                            <path d="M19.07 4.93a10 10 0 010 14.14" />
-                          </svg>
-                        )}
-                      </button>
-                      <span className="text-[10px] text-goshiwon-text-muted mt-3">
-                        listen, then flip to check
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      {/* Normal mode: Korean text */}
-                      <span className="text-[#d4a843] text-2xl font-bold leading-relaxed">
-                        {currentCard.korean}
-                      </span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleSpeak(); }}
-                        aria-label={isSpeaking ? "Stop listening" : "Listen to pronunciation"}
-                        className="mt-3 p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded-full"
-                      >
-                        {isSpeaking ? (
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="6" y="6" width="12" height="12" rx="1" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                            <path d="M15.54 8.46a5 5 0 010 7.07" />
-                          </svg>
-                        )}
-                      </button>
-                    </>
-                  )}
-                  <span className="text-[10px] text-goshiwon-text-muted mt-2">
-                    tap or press space to flip
-                  </span>
-                </div>
-                {/* Back face */}
-                <div className="flashcard-back bg-goshiwon-surface border border-goshiwon-border rounded-xl p-8 flex flex-col items-center justify-center">
-                  {/* In listen mode, reveal Korean text on the back */}
-                  {listenMode && (
-                    <span className="text-[#d4a843] text-xl font-bold mb-2">
-                      {currentCard.korean}
+              {isSpeaking ? (
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="1" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 010 7.07" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Options */}
+          <div className="space-y-2 max-w-sm mx-auto w-full">
+            {currentQuestion.options.map((option, idx) => {
+              const isSelected = selectedOption === option;
+              const isCorrect = option === currentQuestion.correctAnswer;
+              let optionClass = "bg-goshiwon-surface border-goshiwon-border hover:border-goshiwon-yellow/50 hover:bg-goshiwon-surface-hover";
+
+              if (answered) {
+                if (isCorrect) {
+                  optionClass = "bg-emerald-400/10 border-emerald-400/40 text-emerald-300";
+                } else if (isSelected && !isCorrect) {
+                  optionClass = "bg-goshiwon-accent/15 border-goshiwon-accent/40 text-goshiwon-accent-light";
+                } else {
+                  optionClass = "bg-goshiwon-surface/50 border-goshiwon-border/50 opacity-50";
+                }
+              }
+
+              return (
+                <button
+                  key={`${currentQuestion.id}-${idx}`}
+                  onClick={() => handleSelect(option)}
+                  disabled={answered}
+                  aria-label={`Option ${idx + 1}: ${option}`}
+                  className={`w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 ${optionClass} disabled:cursor-default`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full border border-current/30 text-xs font-medium shrink-0 opacity-60">
+                      {idx + 1}
                     </span>
-                  )}
-                  {showRomanization && (
-                    <span className="text-goshiwon-text-muted text-sm mb-2">
-                      {currentCard.romanization}
+                    <span className={`text-sm ${answered && isCorrect ? "font-medium" : ""} ${!answered ? "text-goshiwon-text" : ""}`}>
+                      {option}
                     </span>
-                  )}
-                  <span className="text-goshiwon-text text-lg font-medium">
-                    {currentCard.english}
-                  </span>
-                  {/* SRS review status */}
-                  {currentCard.repetitions != null && currentCard.repetitions > 0 && currentCard.nextReview && (
-                    <span className="text-[10px] text-goshiwon-text-muted mt-3">
-                      next review: {formatNextReview(currentCard.nextReview)}
-                    </span>
-                  )}
-                  {currentCard.repetitions != null && currentCard.repetitions === 0 && !currentCard.lastGrade && (
-                    <span className="text-[10px] text-goshiwon-text-muted/50 mt-3 italic">
-                      new word
-                    </span>
-                  )}
-                </div>
-              </div>
+                    {answered && isCorrect && (
+                      <svg className="w-4 h-4 ml-auto text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                    {answered && isSelected && !isCorrect && (
+                      <svg className="w-4 h-4 ml-auto text-goshiwon-accent-light shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Next / Continue button */}
+          {answered && (
+            <div className="mt-6 text-center animate-message-in">
+              <button
+                onClick={handleNext}
+                className="px-6 py-2 text-xs font-medium rounded-lg bg-goshiwon-yellow/15 text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors"
+              >
+                {currentIndex >= questions.length - 1 ? "See Results" : "Next"}
+                <span className="ml-1 opacity-40 text-[10px]">Enter</span>
+              </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* Bottom controls */}
-      <div className="px-4 pb-4 pt-2 space-y-3">
-        {/* Grade buttons — only visible when flipped */}
-        {flipped && (
-          <div className="flex items-center justify-center gap-2 animate-message-in">
-            <button
-              onClick={() => { onGradeSound?.("again"); if (currentCard) onWordGraded?.(currentCard.id, "again"); grade("again"); }}
-              aria-label="Grade: Again"
-              className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-accent/20 text-goshiwon-accent-light border border-goshiwon-accent/40 hover:bg-goshiwon-accent/30 transition-colors flex flex-col items-center gap-0.5"
-            >
-              <span>Again <span className="opacity-40 ml-0.5">1</span></span>
-              <span className="text-[10px] opacity-60">다시</span>
-            </button>
-            <button
-              onClick={() => { onGradeSound?.("good"); if (currentCard) onWordGraded?.(currentCard.id, "good"); grade("good"); }}
-              aria-label="Grade: Good"
-              className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-surface text-goshiwon-text border border-goshiwon-border hover:bg-goshiwon-surface-hover transition-colors flex flex-col items-center gap-0.5"
-            >
-              <span>Good <span className="opacity-40 ml-0.5">2</span></span>
-              <span className="text-[10px] opacity-60">좋아요</span>
-            </button>
-            <button
-              onClick={() => { onGradeSound?.("easy"); if (currentCard) onWordGraded?.(currentCard.id, "easy"); grade("easy"); }}
-              aria-label="Grade: Easy"
-              className="flex-1 max-w-[110px] py-2 text-xs font-medium rounded-lg bg-goshiwon-yellow/15 text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors flex flex-col items-center gap-0.5"
-            >
-              <span>Easy <span className="opacity-40 ml-0.5">3</span></span>
-              <span className="text-[10px] opacity-60">쉬워요</span>
-            </button>
-          </div>
-        )}
-
-        {/* Navigation arrows */}
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={prev}
-            disabled={currentIndex === 0}
-            aria-label="Previous card"
-            className="p-2 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors disabled:opacity-30 disabled:cursor-default"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <button
-            onClick={next}
-            disabled={currentIndex >= totalCards - 1}
-            aria-label="Next card"
-            className="p-2 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors disabled:opacity-30 disabled:cursor-default"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
+          {/* Hint at bottom */}
+          {!answered && (
+            <p className="mt-auto text-center text-[10px] text-goshiwon-text-muted">
+              press 1-{currentQuestion.options.length} to select
+            </p>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
