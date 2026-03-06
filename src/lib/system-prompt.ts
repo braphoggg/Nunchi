@@ -191,6 +191,8 @@ export interface PromptContext {
   activeTopic?: string;
   /** Active lesson topic Korean name */
   activeTopicKr?: string;
+  /** Active lesson topic difficulty */
+  activeTopicDifficulty?: "beginner" | "intermediate" | "advanced";
   /** Korean words the student has already saved (for deduplication) */
   savedWords?: string[];
 }
@@ -242,8 +244,16 @@ export function buildSystemPrompt(ctx: PromptContext): string {
 
   // ── Dynamic: Active lesson topic ──
   if (ctx.activeTopic && ctx.activeTopicKr) {
+    let difficultyGuidance = "";
+    if (ctx.activeTopicDifficulty === "beginner") {
+      difficultyGuidance = "\nDifficulty: Beginner. Use simple, common vocabulary (1-3 syllable words). Short sentences only (3-5 words). Introduce one new concept at a time. Provide romanization for every Korean word. Use lots of examples from daily goshiwon life. Be patient and repeat key words often.";
+    } else if (ctx.activeTopicDifficulty === "intermediate") {
+      difficultyGuidance = "\nDifficulty: Intermediate. Use a mix of basic and moderately complex vocabulary. Introduce compound sentences and basic grammar patterns (particles, conjugation). Provide romanization only for new or complex words. Expect the student to recognize basic vocabulary without help. Push them to form their own sentences.";
+    } else if (ctx.activeTopicDifficulty === "advanced") {
+      difficultyGuidance = "\nDifficulty: Advanced. Use natural Korean with complex grammar (존댓말/반말 contrasts, indirect speech, nuanced particles). Minimal romanization — only for rare or literary words. Introduce idiomatic expressions, cultural context, and subtle word-choice differences. Challenge the student to think about register and politeness levels. Speak more naturally and expect more from them.";
+    }
     sections.push(`<active_lesson>
-The student selected the "${ctx.activeTopicKr}" (${ctx.activeTopic}) lesson. Structure your teaching around this topic. Stay focused on it unless the student explicitly changes the subject. Introduce vocabulary and grammar relevant to this topic, using the Eden Goshiwon setting to contextualize.
+The student selected the "${ctx.activeTopicKr}" (${ctx.activeTopic}) lesson. Structure your teaching around this topic. Stay focused on it unless the student explicitly changes the subject. Introduce vocabulary and grammar relevant to this topic, using the Eden Goshiwon setting to contextualize.${difficultyGuidance}
 </active_lesson>`);
   }
 

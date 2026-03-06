@@ -82,9 +82,9 @@ const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string }
 
 export default function ChatContainer() {
   // Active lesson topic (set when user picks a topic from WelcomeScreen)
-  const [activeTopic, setActiveTopic] = useState<{ id: string; titleKr: string } | null>(null);
+  const [activeTopic, setActiveTopic] = useState<{ id: string; titleKr: string; difficulty: string } | null>(null);
 
-  const { messages, sendMessage, reload, status, error, setMessages } = useChat();
+  const { messages, sendMessage, regenerate, status, error, setMessages } = useChat();
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
   inputRef.current = input;
@@ -208,6 +208,7 @@ export default function ChatContainer() {
     streakDays: currentStreak,
     activeTopic: activeTopic?.id,
     activeTopicKr: activeTopic?.titleKr,
+    activeTopicDifficulty: activeTopic?.difficulty,
     savedWords: savedWordsKorean,
   });
   chatContextRef.current = {
@@ -218,6 +219,7 @@ export default function ChatContainer() {
     streakDays: currentStreak,
     activeTopic: activeTopic?.id,
     activeTopicKr: activeTopic?.titleKr,
+    activeTopicDifficulty: activeTopic?.difficulty,
     savedWords: savedWordsKorean,
   };
 
@@ -516,7 +518,14 @@ export default function ChatContainer() {
     // Track active topic for system prompt context
     const topic = LESSON_TOPICS.find((t) => t.id === topicId);
     if (topic) {
-      setActiveTopic({ id: topic.id, titleKr: topic.titleKr });
+      setActiveTopic({ id: topic.id, titleKr: topic.titleKr, difficulty: topic.difficulty });
+      // Update context ref immediately so sendMessage picks up the topic data
+      chatContextRef.current = {
+        ...chatContextRef.current,
+        activeTopic: topic.id,
+        activeTopicKr: topic.titleKr,
+        activeTopicDifficulty: topic.difficulty,
+      };
     }
     recordMessage(message);
     sendMessage({ text: message }, { body: { context: chatContextRef.current } });
@@ -768,7 +777,7 @@ export default function ChatContainer() {
               {error.message || "An unexpected error occurred."}
             </p>
             <button
-              onClick={() => { setErrorDismissed(true); reload(); }}
+              onClick={() => { setErrorDismissed(true); regenerate(); }}
               className="mt-2 px-3 py-1 text-xs font-medium rounded-full bg-goshiwon-accent/30 text-goshiwon-accent-light hover:bg-goshiwon-accent/40 transition-colors"
             >
               Retry

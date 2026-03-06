@@ -76,6 +76,7 @@ export async function POST(req: Request) {
       streakDays: typeof safeContext.streakDays === "number" ? safeContext.streakDays : undefined,
       activeTopic: typeof safeContext.activeTopic === "string" ? safeContext.activeTopic : undefined,
       activeTopicKr: typeof safeContext.activeTopicKr === "string" ? safeContext.activeTopicKr : undefined,
+      activeTopicDifficulty: typeof safeContext.activeTopicDifficulty === "string" && ["beginner", "intermediate", "advanced"].includes(safeContext.activeTopicDifficulty) ? safeContext.activeTopicDifficulty as "beginner" | "intermediate" | "advanced" : undefined,
       savedWords: Array.isArray(safeContext.savedWords)
         ? safeContext.savedWords.filter((w: unknown) => typeof w === "string").slice(0, 50)
         : undefined,
