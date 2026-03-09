@@ -97,7 +97,7 @@ export default function TopBar({
       </div>
 
       <div className="flex-1 min-w-0">
-        <h1 className="font-medium text-goshiwon-text text-sm leading-tight truncate">
+        <h1 className="font-medium text-goshiwon-text text-sm leading-tight truncate font-serif-display">
           서문조 (Seo Moon-jo)
         </h1>
       </div>

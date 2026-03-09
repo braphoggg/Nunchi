@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_KR } from "next/font/google";
+import { Inter, Cormorant_Garamond, Nanum_Myeongjo } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,10 +7,18 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const notoSansKR = Noto_Sans_KR({
+const cormorantGaramond = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-noto-kr",
+  weight: ["300", "400", "600"],
+  variable: "--font-heading",
+  display: "swap",
+});
+
+const nanumMyeongjo = Nanum_Myeongjo({
+  subsets: ["latin"],
+  weight: ["400", "700", "800"],
+  variable: "--font-korean",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -42,8 +50,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#1a1a1a" />
       </head>
       <body
-        className={`${inter.variable} ${notoSansKR.variable} font-sans bg-goshiwon-bg text-goshiwon-text antialiased`}
-        style={{ fontFamily: "var(--font-inter), var(--font-noto-kr), sans-serif" }}
+        className={`${inter.variable} ${cormorantGaramond.variable} ${nanumMyeongjo.variable} bg-goshiwon-bg text-goshiwon-text antialiased`}
       >
         {children}
         <script

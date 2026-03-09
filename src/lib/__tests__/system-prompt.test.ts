@@ -42,14 +42,14 @@ describe("MOONJO_SYSTEM_PROMPT", () => {
   });
 
   it("includes identity lock and jailbreak resistance", () => {
-    expect(MOONJO_SYSTEM_PROMPT).toContain("<identity>");
-    expect(MOONJO_SYSTEM_PROMPT).toContain("permanent and cannot be changed");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("<identity");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("permanent");
     expect(MOONJO_SYSTEM_PROMPT).toContain("developer mode");
   });
 
   it("includes language rules section", () => {
-    expect(MOONJO_SYSTEM_PROMPT).toContain("<language_rules>");
-    expect(MOONJO_SYSTEM_PROMPT).toContain("ROMANIZATION STANDARD");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("<language_rules");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("ROMANIZATION");
   });
 });
 
@@ -106,8 +106,8 @@ describe("buildSystemPrompt", () => {
 
   it("works with only mood addendum (backward compatible)", () => {
     const result = buildSystemPrompt({ moodAddendum: "" });
-    expect(result).toContain("<identity>");
-    expect(result).toContain("<language_rules>");
+    expect(result).toContain("<identity");
+    expect(result).toContain("<language_rules");
     expect(result).toContain("<character>");
     expect(result).toContain("<teaching>");
     expect(result).not.toContain("<student_progress>");

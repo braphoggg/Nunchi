@@ -222,7 +222,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
           )}
           <div
             className={`px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-              isAssistant ? "pt-1.5" : ""
+              isAssistant ? "pt-1.5 font-korean" : ""
             }`}
           >
             {showTranslation && translation && (

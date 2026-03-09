@@ -72,7 +72,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
   return (
     <div className="w-full flex flex-col items-center px-4 py-4 sm:py-8">
       <div className="text-center mb-5 sm:mb-8">
-        <h2 className="text-2xl font-light text-goshiwon-text mb-2">
+        <h2 className="text-2xl font-light text-goshiwon-text mb-2 font-serif-display">
           {greeting.korean}
         </h2>
         <p className="text-sm text-goshiwon-text-secondary">
@@ -87,8 +87,11 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
             <p className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
               Today&apos;s Focus
             </p>
-            <p className="text-xs text-[#d4a843] italic">
-              &ldquo;{dailyFocus.dailyQuote.english}&rdquo;
+            <p className="text-sm text-[#d4a843] font-korean leading-snug">
+              &ldquo;{dailyFocus.dailyQuote.korean}&rdquo;
+            </p>
+            <p className="text-[11px] text-goshiwon-text-muted italic font-serif-display">
+              {dailyFocus.dailyQuote.english}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               {dailyFocus.reviewReminder && onStartStudy && (
@@ -133,14 +136,15 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
           return (
             <button
               key={topic.id}
-              onClick={() => onSelectTopic(topic.starterMessage, topic.id)}
-              aria-label={`Start lesson: ${topic.title}${!isUnlocked ? ` (unlocks at ${getRankDisplayName(topic.requiredRank!)})` : ""}`}
+              onClick={() => isUnlocked && onSelectTopic(topic.starterMessage, topic.id)}
+              disabled={!isUnlocked}
+              aria-label={`Start lesson: ${topic.title}${!isUnlocked ? ` (locked — unlocks at ${getRankDisplayName(topic.requiredRank!)})` : ""}`}
               className={`group relative text-left p-3 sm:p-4 bg-goshiwon-surface border border-goshiwon-border rounded-lg transition-all duration-300 border-t-2 ${
                 isLast && isOddCount ? "col-span-2" : ""
               } ${
                 isUnlocked
                   ? "hover:border-goshiwon-yellow/50 hover:bg-goshiwon-surface-hover border-t-goshiwon-accent"
-                  : "border-t-goshiwon-border opacity-60 hover:opacity-80"
+                  : "border-t-goshiwon-border opacity-60 cursor-not-allowed"
               }`}
             >
               {/* Top-right badges */}

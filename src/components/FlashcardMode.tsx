@@ -360,7 +360,7 @@ export default function FlashcardMode({
 
           {/* Korean prompt */}
           <div className="text-center mb-2">
-            <span className="text-[#d4a843] text-2xl font-bold leading-relaxed">
+            <span className="text-[#d4a843] text-2xl font-bold leading-relaxed font-korean">
               {currentQuestion.prompt}
             </span>
           </div>
