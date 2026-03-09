@@ -95,9 +95,14 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     return vocabItems.every((w) => isWordSaved(w.korean));
   }, [isWordSaved, isAssistant, content]);
 
+  // Memoize parsed vocabulary so both handlers share the same parse
+  const vocabItems = useMemo(
+    () => (isAssistant && hasVocabulary(content) ? parseVocabulary(content) : []),
+    [isAssistant, content],
+  );
+
   const handleSaveWords = useCallback(async () => {
     if (!onSaveWords || saved || saving || allWordsSaved) return;
-    const vocabItems = parseVocabulary(content);
     if (vocabItems.length === 0) return;
 
     // Find words that need English translation
@@ -134,7 +139,42 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     onWordSavedSound?.();
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
-  }, [content, onSaveWords, saved, saving, allWordsSaved, onWordSavedSound]);
+  }, [vocabItems, onSaveWords, saved, saving, allWordsSaved, onWordSavedSound]);
+
+  /** Save a single vocabulary word by its Korean text (clicked inline) */
+  const handleSingleWordSave = useCallback(async (koreanWord: string) => {
+    if (!onSaveWords || saving) return;
+    if (isWordSaved?.(koreanWord)) return;
+
+    const item = vocabItems.find((w) => w.korean === koreanWord);
+    if (!item) return;
+
+    // Fetch translation if missing
+    if (!item.english) {
+      setSaving(true);
+      try {
+        const res = await fetch("/api/vocabulary-translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ words: [item.korean] }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const translations: Record<string, string> = data.translations ?? {};
+          if (translations[item.korean]) {
+            item.english = translations[item.korean];
+          }
+        }
+      } catch {
+        // Save with empty English — better than not saving
+      } finally {
+        setSaving(false);
+      }
+    }
+
+    onSaveWords([item]);
+    onWordSavedSound?.();
+  }, [vocabItems, onSaveWords, saving, isWordSaved, onWordSavedSound]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const timestamp = useMemo(() => getAtmosphericTimestamp(), []);
@@ -244,8 +284,8 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
             ) : isAssistant ? (
               formatMessage(
                 displayContent,
-                onSaveWords && hasVocabulary(content) && !allWordsSaved && !showTranslation
-                  ? { onVocabClick: handleSaveWords }
+                onSaveWords && hasVocabulary(content) && !showTranslation
+                  ? { onVocabClick: handleSingleWordSave, isWordSaved }
                   : undefined
               )
             ) : (

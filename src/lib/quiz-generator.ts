@@ -61,14 +61,22 @@ export function generateQuiz(
     const prompt = type === "korean_to_english" ? word.korean : word.english;
     const correctAnswer = type === "korean_to_english" ? word.english : word.korean;
 
-    // Pick 3 random distractors from other words
-    const distractors = shuffle(
-      studyable
-        .filter((w) => w.id !== word.id)
-        .map((w) =>
-          type === "korean_to_english" ? w.english : w.korean,
-        ),
-    ).slice(0, 3);
+    // Pick 3 random distractors from other words.
+    // Filter by answer text (not just ID) so synonyms like
+    // 감사합니다/고맙습니다 (both "thank you") don't produce duplicate options.
+    const seen = new Set<string>([correctAnswer.toLowerCase()]);
+    const distractors: string[] = [];
+    const candidates = shuffle(
+      studyable.filter((w) => w.id !== word.id),
+    );
+    for (const c of candidates) {
+      if (distractors.length >= 3) break;
+      const text = type === "korean_to_english" ? c.english : c.korean;
+      const key = text.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      distractors.push(text);
+    }
 
     // Combine and shuffle options
     const options = shuffle([correctAnswer, ...distractors]);

@@ -49,26 +49,30 @@ function tokenize(content: string): Token[] {
 
 export function formatMessage(
   content: string,
-  options?: { onVocabClick?: () => void }
+  options?: {
+    onVocabClick?: (koreanWord: string) => void;
+    isWordSaved?: (koreanWord: string) => boolean;
+  }
 ): React.ReactNode[] {
   const tokens = tokenize(content);
 
   return tokens.map((token, i) => {
     switch (token.type) {
-      case "bold":
-        if (options?.onVocabClick) {
+      case "bold": {
+        const alreadySaved = options?.isWordSaved?.(token.text) ?? false;
+        if (options?.onVocabClick && !alreadySaved) {
           return React.createElement(
             "strong",
             {
               key: i,
               className:
                 "text-[#d4a843] font-semibold cursor-pointer hover:underline underline-offset-2 decoration-[#d4a843]/50",
-              onClick: options.onVocabClick,
-              title: "Click to save all vocabulary from this message",
+              onClick: () => options.onVocabClick!(token.text),
+              title: `Click to save "${token.text}"`,
               role: "button",
               tabIndex: 0,
               onKeyDown: (e: React.KeyboardEvent) => {
-                if (e.key === "Enter" || e.key === " ") options.onVocabClick?.();
+                if (e.key === "Enter" || e.key === " ") options.onVocabClick!(token.text);
               },
             },
             token.text
@@ -76,9 +80,15 @@ export function formatMessage(
         }
         return React.createElement(
           "strong",
-          { key: i, className: "text-[#d4a843] font-semibold" },
+          {
+            key: i,
+            className: alreadySaved
+              ? "text-[#d4a843]/60 font-semibold"
+              : "text-[#d4a843] font-semibold",
+          },
           token.text
         );
+      }
 
       case "strike":
         return React.createElement(
