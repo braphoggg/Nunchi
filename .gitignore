@@ -48,4 +48,4 @@ coverage/
 .next.config.ts/
 .postcss.config.mjs/
 .tsconfig.json/
-vitest.config.ts/
+.vitest.config.ts/
