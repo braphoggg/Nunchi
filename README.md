@@ -69,22 +69,22 @@ The app is PWA-enabled — install it to your home screen for an app-like experi
 ### Conversation & Learning
 
 - **7 structured lessons** — Greetings, Survival Phrases, Numbers & Counting, Ordering Food, Describing Feelings, Polite vs Casual speech, and Free Conversation
-- **Lesson progression** — Topics are tiered by difficulty (beginner / intermediate / advanced) and soft-locked behind rank requirements. Beginners can't jump to advanced grammar without earning it first
+- **Lesson progression** — Topics are tiered by difficulty (beginner / intermediate / advanced) and locked behind rank requirements. Locked topics are visually dimmed and disabled until you reach the required rank
 - **Korean-first teaching** — Moon-jo teaches in bold Korean with romanization (`**한글** (hangeul)`). No English in his messages — you discover meaning through context and the translate button
 - **Error correction** — When you make mistakes, Moon-jo corrects them inline: ~~your mistake~~ → **corrected version** with brief explanations
 - **Click-to-translate** — Globe icon on any message toggles between Korean and English. Translations are cached for instant switching
 - **Text-to-speech** — Listen button on every assistant message reads Korean text aloud. Individual vocabulary words also have TTS playback
 - **Mood system** — Moon-jo's personality adapts to your effort. Write mostly in Korean and he becomes warm, even possessive. Barely try and he turns cold and clinical
-- **Daily focus** — "Today's Focus" card on the welcome screen suggests what to practice based on unvisited topics, review schedule, and your rank
+- **Daily focus** — "Today's Focus" card on the welcome screen suggests what to practice based on unvisited topics, review schedule, and your rank. Features a daily Moon-jo quote in Korean with English translation
 
 ### Vocabulary & Study
 
-- **Smart extraction** — Korean vocabulary is automatically detected from Moon-jo's messages
+- **Click-to-save vocabulary** — Bold Korean words in Moon-jo's messages are individually clickable to save. Click a single word to save just that word, or use the batch save button to save all vocabulary from a message. Already-saved words dim automatically
 - **Personal dictionary** (나의 단어장) — Save words with Korean, romanization, and English translation
 - **Spaced Repetition (SRS)** — SM-2 algorithm tracks ease factor, review interval, and repetition count for every word. Due words are prioritized in study sessions
 - **Flashcard study** — 3D flip cards with self-assessment (Again / Good / Easy) that feeds directly into the SRS scheduler. Shows next review date on each card
 - **Listen mode** — Toggle in flashcards that hides Korean text and shows only a play button. Train your ear, then flip to check
-- **Multiple-choice quizzes** — Korean → English and English → Korean MCQs generated from your saved vocabulary. 4 options per question, score summary with Moon-jo feedback
+- **Multiple-choice quizzes** — Korean → English and English → Korean MCQs generated from your saved vocabulary. 4 unique options per question (synonyms deduplicated), score summary with Moon-jo feedback
 - **Batch translation** — Words missing English translations are auto-translated via the vocabulary API, with manual retry for failures
 - **Unseen badge** — Notification dot shows new unsaved vocabulary
 
@@ -151,6 +151,9 @@ Earn XP, build streaks, and rise through the goshiwon ranks.
 ### Atmosphere
 
 - **Night progression** — The UI gradually darkens across 4 stages as the conversation grows deeper. Colors shift toward black and deep red
+- **Film grain overlay** — Subtle SVG fractalNoise texture layered over the interface at low opacity with mix-blend-mode overlay, giving the UI a gritty, analog feel
+- **Vignette** — Radial gradient darkening the edges of the viewport, drawing focus inward like a worn film frame
+- **Cinematic typography** — Cormorant Garamond serif for Moon-jo's name, greetings, and quotes. Nanum Myeongjo Korean serif for assistant messages and flashcard prompts
 - **Ambient sound** — Low 60Hz electrical hum when Moon-jo types, filtered key click sounds as you type
 - **Goshiwon events** — 15 random atmospheric interruptions between messages:
   - *A sound from Room 313...*
@@ -273,7 +276,7 @@ Corrupted data auto-resets to safe defaults. XP has anti-tampering validation (m
 | Audio | Web Audio API + Web Speech API |
 | PWA | Service Worker + Web App Manifest |
 | Testing | [Vitest](https://vitest.dev) + [React Testing Library](https://testing-library.com) |
-| Fonts | Inter + Noto Sans KR (Google Fonts) |
+| Fonts | Inter + Cormorant Garamond + Nanum Myeongjo (Google Fonts) |
 
 ### Theme
 
@@ -288,7 +291,7 @@ Custom dark palette defined in Tailwind v4 (with a warm-parchment light mode):
 | `goshiwon-text` | `#e8e4ec` | Primary text |
 | `goshiwon-border` | `#2a2533` | Borders, dividers |
 
-12+ CSS animations including message fade-in, flashcard 3D flip, keyboard slide-up, night color transitions, XP toast popups, and rank-up glow effects.
+Three font layers — Inter (UI body), Cormorant Garamond (serif display for headers and quotes), and Nanum Myeongjo (Korean serif for assistant messages and flashcards). 12+ CSS animations including message fade-in, flashcard 3D flip, keyboard slide-up, night color transitions, XP toast popups, and rank-up glow effects.
 
 ---
 
@@ -300,13 +303,13 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-**677 tests** across 51 test files covering:
+**764 tests** across 55 test files covering:
 
 - **API routes** — Chat streaming, translation, vocabulary batch, error handling, rate limiting
 - **Components** — All UI components including overlays, message rendering, input handling
-- **Hooks** — Gamification state, vocabulary management, flashcards, SRS integration, sound engine, night progression, goshiwon events, settings, tutorial
-- **Libraries** — Hangul composition/decomposition, vocabulary parsing, mood calculation, XP/rank logic, SRS algorithm, quiz generation, daily planner, data backup/restore, security validation, timestamps, message formatting
-- **Edge cases** — Race conditions, localStorage corruption, streak midnight rollover, anti-tampering detection, SRS interval boundaries
+- **Hooks** — Gamification state, vocabulary management, flashcards, SRS integration, sound engine, night progression, goshiwon events, settings persistence, tutorial state machine
+- **Libraries** — Hangul composition/decomposition, vocabulary parsing, mood calculation, XP/rank logic, SRS algorithm, quiz generation, daily planner, data backup/restore, security validation, timestamps, message formatting, tutorial steps data integrity
+- **Edge cases** — Race conditions, localStorage corruption, streak midnight rollover, anti-tampering detection, SRS interval boundaries, locked topic enforcement, quiz option deduplication
 
 Tests run with Vitest in a jsdom environment with React Testing Library. TypeScript strict mode enforced.
 
@@ -321,7 +324,7 @@ src/
 │   │   ├── chat/                  # Streaming chat (Gemini 2.5 Flash)
 │   │   ├── translate/             # Korean → English translation
 │   │   └── vocabulary-translate/  # Batch vocabulary translation
-│   ├── globals.css                # Goshiwon theme + 12 animations
+│   ├── globals.css                # Goshiwon theme + atmospheric overlays + 12 animations
 │   ├── layout.tsx                 # Root layout, fonts, metadata, PWA tags
 │   ├── manifest.ts                # PWA web app manifest
 │   └── page.tsx                   # Home → ChatContainer
@@ -393,7 +396,7 @@ public/
 | `npm run dev` | Start development server |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
-| `npm test` | Run all 677 tests |
+| `npm test` | Run all 764 tests |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run test:coverage` | Tests with coverage report |
 | `npm run lint` | ESLint check |
