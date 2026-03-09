@@ -8,6 +8,7 @@ node_modules/
 out/
 dist/
 build/
+.vercel
 
 # environment variables
 .env
@@ -44,8 +45,3 @@ coverage/
 # claude config
 .claude/
 
-# config
-next.config.ts
-postcss.config.mjs
-tsconfig.json
-vitest.config.ts
