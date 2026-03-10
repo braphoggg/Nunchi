@@ -394,7 +394,7 @@ export default function TutorialOverlay({
         className="animate-tutorial-tooltip z-[72]"
         style={{ pointerEvents: "auto", ...tooltipStyle }}
       >
-        <div className="bg-goshiwon-surface border border-goshiwon-border rounded-xl shadow-2xl p-4 flex flex-col gap-3">
+        <div className="bg-goshiwon-surface border border-goshiwon-border rounded-xl shadow-2xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-3">
           {/* Header line */}
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-goshiwon-text-muted uppercase tracking-widest">
@@ -413,7 +413,7 @@ export default function TutorialOverlay({
 
           {/* Title */}
           <div>
-            <h3 className="text-sm font-medium text-goshiwon-text">
+            <h3 className="text-xs sm:text-sm font-medium text-goshiwon-text">
               {step.titleKr}
             </h3>
             <p className="text-[10px] text-goshiwon-text-muted">
@@ -421,13 +421,13 @@ export default function TutorialOverlay({
             </p>
           </div>
 
-          {/* Moon-jo dialogue */}
-          <p className="text-xs text-goshiwon-yellow italic leading-relaxed">
+          {/* Moon-jo dialogue — hidden on mobile to save vertical space */}
+          <p className="hidden sm:block text-xs text-goshiwon-yellow italic leading-relaxed">
             &ldquo;{step.moonjoSays}&rdquo;
           </p>
 
           {/* Description */}
-          <p className="text-xs text-goshiwon-text-secondary leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-goshiwon-text-secondary leading-relaxed">
             {step.description}
           </p>
 
@@ -435,17 +435,17 @@ export default function TutorialOverlay({
           {isInteract && (step.interactionHint || step.secondaryInteractionHint) && (
             <div className="flex flex-col gap-1">
               {step.interactionHint && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
+                <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
                   <span className="text-goshiwon-yellow text-xs">&#9758;</span>
-                  <span className="text-xs text-goshiwon-yellow">{step.interactionHint}</span>
+                  <span className="text-[11px] sm:text-xs text-goshiwon-yellow">{step.interactionHint}</span>
                 </div>
               )}
               {step.secondaryInteractionHint && (
                 <>
                   <p className="text-center text-[10px] text-goshiwon-text-muted">— or —</p>
-                  <div className="flex items-center gap-2 px-3 py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
+                  <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
                     <span className="text-goshiwon-yellow text-xs">&#9758;</span>
-                    <span className="text-xs text-goshiwon-yellow">{step.secondaryInteractionHint}</span>
+                    <span className="text-[11px] sm:text-xs text-goshiwon-yellow">{step.secondaryInteractionHint}</span>
                   </div>
                 </>
               )}
@@ -453,11 +453,11 @@ export default function TutorialOverlay({
           )}
 
           {/* Navigation */}
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center justify-between pt-0 sm:pt-1">
             <button
               onClick={onPrev}
               disabled={stepIndex === 0}
-              className="px-3 py-2 min-h-[44px] text-xs text-goshiwon-text-muted hover:text-goshiwon-text transition-colors disabled:opacity-30 disabled:cursor-default"
+              className="px-3 py-1.5 sm:py-2 min-h-[44px] text-xs text-goshiwon-text-muted hover:text-goshiwon-text transition-colors disabled:opacity-30 disabled:cursor-default"
             >
               ← Back
             </button>
@@ -479,13 +479,13 @@ export default function TutorialOverlay({
             </div>
 
             {isInteract ? (
-              <span className="px-3 py-2 min-h-[44px] text-xs text-goshiwon-text-muted italic flex items-center">
+              <span className="px-3 py-1.5 sm:py-2 min-h-[44px] text-xs text-goshiwon-text-muted italic flex items-center">
                 Waiting...
               </span>
             ) : (
               <button
                 onClick={onNext}
-                className="px-3 py-2 min-h-[44px] text-xs text-goshiwon-yellow hover:text-goshiwon-text transition-colors font-medium"
+                className="px-3 py-1.5 sm:py-2 min-h-[44px] text-xs text-goshiwon-yellow hover:text-goshiwon-text transition-colors font-medium"
               >
                 {stepIndex === totalSteps - 1 ? "Finish" : "Next →"}
               </button>
