@@ -263,16 +263,18 @@ export default function TutorialOverlay({
       width: "360px",
     };
   } else if (effectiveCutout && effectiveCutout2) {
-    // Two cutouts: anchor the tooltip's *bottom* just above the second cutout
-    // so navigation buttons (Next/Back) are always reachable.  On tall viewports
-    // the tooltip sits neatly inside the gap; on short mobile viewports it may
-    // extend upward over the dark overlay — harmless for "observe" steps.
+    // Two cutouts: anchor the tooltip's bottom just above the *first* cutout
+    // so it sits in the dark overlay area above (e.g. welcome text / today's
+    // focus).  This keeps both spotlighted regions fully visible underneath.
+    const spaceAbove = effectiveCutout.y - 16; // room from viewport top to first cutout
     tooltipStyle = {
       position: "absolute",
-      bottom: vh - effectiveCutout2.y + 8,
+      bottom: vh - effectiveCutout.y + 8,
       left: Math.max(16, Math.min(effectiveCutout.x, vw - 376)),
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
+      // On very short viewports clamp height so tooltip never extends above viewport
+      ...(spaceAbove < 280 && { maxHeight: Math.max(spaceAbove, 120), overflowY: "auto" as const }),
     };
   } else if (effectiveTooltipPos === "bottom" && effectiveCutout) {
     tooltipStyle = {
@@ -365,20 +367,22 @@ export default function TutorialOverlay({
 
       {/* Highlight ring(s) on target(s) */}
       {activeCutouts.map((r, i) => {
-        // The box-shadow ring extends 2 px *outside* the div.
-        // If the div reaches the viewport edge the ring overflows and gets
-        // clipped.  Shrink the ring div by RING px on any side that is flush
-        // with the viewport so the shadow lands exactly at the edge.
+        // The box-shadow ring extends RING px *outside* the div.
+        // Inset from ALL viewport edges so the shadow is never clipped.
         const RING = 2;
-        const ringW = Math.max(0, Math.min(r.width,  vw - r.x - RING));
-        const ringH = Math.max(0, Math.min(r.height, vh - r.y - RING));
+        const leftInset  = r.x < RING ? RING - r.x : 0;
+        const topInset   = r.y < RING ? RING - r.y : 0;
+        const ringX = r.x + leftInset;
+        const ringY = r.y + topInset;
+        const ringW = Math.max(0, Math.min(r.width  - leftInset, vw - ringX - RING));
+        const ringH = Math.max(0, Math.min(r.height - topInset,  vh - ringY - RING));
         return (
           <div
             key={i}
             className="absolute tutorial-highlight rounded-xl"
             style={{
-              left: r.x,
-              top: r.y,
+              left: ringX,
+              top: ringY,
               width: ringW,
               height: ringH,
               transition: "left 0.3s, top 0.3s, width 0.3s, height 0.3s",
