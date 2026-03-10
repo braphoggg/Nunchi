@@ -430,6 +430,25 @@ export default function ChatContainer() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Accurate viewport height for mobile browsers.
+  // visualViewport.height excludes browser chrome (address bar, nav bar)
+  // which 100dvh / innerHeight may include on Samsung Internet & others.
+  useEffect(() => {
+    const update = () => {
+      const h = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--app-height", `${h}px`);
+    };
+    update();
+    const vv = window.visualViewport;
+    if (vv) vv.addEventListener("resize", update);
+    window.addEventListener("resize", update);
+    return () => {
+      if (vv) vv.removeEventListener("resize", update);
+      window.removeEventListener("resize", update);
+      document.documentElement.style.removeProperty("--app-height");
+    };
+  }, []);
+
   // Ambient soundscape — start on mount, stop on unmount
   useEffect(() => {
     sound.startAmbient();
@@ -574,7 +593,7 @@ export default function ChatContainer() {
       style={{ ...(settings.theme === "light" ? LIGHT_THEME : styleOverrides), zoom: settings.fontScale }}
       data-reduce-motion={settings.reduceAnimations ? "true" : "false"}
       data-theme={settings.theme}
-      className="fixed inset-0 flex flex-col max-w-2xl mx-auto border-x border-goshiwon-border night-transition bg-goshiwon-bg goshiwon-atmosphere"
+      className="relative flex flex-col overflow-hidden app-height max-w-2xl mx-auto border-x border-goshiwon-border night-transition bg-goshiwon-bg goshiwon-atmosphere"
     >
       <TopBar
         onReset={messages.length > 0 ? promptLeave : undefined}
@@ -824,9 +843,9 @@ export default function ChatContainer() {
         </div>
       )}
 
-      {/* shrink-0 prevents keyboard + input from being compressed by
-          flex negative-space distribution when the container is tight */}
-      <div className="shrink-0">
+      {/* mt-auto pushes to container bottom even if flex-1 doesn't absorb
+          all space; shrink-0 prevents compression on tight viewports */}
+      <div className="shrink-0 mt-auto">
         <HangulKeyboard
           onInput={handleKeyboardInput}
           onDeleteChar={handleKeyboardDelete}
