@@ -430,6 +430,23 @@ export default function ChatContainer() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Robust viewport height for mobile browsers where 100dvh may be inaccurate.
+  // Sets --app-height on <html> so .app-height picks it up via CSS var().
+  useEffect(() => {
+    const update = () => {
+      document.documentElement.style.setProperty(
+        "--app-height",
+        `${window.innerHeight}px`,
+      );
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      document.documentElement.style.removeProperty("--app-height");
+    };
+  }, []);
+
   // Ambient soundscape — start on mount, stop on unmount
   useEffect(() => {
     sound.startAmbient();
@@ -824,23 +841,27 @@ export default function ChatContainer() {
         </div>
       )}
 
-      <HangulKeyboard
-        onInput={handleKeyboardInput}
-        onDeleteChar={handleKeyboardDelete}
-        onSubmit={handleKeyboardSubmit}
-        visible={keyboardVisible}
-        onJamoPress={sound.playJamoPress}
-        onSpecialKey={sound.playSpecialKey}
-      />
+      {/* shrink-0 prevents keyboard + input from being compressed by
+          flex negative-space distribution when the container is tight */}
+      <div className="shrink-0">
+        <HangulKeyboard
+          onInput={handleKeyboardInput}
+          onDeleteChar={handleKeyboardDelete}
+          onSubmit={handleKeyboardSubmit}
+          visible={keyboardVisible}
+          onJamoPress={sound.playJamoPress}
+          onSpecialKey={sound.playSpecialKey}
+        />
 
-      <ChatInput
-        input={input}
-        onChange={setInput}
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-        keyboardVisible={keyboardVisible}
-        onToggleKeyboard={toggleKeyboard}
-      />
+        <ChatInput
+          input={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          keyboardVisible={keyboardVisible}
+          onToggleKeyboard={toggleKeyboard}
+        />
+      </div>
 
       {/* First-run onboarding overlay */}
       {showOnboarding && (
