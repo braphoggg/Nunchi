@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, KeyboardEvent } from "react";
+import { FormEvent, useRef, useState, useEffect, KeyboardEvent } from "react";
 
 interface ChatInputProps {
   input: string;
@@ -21,6 +21,22 @@ export default function ChatInput({
 }: ChatInputProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Shorter placeholder on mobile to prevent text wrapping
+  const SHORT_PH = "메시지를 입력하세요...";
+  const LONG_PH = "메시지를 입력하세요... (Type a message...)";
+  const [placeholder, setPlaceholder] = useState(SHORT_PH);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      setPlaceholder(LONG_PH);
+      return;
+    }
+    const mq = window.matchMedia("(min-width: 640px)");
+    const update = () => setPlaceholder(mq.matches ? LONG_PH : SHORT_PH);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -84,7 +100,7 @@ export default function ChatInput({
             handleInput();
           }}
           onKeyDown={handleKeyDown}
-          placeholder="메시지를 입력하세요... (Type a message...)"
+          placeholder={placeholder}
           className="flex-1 bg-goshiwon-input rounded-lg px-4 py-3 text-goshiwon-text text-sm placeholder:text-goshiwon-text-muted focus:outline-none focus:ring-1 focus:ring-goshiwon-accent/50 border border-goshiwon-border focus:border-goshiwon-accent/50 transition-colors auto-grow-textarea"
           disabled={isLoading}
           autoFocus
