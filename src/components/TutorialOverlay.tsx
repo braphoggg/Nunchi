@@ -178,9 +178,23 @@ export default function TutorialOverlay({
       return;
     }
 
-    // Small delay for scroll-into-view to settle
-    const timer = setTimeout(computeCutout, 50);
-    return () => clearTimeout(timer);
+    // Initial attempt after a short delay for scroll-into-view to settle.
+    // For dynamically appearing elements (e.g. the hangul keyboard auto-opens
+    // when its tutorial step is reached), the MutationObserver below is the
+    // primary discovery mechanism.  As a belt-and-suspenders fallback for
+    // mobile browsers where MutationObserver can be unreliable, we schedule
+    // retry attempts.  computeCutout is idempotent so extra calls are harmless.
+    let cancelled = false;
+    const delays = [50, 350, 700];
+    const timers = delays.map((ms) =>
+      setTimeout(() => {
+        if (!cancelled) computeCutout();
+      }, ms),
+    );
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
   }, [computeCutout, stepIndex, step.targetSelector]);
 
   // Recompute on resize

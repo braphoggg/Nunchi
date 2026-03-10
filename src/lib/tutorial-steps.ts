@@ -43,27 +43,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "topics",
     targetSelector: '[data-tutorial="welcome-topics"]',
-    secondaryTargetSelector: '[data-tutorial="chat-input"]',
     title: "Start a Lesson",
     titleKr: "수업 시작하기",
     moonjoSays: "준비됐나요? 주제를 고르거나... 아니면 그냥 말을 걸어도 돼요.",
     description:
-      "Pick a guided topic above — each one teaches a different skill. Or skip straight to conversation and type anything below.",
-    type: "observe",
-    tooltipPosition: "bottom",
-    spotlightPadding: 8,
-  },
-  {
-    id: "chat-input",
-    targetSelector: '[data-tutorial="chat-input"]',
-    title: "Chat with Moon-jo",
-    titleKr: "대화하기",
-    moonjoSays: "여기에 메시지를 쓰세요. 한국어로 쓰면... 더 좋겠죠.",
-    description:
-      "Type your message here and press Enter or the arrow button to send. Writing in Korean earns more XP.",
+      "Pick a guided topic above — each one teaches a different skill. Or skip straight to conversation and type anything in the chat box below.",
     type: "observe",
     tooltipPosition: "top",
-    spotlightPadding: 4,
+    spotlightPadding: 8,
   },
   {
     id: "keyboard",
