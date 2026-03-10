@@ -25,13 +25,10 @@ body {
 
 /* Full-height utility accounting for mobile browser chrome.
    dvh (dynamic viewport height) shrinks when the address-bar or
-   bottom-nav appears, so the app never extends behind it.
-   --app-height is set by JS (window.innerHeight) as the ultimate
-   fallback for Android devices where even dvh is inaccurate. */
+   bottom-nav appears, so the app never extends behind it. */
 .app-height {
   height: 100vh;
   height: 100dvh;
-  height: var(--app-height, 100dvh);
 }
 
 /* Typography — base body font using Next.js font variables */
