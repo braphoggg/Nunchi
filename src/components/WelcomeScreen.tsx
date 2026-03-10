@@ -70,20 +70,20 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
   );
 
   return (
-    <div className="w-full flex flex-col items-center px-4 py-4 sm:py-8">
-      <div className="text-center mb-5 sm:mb-8">
-        <h2 className="text-2xl font-light text-goshiwon-text mb-2 font-serif-display">
+    <div className="w-full flex flex-col items-center px-4 py-2 sm:py-8">
+      <div className="text-center mb-3 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-light text-goshiwon-text mb-1 sm:mb-2 font-serif-display">
           {greeting.korean}
         </h2>
-        <p className="text-sm text-goshiwon-text-secondary">
+        <p className="text-xs sm:text-sm text-goshiwon-text-secondary">
           {greeting.english}
         </p>
       </div>
 
       {/* Today's Focus — review words / suggested topic */}
       {(dailyFocus.suggestedTopic || dailyFocus.reviewReminder) && (
-        <div className="w-full max-w-lg mb-4">
-          <div className="bg-goshiwon-surface/80 border border-goshiwon-yellow/20 rounded-lg p-3 space-y-2">
+        <div className="w-full max-w-lg mb-2 sm:mb-4">
+          <div className="bg-goshiwon-surface/80 border border-goshiwon-yellow/20 rounded-lg p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
             <p className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
               Today&apos;s Focus
             </p>
@@ -125,7 +125,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
         </div>
       )}
 
-      <div data-tutorial="welcome-topics" className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-lg">
+      <div data-tutorial="welcome-topics" className="grid grid-cols-2 gap-1.5 sm:gap-3 w-full max-w-lg">
         {LESSON_TOPICS.map((topic, index) => {
           const isLast = index === LESSON_TOPICS.length - 1;
           const isOddCount = LESSON_TOPICS.length % 2 !== 0;
@@ -139,7 +139,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
               onClick={() => isUnlocked && onSelectTopic(topic.starterMessage, topic.id)}
               disabled={!isUnlocked}
               aria-label={`Start lesson: ${topic.title}${!isUnlocked ? ` (locked — unlocks at ${getRankDisplayName(topic.requiredRank!)})` : ""}`}
-              className={`group relative text-left p-3 sm:p-4 bg-goshiwon-surface border border-goshiwon-border rounded-lg transition-all duration-300 border-t-2 ${
+              className={`group relative text-left p-2.5 sm:p-4 bg-goshiwon-surface border border-goshiwon-border rounded-lg transition-all duration-300 border-t-2 ${
                 isLast && isOddCount ? "col-span-2" : ""
               } ${
                 isUnlocked
@@ -191,7 +191,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
         })}
       </div>
 
-      <p className="mt-6 sm:mt-8 text-xs text-goshiwon-text-secondary text-center max-w-sm">
+      <p className="mt-3 sm:mt-8 text-xs text-goshiwon-text-secondary text-center max-w-sm">
         Or simply type a message below. Moon-jo is always... watching.
       </p>
       {(!rank || rank.id === "new_resident") && (

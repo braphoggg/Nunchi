@@ -18,8 +18,17 @@
 
 html,
 body {
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
+}
+
+/* Full-height utility accounting for mobile browser chrome.
+   dvh (dynamic viewport height) shrinks when the address-bar or
+   bottom-nav appears, so the app never extends behind it. */
+.app-height {
+  height: 100vh;
+  height: 100dvh;
 }
 
 /* Typography — base body font using Next.js font variables */
@@ -333,6 +342,14 @@ button:not(:disabled),
 @media (max-width: 640px) {
   ::-webkit-scrollbar {
     width: 10px;
+  }
+
+  /* Prevent iOS Safari from auto-zooming when focusing inputs with
+     font-size < 16px. 16px is the threshold below which iOS zooms. */
+  textarea,
+  input[type="text"],
+  input[type="search"] {
+    font-size: 16px;
   }
 }
 

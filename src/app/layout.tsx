@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond, Nanum_Myeongjo } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +20,12 @@ const nanumMyeongjo = Nanum_Myeongjo({
   variable: "--font-korean",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Room 203 | Korean with Moon-jo",
