@@ -263,11 +263,13 @@ export default function TutorialOverlay({
       width: "360px",
     };
   } else if (effectiveCutout && effectiveCutout2) {
-    // Two cutouts: position tooltip in the gap between them
-    const gapTop = effectiveCutout.y + effectiveCutout.height + 12;
+    // Two cutouts: anchor the tooltip's *bottom* just above the second cutout
+    // so navigation buttons (Next/Back) are always reachable.  On tall viewports
+    // the tooltip sits neatly inside the gap; on short mobile viewports it may
+    // extend upward over the dark overlay — harmless for "observe" steps.
     tooltipStyle = {
       position: "absolute",
-      top: gapTop,
+      bottom: vh - effectiveCutout2.y + 8,
       left: Math.max(16, Math.min(effectiveCutout.x, vw - 376)),
       maxWidth: "calc(100vw - 32px)",
       width: "360px",
