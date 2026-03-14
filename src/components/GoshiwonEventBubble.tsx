@@ -34,7 +34,7 @@ export default function GoshiwonEventBubble({
         <p className="text-sm italic text-[#d4a843] leading-relaxed">
           {event.korean}
         </p>
-        <p className="text-[10px] text-goshiwon-text-muted mt-1">
+        <p className="text-xs text-goshiwon-text-muted mt-1">
           {event.english}
         </p>
       </div>

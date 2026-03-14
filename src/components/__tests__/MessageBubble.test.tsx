@@ -3,6 +3,33 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import MessageBubble from "../MessageBubble";
 import type { UIMessage } from "ai";
 
+vi.mock("@/contexts/SoundContext", () => ({
+  useSound: () => ({
+    playWordSaved: vi.fn(),
+    playTranslationToggle: vi.fn(),
+    playCopyConfirm: vi.fn(),
+    muted: false,
+    toggleMute: vi.fn(),
+    volume: 80,
+    setVolume: vi.fn(),
+  }),
+}));
+
+vi.mock("@/contexts/SettingsContext", () => ({
+  useSettingsContext: () => ({
+    settings: {
+      theme: "dark",
+      fontScale: 1,
+      reduceAnimations: false,
+      showRomanization: true,
+    },
+    setTheme: vi.fn(),
+    setFontScale: vi.fn(),
+    setReduceAnimations: vi.fn(),
+    setShowRomanization: vi.fn(),
+  }),
+}));
+
 function createMessage(
   overrides: Partial<UIMessage> & { role: UIMessage["role"] }
 ): UIMessage {

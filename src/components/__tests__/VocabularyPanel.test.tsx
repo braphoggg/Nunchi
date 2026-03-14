@@ -3,6 +3,21 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import VocabularyPanel from "../VocabularyPanel";
 import type { VocabularyItem } from "@/types";
 
+vi.mock("@/contexts/SettingsContext", () => ({
+  useSettingsContext: () => ({
+    settings: {
+      theme: "dark",
+      fontScale: 1,
+      reduceAnimations: false,
+      showRomanization: true,
+    },
+    setTheme: vi.fn(),
+    setFontScale: vi.fn(),
+    setReduceAnimations: vi.fn(),
+    setShowRomanization: vi.fn(),
+  }),
+}));
+
 const sampleWords: VocabularyItem[] = [
   {
     id: "1",

@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import type { VocabularyItem } from "@/types";
 import { generateQuiz, MIN_QUIZ_WORDS, type QuizQuestion, type QuizResult } from "@/lib/quiz-generator";
+import Modal from "./Modal";
+import { useSound } from "@/contexts/SoundContext";
 
 interface QuizModeProps {
   words: VocabularyItem[];
   onClose: () => void;
   onQuizComplete?: (result: QuizResult) => void;
-  onCorrectSound?: () => void;
-  onWrongSound?: () => void;
-  onCompleteSound?: () => void;
 }
 
 /** Moon-jo quiz feedback based on score */
@@ -39,14 +38,12 @@ function getMoonjoQuizFeedback(pct: number): { korean: string; english: string }
   };
 }
 
-export default function QuizMode({
+function QuizMode({
   words,
   onClose,
   onQuizComplete,
-  onCorrectSound,
-  onWrongSound,
-  onCompleteSound,
 }: QuizModeProps) {
+  const sound = useSound();
   const studyable = useMemo(() => words.filter((w) => w.english?.trim()), [words]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -79,10 +76,10 @@ export default function QuizMode({
   useEffect(() => {
     if (isComplete && !completionReported.current) {
       completionReported.current = true;
-      onCompleteSound?.();
+      sound.playSessionComplete();
       onQuizComplete?.(result);
     }
-  }, [isComplete, result, onQuizComplete, onCompleteSound]);
+  }, [isComplete, result, onQuizComplete, sound]);
 
   const handleSelect = useCallback(
     (option: string) => {
@@ -96,12 +93,12 @@ export default function QuizMode({
         return next;
       });
       if (isCorrect) {
-        onCorrectSound?.();
+        sound.playWordSaved();
       } else {
-        onWrongSound?.();
+        sound.playFlashcardGrade("again");
       }
     },
-    [answered, currentQuestion, onCorrectSound, onWrongSound],
+    [answered, currentQuestion, sound],
   );
 
   const handleNext = useCallback(() => {
@@ -150,19 +147,7 @@ export default function QuizMode({
   // Not enough words
   if (studyable.length < MIN_QUIZ_WORDS) {
     return (
-      <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
-        <div className="flex items-center px-4 py-3 border-b border-goshiwon-border">
-          <button
-            onClick={onClose}
-            aria-label="Back to vocabulary"
-            className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors mr-2"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <h2 className="text-sm font-medium text-goshiwon-text">Quiz</h2>
-        </div>
+      <Modal title="Quiz" backButton onClose={onClose} zIndex={10} closeAriaLabel="Back to vocabulary">
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <p className="text-goshiwon-text-secondary text-sm">
             Not enough words for a quiz.
@@ -171,7 +156,7 @@ export default function QuizMode({
             Save at least {MIN_QUIZ_WORDS} vocabulary words with translations to start a quiz.
           </p>
         </div>
-      </div>
+      </Modal>
     );
   }
 
@@ -181,10 +166,7 @@ export default function QuizMode({
     const feedback = getMoonjoQuizFeedback(pct);
 
     return (
-      <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
-        <div className="flex items-center px-4 py-3 border-b border-goshiwon-border">
-          <h2 className="text-sm font-medium text-goshiwon-text">Quiz Complete</h2>
-        </div>
+      <Modal title="Quiz Complete" onClose={onClose} zIndex={10}>
         <div className="flex-1 flex flex-col items-center justify-center px-6 animate-summary-in">
           {/* Score circle */}
           <div className="relative w-24 h-24 mb-6">
@@ -208,7 +190,7 @@ export default function QuizMode({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-bold text-goshiwon-text">{pct}%</span>
-              <span className="text-[9px] text-goshiwon-text-muted">{result.correct}/{result.total}</span>
+              <span className="text-xs text-goshiwon-text-muted">{result.correct}/{result.total}</span>
             </div>
           </div>
 
@@ -262,30 +244,31 @@ export default function QuizMode({
             </button>
           </div>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   // Quiz question screen
-  return (
-    <div className="absolute inset-0 z-10 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-goshiwon-border">
-        <button
-          onClick={onClose}
-          aria-label="Exit quiz"
-          className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <span className="text-xs text-goshiwon-text-muted">
-          {currentIndex + 1} / {questions.length}
-        </span>
-        <div className="w-7" />
-      </div>
+  const quizHeader = (
+    <div className="flex items-center justify-between px-4 py-3 border-b border-goshiwon-border">
+      <button
+        onClick={onClose}
+        aria-label="Exit quiz"
+        className="min-h-[44px] min-w-[44px] flex items-center justify-center text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <span className="text-xs text-goshiwon-text-muted">
+        {currentIndex + 1} / {questions.length}
+      </span>
+      <div className="w-[44px]" />
+    </div>
+  );
 
+  return (
+    <Modal title="Quiz" onClose={onClose} zIndex={10} customHeader={quizHeader} closeAriaLabel="Exit quiz">
       {/* Progress bar */}
       <div className="h-0.5 bg-goshiwon-border">
         <div
@@ -303,7 +286,7 @@ export default function QuizMode({
         <div className="flex-1 flex flex-col px-6 pt-8 pb-4">
           {/* Question type badge */}
           <div className="text-center mb-2">
-            <span className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
+            <span className="text-xs text-goshiwon-text-muted uppercase tracking-wider">
               {currentQuestion.type === "korean_to_english"
                 ? "Korean \u2192 English"
                 : "English \u2192 Korean"}
@@ -378,19 +361,21 @@ export default function QuizMode({
                 className="px-6 py-2 text-xs font-medium rounded-lg bg-goshiwon-yellow/15 text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors"
               >
                 {currentIndex >= questions.length - 1 ? "See Results" : "Next"}
-                <span className="ml-1 opacity-40 text-[10px]">Enter</span>
+                <span className="ml-1 opacity-40 text-xs">Enter</span>
               </button>
             </div>
           )}
 
           {/* Hint at bottom */}
           {!answered && (
-            <p className="mt-auto text-center text-[10px] text-goshiwon-text-muted">
+            <p className="mt-auto text-center text-xs text-goshiwon-text-muted">
               press 1-{currentQuestion.options.length} to select
             </p>
           )}
         </div>
       )}
-    </div>
+    </Modal>
   );
 }
+
+export default memo(QuizMode);

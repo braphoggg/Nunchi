@@ -5,6 +5,18 @@ import QuizMode from "../QuizMode";
 import { MIN_QUIZ_WORDS } from "@/lib/quiz-generator";
 import type { VocabularyItem } from "@/types";
 
+vi.mock("@/contexts/SoundContext", () => ({
+  useSound: () => ({
+    playWordSaved: vi.fn(),
+    playFlashcardGrade: vi.fn(),
+    playSessionComplete: vi.fn(),
+    muted: false,
+    toggleMute: vi.fn(),
+    volume: 80,
+    setVolume: vi.fn(),
+  }),
+}));
+
 // ─── helpers ───────────────────────────────────────────────────────
 
 function makeWord(
@@ -138,27 +150,21 @@ describe("QuizMode — answering", () => {
     }
   });
 
-  it("calls onCorrectSound when correct answer selected", async () => {
-    const onCorrectSound = vi.fn();
-    const onWrongSound = vi.fn();
+  it("selecting an option disables further selection", async () => {
     render(
       <QuizMode
         words={SAMPLE_WORDS}
         onClose={vi.fn()}
-        onCorrectSound={onCorrectSound}
-        onWrongSound={onWrongSound}
       />,
     );
-    // Find the correct answer — we need to check all options
     const options = screen.getAllByRole("button").filter((b) =>
       b.getAttribute("aria-label")?.startsWith("Option"),
     );
-    // Click each option — one will be correct
     await userEvent.click(options[0]);
-    // Either correct or wrong sound was called
-    expect(
-      onCorrectSound.mock.calls.length + onWrongSound.mock.calls.length,
-    ).toBe(1);
+    // All options should be disabled after answering
+    for (const opt of options) {
+      expect(opt).toBeDisabled();
+    }
   });
 
   it("hides keyboard hint after answering", async () => {

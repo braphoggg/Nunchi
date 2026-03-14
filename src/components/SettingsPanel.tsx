@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import type { AppSettings } from "@/hooks/useSettings";
+import Modal from "./Modal";
+import { useSettingsContext } from "@/contexts/SettingsContext";
+import { useSound } from "@/contexts/SoundContext";
 import {
   createBackup,
   downloadBackup,
@@ -10,15 +12,6 @@ import {
 } from "@/lib/data-backup";
 
 interface SettingsPanelProps {
-  settings: AppSettings;
-  onSetTheme: (theme: "dark" | "light") => void;
-  onSetFontScale: (scale: number) => void;
-  onSetReduceAnimations: (reduce: boolean) => void;
-  onSetShowRomanization: (show: boolean) => void;
-  isMuted: boolean;
-  onToggleMute: () => void;
-  volume: number;
-  onSetVolume: (volume: number) => void;
   onClose: () => void;
 }
 
@@ -129,7 +122,7 @@ function DataBackupSection() {
             aria-label="Import backup file"
           />
         </div>
-        <p className="text-[10px] text-goshiwon-text-muted">
+        <p className="text-xs text-goshiwon-text-muted">
           Export saves all progress, vocabulary, and settings as a JSON file.
         </p>
         {importStatus && (
@@ -146,37 +139,12 @@ function DataBackupSection() {
   );
 }
 
-export default function SettingsPanel({
-  settings,
-  onSetTheme,
-  onSetFontScale,
-  onSetReduceAnimations,
-  onSetShowRomanization,
-  isMuted,
-  onToggleMute,
-  volume,
-  onSetVolume,
-  onClose,
-}: SettingsPanelProps) {
-  return (
-    <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm overflow-y-auto animate-vocab-panel-in">
-      {/* Header */}
-      <div className="sticky top-0 flex items-center justify-between px-4 py-3 bg-goshiwon-surface border-b border-goshiwon-border">
-        <h2 className="text-sm font-medium text-goshiwon-text">
-          설정 (Settings)
-        </h2>
-        <button
-          onClick={onClose}
-          aria-label="Close settings"
-          className="text-goshiwon-text-muted hover:text-goshiwon-text transition-colors p-1"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
+export default function SettingsPanel({ onClose }: SettingsPanelProps) {
+  const { settings, setTheme: onSetTheme, setFontScale: onSetFontScale, setReduceAnimations: onSetReduceAnimations, setShowRomanization: onSetShowRomanization } = useSettingsContext();
+  const { muted: isMuted, toggleMute: onToggleMute, volume, setVolume: onSetVolume } = useSound();
 
+  return (
+    <Modal onClose={onClose} title="설정 (Settings)" stickyHeader closeAriaLabel="Close settings">
       {/* Body */}
       <div className="p-4 space-y-6">
         {/* Theme */}
@@ -344,6 +312,6 @@ export default function SettingsPanel({
           </div>
         </section>
       </div>
-    </div>
+    </Modal>
   );
 }

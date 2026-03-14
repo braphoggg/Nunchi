@@ -401,7 +401,7 @@ export default function TutorialOverlay({
         <div className="bg-goshiwon-surface border border-goshiwon-border rounded-xl shadow-2xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-3">
           {/* Header line */}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-goshiwon-text-muted uppercase tracking-widest">
+            <span className="text-xs text-goshiwon-text-muted uppercase tracking-widest">
               {stepIndex + 1} / {totalSteps}
             </span>
             <button
@@ -420,7 +420,7 @@ export default function TutorialOverlay({
             <h3 className="text-xs sm:text-sm font-medium text-goshiwon-text">
               {step.titleKr}
             </h3>
-            <p className="text-[10px] text-goshiwon-text-muted">
+            <p className="text-xs text-goshiwon-text-muted">
               {step.title}
             </p>
           </div>
@@ -431,7 +431,7 @@ export default function TutorialOverlay({
           </p>
 
           {/* Description */}
-          <p className="text-[11px] sm:text-xs text-goshiwon-text-secondary leading-relaxed">
+          <p className="text-xs sm:text-xs text-goshiwon-text-secondary leading-relaxed">
             {step.description}
           </p>
 
@@ -441,15 +441,15 @@ export default function TutorialOverlay({
               {step.interactionHint && (
                 <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
                   <span className="text-goshiwon-yellow text-xs">&#9758;</span>
-                  <span className="text-[11px] sm:text-xs text-goshiwon-yellow">{step.interactionHint}</span>
+                  <span className="text-xs sm:text-xs text-goshiwon-yellow">{step.interactionHint}</span>
                 </div>
               )}
               {step.secondaryInteractionHint && (
                 <>
-                  <p className="text-center text-[10px] text-goshiwon-text-muted">— or —</p>
+                  <p className="text-center text-xs text-goshiwon-text-muted">— or —</p>
                   <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 bg-goshiwon-bg rounded-lg border border-goshiwon-yellow/20">
                     <span className="text-goshiwon-yellow text-xs">&#9758;</span>
-                    <span className="text-[11px] sm:text-xs text-goshiwon-yellow">{step.secondaryInteractionHint}</span>
+                    <span className="text-xs sm:text-xs text-goshiwon-yellow">{step.secondaryInteractionHint}</span>
                   </div>
                 </>
               )}

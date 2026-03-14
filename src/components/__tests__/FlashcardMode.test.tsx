@@ -3,6 +3,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import FlashcardMode from "../FlashcardMode";
 import type { VocabularyItem } from "@/types";
 
+vi.mock("@/contexts/SoundContext", () => ({
+  useSound: () => ({
+    playWordSaved: vi.fn(),
+    playFlashcardGrade: vi.fn(),
+    playSessionComplete: vi.fn(),
+    playJamoPress: vi.fn(),
+    playSpecialKey: vi.fn(),
+    playTranslationToggle: vi.fn(),
+    playCopyConfirm: vi.fn(),
+    muted: false,
+    toggleMute: vi.fn(),
+    volume: 80,
+    setVolume: vi.fn(),
+  }),
+}));
+
 function makeWord(overrides: Partial<VocabularyItem> = {}): VocabularyItem {
   return {
     id: `id-${Math.random()}`,
@@ -103,37 +119,31 @@ describe("FlashcardMode", () => {
     expect(screen.getByText(/press 1-4 to select/)).toBeInTheDocument();
   });
 
-  it("selecting correct option fires onCorrectSound and onWordGraded with 'good'", () => {
-    const onCorrectSound = vi.fn();
+  it("selecting correct option fires onWordGraded with 'good'", () => {
     const onWordGraded = vi.fn();
     render(
       <FlashcardMode
         words={sampleWords}
         onClose={vi.fn()}
-        onCorrectSound={onCorrectSound}
         onWordGraded={onWordGraded}
       />,
     );
     // First option is the correct answer (deterministic mock)
     fireEvent.click(screen.getByLabelText(/^Option 1:/));
-    expect(onCorrectSound).toHaveBeenCalledTimes(1);
     expect(onWordGraded).toHaveBeenCalledWith("1", "good");
   });
 
-  it("selecting wrong option fires onWrongSound and onWordGraded with 'again'", () => {
-    const onWrongSound = vi.fn();
+  it("selecting wrong option fires onWordGraded with 'again'", () => {
     const onWordGraded = vi.fn();
     render(
       <FlashcardMode
         words={sampleWords}
         onClose={vi.fn()}
-        onWrongSound={onWrongSound}
         onWordGraded={onWordGraded}
       />,
     );
     // Second option is a distractor (wrong answer)
     fireEvent.click(screen.getByLabelText(/^Option 2:/));
-    expect(onWrongSound).toHaveBeenCalledTimes(1);
     expect(onWordGraded).toHaveBeenCalledWith("1", "again");
   });
 

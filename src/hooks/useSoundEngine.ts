@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { getAudioContext, getMasterGain, setMasterMuted, setMasterVolume, disposeAudioContext } from "@/lib/sound/audio-context";
 import { AmbientEngine, type MoodLevel } from "@/lib/sound/ambient-engine";
 import {
@@ -295,7 +295,7 @@ export function useSoundEngine() {
     // Legacy: no longer used separately; ambient is handled by startAmbient/typing
   }, []);
 
-  return {
+  return useMemo(() => ({
     // Legacy API (backward compat)
     playKeyClick,
     playAmbientHum,
@@ -343,5 +343,7 @@ export function useSoundEngine() {
     // Special events
     playFarewell: playFarewellSound,
     playGoshiwonEvent: playGoshiwon,
-  };
+  // Only reactive values are muted and volume; all callbacks are useCallback-stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [muted, volume]);
 }

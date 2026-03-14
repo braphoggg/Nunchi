@@ -27,18 +27,21 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTutorial } from "@/hooks/useTutorial";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useFlashcards } from "@/hooks/useFlashcards";
-import { useGoshiwonEvents } from "@/hooks/useGoshiwonEvents";
-import { useNightProgression } from "@/hooks/useNightProgression";
+import { useAtmosphere } from "@/hooks/useAtmosphere";
+import { useOverlayState } from "@/hooks/useOverlayState";
+import { useViewportHeight } from "@/hooks/useViewportHeight";
 import { useGamification } from "@/hooks/useGamification";
 import { useLessonHistory } from "@/hooks/useLessonHistory";
 import { resetTimestampCounter } from "@/lib/timestamps";
 import { getTextContent } from "@/lib/message-utils";
-import { computeKoreanRatio, getMoodLevel } from "@/lib/mood-engine";
 import { LESSON_TOPICS } from "@/lib/lesson-topics";
 import type { ResidentRank } from "@/types";
 import { computeNextSRS, getSRSState } from "@/lib/srs";
 import { MIN_QUIZ_WORDS } from "@/lib/quiz-generator";
 import type { FlashcardGrade } from "@/hooks/useFlashcards";
+import { SoundProvider } from "@/contexts/SoundContext";
+import { SettingsProvider } from "@/contexts/SettingsContext";
+import { GamificationProvider } from "@/contexts/GamificationContext";
 
 const VISITED_TOPICS_KEY = "nunchi-visited-topics";
 const ONBOARDED_KEY = "nunchi-onboarded";
@@ -165,13 +168,6 @@ export default function ChatContainer() {
     [words, updateWord],
   );
 
-  // Goshiwon atmospheric events
-  const assistantMsgCount = messages.filter((m) => m.role === "assistant").length;
-  const { activeEvent, dismissEvent } = useGoshiwonEvents(assistantMsgCount);
-
-  // Night mode progression
-  const { stage: nightStage, styleOverrides } = useNightProgression(messages.length);
-
   // Gamification
   const {
     totalXP,
@@ -189,6 +185,15 @@ export default function ChatContainer() {
     recordQuizComplete,
     recordWordSaved,
   } = useGamification(wordCount);
+
+  // Atmosphere: ambient sound, night mode, mood, goshiwon events
+  const { styleOverrides, activeEvent, dismissEvent, currentMood } = useAtmosphere({
+    messages,
+    isLoading,
+    recentXPGain,
+    sound,
+    tutorial,
+  });
 
   // Quiz completion handler
   const handleQuizComplete = useCallback(
@@ -260,16 +265,12 @@ export default function ChatContainer() {
     }
   }, [isLoading, sendMessage, recordMessage, sound]);
 
-  // Stats panel
-  const [statsOpen, setStatsOpen] = useState(false);
-  const toggleStats = useCallback(() => {
-    setStatsOpen((o) => {
-      sound.playPanelTransition(!o ? "open" : "close");
-      if (!o) closePanel();
-      return !o;
-    });
-  }, [closePanel, sound]);
-  const closeStats = useCallback(() => setStatsOpen(false), []);
+  // Overlay panel state (stats, help, settings)
+  const {
+    statsOpen, toggleStats, closeStats,
+    helpOpen, toggleHelp, closeHelp,
+    settingsOpen, toggleSettings, closeSettings,
+  } = useOverlayState(sound, closePanel);
 
   // Lesson history
   const {
@@ -297,30 +298,6 @@ export default function ChatContainer() {
     togglePanel();
   }, [closeStats, togglePanel, sound, panelOpen]);
 
-  // Help modal
-  const [helpOpen, setHelpOpen] = useState(false);
-  const toggleHelp = useCallback(() => {
-    setHelpOpen((o) => {
-      sound.playPanelTransition(!o ? "open" : "close");
-      if (!o) {
-        closePanel();
-        closeStats();
-      }
-      return !o;
-    });
-  }, [closePanel, closeStats, sound]);
-  const closeHelp = useCallback(() => setHelpOpen(false), []);
-
-  // Settings panel
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const toggleSettings = useCallback(() => {
-    setSettingsOpen((o) => {
-      sound.playPanelTransition(!o ? "open" : "close");
-      if (!o) { closePanel(); closeStats(); closeHelp(); }
-      return !o;
-    });
-  }, [closePanel, closeStats, closeHelp, sound]);
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
 
   // Onboarding overlay — show once per browser
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -363,26 +340,21 @@ export default function ChatContainer() {
   const promptLeave = useCallback(() => setConfirmLeave(true), []);
   const cancelLeave = useCallback(() => setConfirmLeave(false), []);
 
-  // Escape key closes overlays
+  // Escape key — Modal handles its own Escape for overlay panels.
+  // ChatContainer only handles non-Modal overlays (tutorial, leave dialog, keyboard).
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         if (tutorial.isActive) { tutorial.skipTutorial(); return; }
         if (confirmLeave) { cancelLeave(); return; }
-        if (helpOpen) { closeHelp(); return; }
-        if (settingsOpen) { closeSettings(); return; }
-        if (reviewingConversation) { closeReview(); return; }
-        if (historyOpen) { closeHistory(); return; }
-        if (statsOpen) { closeStats(); return; }
-        if (quizActive) { endQuiz(); return; }
-        if (flashcardActive) { endFlashcards(); return; }
-        if (panelOpen) { closePanel(); return; }
+        // Guard: if any Modal-based overlay is open, let Modal handle it
+        if (helpOpen || settingsOpen || reviewingConversation || historyOpen || statsOpen || quizActive || flashcardActive || panelOpen) return;
         if (keyboardVisible) { setKeyboardVisible(false); return; }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tutorial, confirmLeave, helpOpen, settingsOpen, reviewingConversation, historyOpen, statsOpen, quizActive, flashcardActive, panelOpen, keyboardVisible, cancelLeave, closeHelp, closeSettings, closeReview, closeHistory, closeStats, endQuiz, endFlashcards, closePanel]);
+  }, [tutorial, confirmLeave, helpOpen, settingsOpen, reviewingConversation, historyOpen, statsOpen, quizActive, flashcardActive, panelOpen, keyboardVisible, cancelLeave]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -415,93 +387,13 @@ export default function ChatContainer() {
   // Transition state
   const [transitioning, setTransitioning] = useState(false);
 
-  // Compute current mood from message history
-  const currentMood = useMemo(() => {
-    if (messages.length === 0) return "neutral" as const;
-    const simpleMessages = messages.map((m) => ({
-      role: m.role,
-      content: getTextContent(m),
-    }));
-    return getMoodLevel(computeKoreanRatio(simpleMessages));
-  }, [messages]);
-
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Accurate viewport height for mobile browsers.
-  // visualViewport.height excludes browser chrome (address bar, nav bar)
-  // which 100dvh / innerHeight may include on Samsung Internet & others.
-  useEffect(() => {
-    const update = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty("--app-height", `${h}px`);
-    };
-    update();
-    const vv = window.visualViewport;
-    if (vv) vv.addEventListener("resize", update);
-    window.addEventListener("resize", update);
-    return () => {
-      if (vv) vv.removeEventListener("resize", update);
-      window.removeEventListener("resize", update);
-      document.documentElement.style.removeProperty("--app-height");
-    };
-  }, []);
-
-  // Ambient soundscape — start on mount, stop on unmount
-  useEffect(() => {
-    sound.startAmbient();
-    return () => sound.stopAmbient();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Sync night stage with ambient engine
-  useEffect(() => {
-    sound.setNightStage(nightStage);
-  }, [nightStage, sound]);
-
-  // Sync mood level with ambient engine
-  useEffect(() => {
-    sound.setMoodLevel(currentMood);
-  }, [currentMood, sound]);
-
-  // Moon-jo typing sequence (replaces old hum+click interval)
-  useEffect(() => {
-    if (isLoading) {
-      sound.startTyping();
-      return () => sound.stopTyping();
-    }
-  }, [isLoading, sound]);
-
-  // Message receive sound — fires when assistant finishes a message
-  const prevMsgLenRef = useRef(messages.length);
-  useEffect(() => {
-    if (messages.length > prevMsgLenRef.current && !isLoading) {
-      const last = messages[messages.length - 1];
-      if (last?.role === "assistant") {
-        sound.playMessageReceive();
-      }
-    }
-    prevMsgLenRef.current = messages.length;
-  }, [messages.length, isLoading, messages, sound]);
-
-  // XP ding sound
-  useEffect(() => {
-    if (recentXPGain) sound.playXPDing();
-  }, [recentXPGain, sound]);
-
-  // Goshiwon event sound
-  useEffect(() => {
-    if (activeEvent) sound.playGoshiwonEvent(activeEvent.english);
-  }, [activeEvent, sound]);
-
-  // Tutorial step sound
-  useEffect(() => {
-    if (tutorial.isActive && tutorial.currentStepIndex > 0) {
-      sound.playTutorialStep();
-    }
-  }, [tutorial.isActive, tutorial.currentStepIndex, sound]);
+  // Accurate viewport height for mobile browsers
+  useViewportHeight();
 
   // Crossfade transition when first message appears
   useEffect(() => {
@@ -588,7 +480,28 @@ export default function ChatContainer() {
     [addWords, recordWordSaved]
   );
 
+  const settingsCtx = useMemo(
+    () => ({ settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization }),
+    [settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization],
+  );
+
+  const gamificationCtx = useMemo(
+    () => ({
+      totalXP, recentXPGain, koreanHint, currentStreak, longestStreak,
+      rank, rankProgress, nextRank, stats,
+      recordMessage, recordTranslation, recordFlashcardComplete, recordQuizComplete, recordWordSaved,
+      vocabCount: wordCount, words,
+    }),
+    [totalXP, recentXPGain, koreanHint, currentStreak, longestStreak,
+     rank, rankProgress, nextRank, stats,
+     recordMessage, recordTranslation, recordFlashcardComplete, recordQuizComplete, recordWordSaved,
+     wordCount, words],
+  );
+
   return (
+    <SoundProvider value={sound}>
+    <SettingsProvider value={settingsCtx}>
+    <GamificationProvider value={gamificationCtx}>
     <div
       style={{ ...(settings.theme === "light" ? LIGHT_THEME : styleOverrides), zoom: settings.fontScale }}
       data-reduce-motion={settings.reduceAnimations ? "true" : "false"}
@@ -664,34 +577,12 @@ export default function ChatContainer() {
 
       {/* Stats panel overlay */}
       {statsOpen && (
-        <StatsPanel
-          rank={rank}
-          rankProgress={rankProgress}
-          nextRank={nextRank}
-          totalXP={totalXP}
-          currentStreak={currentStreak}
-          longestStreak={longestStreak}
-          stats={stats}
-          vocabCount={wordCount}
-          words={words}
-          onClose={closeStats}
-        />
+        <StatsPanel onClose={closeStats} />
       )}
 
       {/* Settings panel */}
       {settingsOpen && (
-        <SettingsPanel
-          settings={settings}
-          onSetTheme={setTheme}
-          onSetFontScale={setFontScale}
-          onSetReduceAnimations={setReduceAnimations}
-          onSetShowRomanization={setShowRomanization}
-          isMuted={sound.muted}
-          onToggleMute={sound.toggleMute}
-          volume={sound.volume}
-          onSetVolume={sound.setVolume}
-          onClose={closeSettings}
-        />
+        <SettingsPanel onClose={closeSettings} />
       )}
 
       {panelOpen && !flashcardActive && !quizActive && (
@@ -705,7 +596,6 @@ export default function ChatContainer() {
           studyableCount={studyableCount}
           quizReady={quizReady}
           dueCount={dueCount}
-          showRomanization={settings.showRomanization}
         />
       )}
 
@@ -715,9 +605,6 @@ export default function ChatContainer() {
           onClose={endFlashcards}
           onSessionComplete={recordFlashcardComplete}
           onWordGraded={handleWordGraded}
-          onCorrectSound={sound.playWordSaved}
-          onWrongSound={() => sound.playFlashcardGrade("again")}
-          onCompleteSound={sound.playSessionComplete}
         />
       )}
 
@@ -726,9 +613,6 @@ export default function ChatContainer() {
           words={words}
           onClose={endQuiz}
           onQuizComplete={handleQuizComplete}
-          onCorrectSound={sound.playWordSaved}
-          onWrongSound={() => sound.playFlashcardGrade("again")}
-          onCompleteSound={sound.playSessionComplete}
         />
       )}
 
@@ -761,10 +645,6 @@ export default function ChatContainer() {
                   onSaveWords={handleSaveWords}
                   isWordSaved={isWordSaved}
                   onTranslateUsed={recordTranslation}
-                  onTranslationToggleSound={sound.playTranslationToggle}
-                  onCopySound={sound.playCopyConfirm}
-                  onWordSavedSound={sound.playWordSaved}
-                  showRomanization={settings.showRomanization}
                 />
               </div>
             ))}
@@ -802,7 +682,7 @@ export default function ChatContainer() {
             <button
               onClick={() => setErrorDismissed(true)}
               aria-label="Dismiss error"
-              className="absolute top-2 right-2 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors p-1"
+              className="absolute top-2 right-2 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -851,8 +731,6 @@ export default function ChatContainer() {
           onDeleteChar={handleKeyboardDelete}
           onSubmit={handleKeyboardSubmit}
           visible={keyboardVisible}
-          onJamoPress={sound.playJamoPress}
-          onSpecialKey={sound.playSpecialKey}
         />
 
         <ChatInput
@@ -885,5 +763,8 @@ export default function ChatContainer() {
         />
       )}
     </div>
+    </GamificationProvider>
+    </SettingsProvider>
+    </SoundProvider>
   );
 }

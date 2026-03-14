@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { RankInfo } from "@/types";
 
 interface StatsBarProps {
@@ -20,7 +21,7 @@ function getStreakLabel(days: number, short = false): string {
   return short ? `${days}d` : `${days} days \u2014 Home.`;
 }
 
-export default function StatsBar({
+function StatsBar({
   streak,
   totalXP,
   rank,
@@ -37,7 +38,7 @@ export default function StatsBar({
     <button
       data-tutorial="statsbar"
       onClick={onToggleStats}
-      className="relative z-50 w-full flex items-center justify-between px-2 sm:px-3 py-1.5 bg-goshiwon-surface/50 border-b border-goshiwon-border text-[10px] sm:text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer group"
+      className="relative z-50 w-full flex items-center justify-between px-2 sm:px-3 py-1.5 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs sm:text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer group"
       aria-label="Open stats panel"
       title="View detailed stats"
     >
@@ -71,7 +72,7 @@ export default function StatsBar({
 
       {/* Rank + progress + chevron */}
       <div className="flex items-center gap-1 sm:gap-2">
-        <span className="text-goshiwon-yellow text-[10px] sm:text-[11px]" title={rank.description}>
+        <span className="text-goshiwon-yellow text-xs" title={rank.description}>
           {rank.korean}
           <span className="hidden sm:inline"> ({rank.english})</span>
         </span>
@@ -102,3 +103,5 @@ export default function StatsBar({
     </button>
   );
 }
+
+export default memo(StatsBar);

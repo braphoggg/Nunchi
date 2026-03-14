@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, memo } from "react";
 import type { UIMessage } from "ai";
 import { formatMessage } from "@/lib/format-message";
 import { getAtmosphericTimestamp } from "@/lib/timestamps";
 import { parseVocabulary, hasVocabulary } from "@/lib/parse-vocabulary";
 import type { VocabularyItem } from "@/types";
 import { getTextContent } from "@/lib/message-utils";
+import { useSound } from "@/contexts/SoundContext";
+import { useSettingsContext } from "@/contexts/SettingsContext";
 
 /** Strip romanization parentheticals from text, e.g. " (annyeonghaseyo)" */
 function stripRomanization(text: string): string {
@@ -35,13 +37,12 @@ interface MessageBubbleProps {
   onSaveWords?: (words: Omit<VocabularyItem, "id" | "savedAt">[]) => void;
   isWordSaved?: (korean: string) => boolean;
   onTranslateUsed?: () => void;
-  onTranslationToggleSound?: () => void;
-  onCopySound?: () => void;
-  onWordSavedSound?: () => void;
-  showRomanization?: boolean;
 }
 
-export default function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed, onTranslationToggleSound, onCopySound, onWordSavedSound, showRomanization = true }: MessageBubbleProps) {
+function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: MessageBubbleProps) {
+  const sound = useSound();
+  const { settings } = useSettingsContext();
+  const showRomanization = settings.showRomanization;
   const isAssistant = message.role === "assistant";
   const content = getTextContent(message);
 
@@ -136,10 +137,10 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     }
 
     onSaveWords(vocabItems);
-    onWordSavedSound?.();
+    sound.playWordSaved();
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
-  }, [vocabItems, onSaveWords, saved, saving, allWordsSaved, onWordSavedSound]);
+  }, [vocabItems, onSaveWords, saved, saving, allWordsSaved, sound]);
 
   /** Save a single vocabulary word by its Korean text (clicked inline) */
   const handleSingleWordSave = useCallback(async (koreanWord: string) => {
@@ -173,15 +174,15 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     }
 
     onSaveWords([item]);
-    onWordSavedSound?.();
-  }, [vocabItems, onSaveWords, saving, isWordSaved, onWordSavedSound]);
+    sound.playWordSaved();
+  }, [vocabItems, onSaveWords, saving, isWordSaved, sound]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const timestamp = useMemo(() => getAtmosphericTimestamp(), []);
 
   async function handleTranslate() {
     if (!isAssistant || translating) return;
-    onTranslationToggleSound?.();
+    sound.playTranslationToggle();
 
     // Toggle back to original
     if (showTranslation) {
@@ -219,7 +220,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(content);
-      onCopySound?.();
+      sound.playCopyConfirm();
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -255,7 +256,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
         >
           {isAssistant && (
             <div className="px-4 pt-3 pb-0">
-              <span className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
+              <span className="text-xs text-goshiwon-text-muted uppercase tracking-wider">
                 서문조
               </span>
             </div>
@@ -266,7 +267,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
             }`}
           >
             {showTranslation && translation && (
-              <p className="text-[10px] text-goshiwon-text-muted italic mb-1">
+              <p className="text-xs text-goshiwon-text-muted italic mb-1">
                 Translated — tap the globe to see original
               </p>
             )}
@@ -299,7 +300,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
               isAssistant ? "text-left" : "text-right"
             }`}
           >
-            <span className="text-[10px] text-goshiwon-text-muted">
+            <span className="text-xs text-goshiwon-text-muted">
               {timestamp}
             </span>
           </div>
@@ -307,14 +308,14 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
 
         {/* Action buttons — below the bubble */}
         {isAssistant ? (
-          <div data-tutorial="message-actions" className="flex items-center gap-1 mt-1 ml-1">
+          <div data-tutorial="message-actions" className="flex items-center gap-1.5 mt-1 ml-1">
             {/* Translate */}
             <button
               onClick={handleTranslate}
               title={showTranslation ? "Show original" : "Translate"}
               aria-label={showTranslation ? "Show original message" : "Translate message"}
               aria-pressed={showTranslation}
-              className={`p-1.5 transition-colors rounded ${
+              className={`p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors rounded ${
                 showTranslation
                   ? "text-goshiwon-yellow hover:text-goshiwon-yellow/80"
                   : "text-goshiwon-text-muted hover:text-goshiwon-text"
@@ -340,10 +341,10 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
               onClick={handleCopy}
               title="Copy"
               aria-label="Copy message"
-              className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
             >
               {copied ? (
-                <span className="text-[10px] text-goshiwon-yellow font-medium">
+                <span className="text-xs text-goshiwon-yellow font-medium">
                   Copied!
                 </span>
               ) : (
@@ -368,7 +369,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
                 onClick={handleSpeak}
                 title={speaking ? "Stop listening" : "Listen"}
                 aria-label={speaking ? "Stop listening to message" : "Listen to Korean text"}
-                className={`p-1.5 transition-colors rounded ${
+                className={`p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors rounded ${
                   speaking
                     ? "text-goshiwon-yellow hover:text-goshiwon-yellow/80"
                     : "text-goshiwon-text-muted hover:text-goshiwon-text"
@@ -402,18 +403,18 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
                 title={saving ? "Saving..." : allWordsSaved ? "Already saved" : "Save words"}
                 aria-label={saving ? "Saving vocabulary" : allWordsSaved ? "Words already saved" : "Save vocabulary"}
                 disabled={allWordsSaved || saved || saving}
-                className={`p-1.5 transition-colors rounded ${
+                className={`p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors rounded ${
                   allWordsSaved
                     ? "text-goshiwon-yellow/60 cursor-default"
                     : "text-goshiwon-text-muted hover:text-goshiwon-text"
                 }`}
               >
                 {saving ? (
-                  <span className="text-[10px] text-goshiwon-text-muted font-medium">
+                  <span className="text-xs text-goshiwon-text-muted font-medium">
                     Saving...
                   </span>
                 ) : saved ? (
-                  <span className="text-[10px] text-goshiwon-yellow font-medium">
+                  <span className="text-xs text-goshiwon-yellow font-medium">
                     Saved!
                   </span>
                 ) : allWordsSaved ? (
@@ -447,16 +448,16 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1 mt-1 mr-1 justify-end">
+          <div className="flex items-center gap-1.5 mt-1 mr-1 justify-end">
             {/* Copy only for user messages */}
             <button
               onClick={handleCopy}
               title="Copy"
               aria-label="Copy message"
-              className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-goshiwon-text-muted hover:text-goshiwon-text transition-colors rounded"
             >
               {copied ? (
-                <span className="text-[10px] text-goshiwon-yellow font-medium">
+                <span className="text-xs text-goshiwon-yellow font-medium">
                   Copied!
                 </span>
               ) : (
@@ -479,7 +480,7 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
 
         {/* Read receipt for user messages */}
         {!isAssistant && (
-          <span className="text-[10px] text-goshiwon-text-muted mt-1 mr-1 animate-read-receipt">
+          <span className="text-xs text-goshiwon-text-muted mt-1 mr-1 animate-read-receipt">
             읽음
           </span>
         )}
@@ -487,3 +488,5 @@ export default function MessageBubble({ message, onSaveWords, isWordSaved, onTra
     </div>
   );
 }
+
+export default memo(MessageBubble);

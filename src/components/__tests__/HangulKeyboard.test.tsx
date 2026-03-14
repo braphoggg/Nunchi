@@ -2,6 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import HangulKeyboard from "../HangulKeyboard";
 
+vi.mock("@/contexts/SoundContext", () => ({
+  useSound: () => ({
+    playJamoPress: vi.fn(),
+    playSpecialKey: vi.fn(),
+    muted: false,
+    toggleMute: vi.fn(),
+    volume: 80,
+    setVolume: vi.fn(),
+  }),
+}));
+
 describe("HangulKeyboard", () => {
   let onInput: ReturnType<typeof vi.fn>;
   let onDeleteChar: ReturnType<typeof vi.fn>;

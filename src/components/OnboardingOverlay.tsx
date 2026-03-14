@@ -16,7 +16,7 @@ export default function OnboardingOverlay({ onStartTour, onSkip }: OnboardingOve
       <div className="mx-4 max-w-sm w-full bg-goshiwon-surface border border-goshiwon-border rounded-xl shadow-2xl p-6 flex flex-col gap-5">
         {/* Header */}
         <div className="text-center">
-          <p className="text-[10px] text-goshiwon-text-muted uppercase tracking-widest mb-2">
+          <p className="text-xs text-goshiwon-text-muted uppercase tracking-widest mb-2">
             Room 203 · Eden Goshiwon
           </p>
           <h2 className="text-lg font-light text-goshiwon-text">
@@ -35,12 +35,12 @@ export default function OnboardingOverlay({ onStartTour, onSkip }: OnboardingOve
             <span className="text-xl">✦</span>
             <span className="text-xl">📖</span>
           </div>
-          <p className="text-[11px] text-goshiwon-text-muted text-center leading-relaxed max-w-[260px]">
+          <p className="text-xs text-goshiwon-text-muted text-center leading-relaxed max-w-[260px]">
             Translate messages, earn XP by writing Korean, and save vocabulary words as you learn.
           </p>
         </div>
 
-        <p className="text-center text-[10px] text-goshiwon-text-muted italic">
+        <p className="text-center text-xs text-goshiwon-text-muted italic">
           &ldquo;The hallway light flickers. He already knows you&rsquo;re here.&rdquo;
         </p>
 

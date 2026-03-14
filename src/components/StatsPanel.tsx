@@ -1,34 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
-import type { RankInfo, SessionStats, VocabularyItem } from "@/types";
+import Modal from "./Modal";
 import { isDueForReview } from "@/lib/srs";
+import { useGamificationContext } from "@/contexts/GamificationContext";
 
 interface StatsPanelProps {
-  rank: RankInfo;
-  rankProgress: number;
-  nextRank: RankInfo | null;
-  totalXP: number;
-  currentStreak: number;
-  longestStreak: number;
-  stats: SessionStats;
-  vocabCount: number;
-  words?: VocabularyItem[];
   onClose: () => void;
 }
 
-export default function StatsPanel({
-  rank,
-  rankProgress,
-  nextRank,
-  totalXP,
-  currentStreak,
-  longestStreak,
-  stats,
-  vocabCount,
-  words = [],
-  onClose,
-}: StatsPanelProps) {
+export default function StatsPanel({ onClose }: StatsPanelProps) {
+  const {
+    rank, rankProgress, nextRank, totalXP,
+    currentStreak, longestStreak, stats,
+    vocabCount, words,
+  } = useGamificationContext();
   // SRS analytics
   const srsInsights = useMemo(() => {
     const now = new Date();
@@ -59,23 +45,7 @@ export default function StatsPanel({
     ? Math.round((stats.messagesWithoutTranslate / stats.totalMessages) * 100)
     : 0;
   return (
-    <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm overflow-y-auto animate-vocab-panel-in">
-      {/* Header */}
-      <div className="sticky top-0 flex items-center justify-between px-4 py-3 bg-goshiwon-surface border-b border-goshiwon-border">
-        <h2 className="text-sm font-medium text-goshiwon-text">
-          Resident Record
-        </h2>
-        <button
-          onClick={onClose}
-          aria-label="Close stats panel"
-          className="text-goshiwon-text-muted hover:text-goshiwon-text transition-colors p-1"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
+    <Modal onClose={onClose} title="Resident Record" stickyHeader closeAriaLabel="Close stats panel">
       <div className="p-4 space-y-5">
         {/* Rank Card */}
         <div className="bg-goshiwon-surface rounded-lg p-4 border border-goshiwon-border">
@@ -90,7 +60,7 @@ export default function StatsPanel({
           {/* Progress to next rank */}
           {nextRank && (
             <div className="mt-4">
-              <div className="flex justify-between text-[10px] text-goshiwon-text-muted mb-1">
+              <div className="flex justify-between text-xs text-goshiwon-text-muted mb-1">
                 <span>{rank.korean}</span>
                 <span>{nextRank.korean}</span>
               </div>
@@ -100,13 +70,13 @@ export default function StatsPanel({
                   style={{ width: `${Math.round(Math.min(rankProgress, 1) * 100)}%` }}
                 />
               </div>
-              <p className="text-[10px] text-goshiwon-text-muted mt-1 text-center">
+              <p className="text-xs text-goshiwon-text-muted mt-1 text-center">
                 {totalXP}/{nextRank.minXP} XP &middot; {vocabCount}/{nextRank.minVocab} words
               </p>
             </div>
           )}
           {!nextRank && (
-            <p className="text-[10px] text-goshiwon-yellow mt-3 text-center italic">
+            <p className="text-xs text-goshiwon-yellow mt-3 text-center italic">
               Maximum rank achieved.
             </p>
           )}
@@ -226,7 +196,7 @@ export default function StatsPanel({
                     className="text-goshiwon-yellow"
                   />
                 </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-goshiwon-text">
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-goshiwon-text">
                   {immersionPct}%
                 </span>
               </div>
@@ -234,7 +204,7 @@ export default function StatsPanel({
                 <p className="text-xs text-goshiwon-text">
                   {stats.messagesWithoutTranslate}/{stats.totalMessages} messages
                 </p>
-                <p className="text-[10px] text-goshiwon-text-muted mt-0.5">
+                <p className="text-xs text-goshiwon-text-muted mt-0.5">
                   without translation button
                 </p>
               </div>
@@ -242,7 +212,7 @@ export default function StatsPanel({
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }
 

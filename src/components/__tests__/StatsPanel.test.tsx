@@ -28,15 +28,21 @@ const stats: SessionStats = {
   messagesWithoutTranslate: 3,
 };
 
+vi.mock("@/contexts/GamificationContext", () => ({
+  useGamificationContext: () => ({
+    rank,
+    rankProgress: 0.35,
+    nextRank,
+    totalXP: 240,
+    currentStreak: 5,
+    longestStreak: 12,
+    stats,
+    vocabCount: 18,
+    words: [],
+  }),
+}));
+
 const defaultProps = {
-  rank,
-  rankProgress: 0.35,
-  nextRank,
-  totalXP: 240,
-  currentStreak: 5,
-  longestStreak: 12,
-  stats,
-  vocabCount: 18,
   onClose: vi.fn(),
 };
 

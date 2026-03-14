@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { SavedConversation } from "@/types";
+import Modal from "./Modal";
 
 interface LessonHistoryProps {
   conversations: SavedConversation[];
@@ -45,36 +46,12 @@ export default function LessonHistory({
   }, [conversations, searchQuery]);
 
   return (
-    <div className="absolute inset-0 z-50 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-goshiwon-border">
-        <div>
-          <h2 className="text-sm font-medium text-goshiwon-text">
-            수업 기록
-          </h2>
-          <p className="text-[10px] text-goshiwon-text-muted">
-            Lesson History{conversations.length > 0 && ` — ${conversations.length} saved`}
-          </p>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label="Close history"
-          className="p-1.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
+    <Modal
+      onClose={onClose}
+      title="수업 기록"
+      subtitle={`Lesson History${conversations.length > 0 ? ` — ${conversations.length} saved` : ""}`}
+      closeAriaLabel="Close history"
+    >
       {/* Search bar */}
       {conversations.length > 0 && (
         <div className="px-3 pt-3">
@@ -103,7 +80,7 @@ export default function LessonHistory({
               <button
                 onClick={() => setSearchQuery("")}
                 aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-goshiwon-text-muted hover:text-goshiwon-text transition-colors"
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M18 6L6 18M6 6l12 12" />
@@ -112,7 +89,7 @@ export default function LessonHistory({
             )}
           </div>
           {searchQuery && (
-            <p className="text-[10px] text-goshiwon-text-muted mt-1.5">
+            <p className="text-xs text-goshiwon-text-muted mt-1.5">
               {filtered.length} {filtered.length === 1 ? "result" : "results"}
             </p>
           )}
@@ -120,7 +97,7 @@ export default function LessonHistory({
       )}
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="p-3 space-y-2">
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <svg
@@ -168,7 +145,7 @@ export default function LessonHistory({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] text-goshiwon-text-muted bg-goshiwon-bg rounded-full px-2 py-0.5">
+                  <span className="text-xs text-goshiwon-text-muted bg-goshiwon-bg rounded-full px-2 py-0.5">
                     {c.messageCount} msgs
                   </span>
                   <button
@@ -177,7 +154,7 @@ export default function LessonHistory({
                       onDelete(c.id);
                     }}
                     aria-label="Delete conversation"
-                    className="p-1 text-goshiwon-text-muted hover:text-goshiwon-accent-light transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-goshiwon-text-muted hover:text-goshiwon-accent-light transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <svg
                       className="w-3.5 h-3.5"
@@ -199,6 +176,6 @@ export default function LessonHistory({
           ))
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

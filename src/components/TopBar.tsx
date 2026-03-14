@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { RankInfo } from "@/types";
 import type { MoodLevel } from "@/lib/mood-engine";
 
@@ -48,18 +49,18 @@ function NavButton({
       disabled={disabled}
       title={title}
       aria-label={ariaLabel}
-      className={`relative flex flex-col items-center gap-0.5 px-1.5 py-1 text-goshiwon-text-muted hover:text-goshiwon-text transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default ${className}`}
+      className={`relative flex flex-col items-center gap-0.5 px-1.5 py-1 min-h-[44px] min-w-[40px] text-goshiwon-text-muted hover:text-goshiwon-text transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default ${className}`}
     >
       {badge}
       {children}
-      <span className="text-[8px] leading-none text-goshiwon-text-muted/70">
+      <span className="text-xs leading-none text-goshiwon-text-muted/70">
         {label}
       </span>
     </button>
   );
 }
 
-export default function TopBar({
+function TopBar({
   onReset,
   onToggleSettings,
   onToggleHistory,
@@ -160,7 +161,7 @@ export default function TopBar({
             label="Words"
             badge={
               (vocabularyCount ?? 0) > 0 ? (
-                <span className="absolute -top-0.5 right-0 w-3.5 h-3.5 bg-goshiwon-accent rounded-full flex items-center justify-center text-[8px] text-goshiwon-text font-medium z-10">
+                <span className="absolute -top-0.5 right-0 w-3.5 h-3.5 bg-goshiwon-accent rounded-full flex items-center justify-center text-xs text-goshiwon-text font-medium z-10">
                   {vocabularyCount! > 99 ? "99" : vocabularyCount}
                 </span>
               ) : undefined
@@ -226,3 +227,5 @@ export default function TopBar({
     </div>
   );
 }
+
+export default memo(TopBar);

@@ -75,7 +75,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
         <h2 className="text-lg sm:text-2xl font-light text-goshiwon-text mb-0.5 sm:mb-2 font-serif-display">
           {greeting.korean}
         </h2>
-        <p className="text-[11px] sm:text-sm text-goshiwon-text-secondary">
+        <p className="text-xs sm:text-sm text-goshiwon-text-secondary">
           {greeting.english}
         </p>
       </div>
@@ -84,21 +84,21 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
       {(dailyFocus.suggestedTopic || dailyFocus.reviewReminder) && (
         <div className="w-full max-w-lg mb-1.5 sm:mb-4">
           <div className="bg-goshiwon-surface/80 border border-goshiwon-yellow/20 rounded-lg p-2 sm:p-3 space-y-1 sm:space-y-2">
-            <p className="text-[10px] text-goshiwon-text-muted uppercase tracking-wider">
+            <p className="text-xs text-goshiwon-text-muted uppercase tracking-wider">
               Today&apos;s Focus
             </p>
             {/* Hide the quote on mobile to save vertical space */}
             <p className="hidden sm:block text-sm text-[#d4a843] font-korean leading-snug">
               &ldquo;{dailyFocus.dailyQuote.korean}&rdquo;
             </p>
-            <p className="hidden sm:block text-[11px] text-goshiwon-text-muted italic font-serif-display">
+            <p className="hidden sm:block text-xs text-goshiwon-text-muted italic font-serif-display">
               {dailyFocus.dailyQuote.english}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               {dailyFocus.reviewReminder && onStartStudy && (
                 <button
                   onClick={onStartStudy}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors border border-goshiwon-accent/20"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-goshiwon-accent/20 text-goshiwon-accent-light hover:bg-goshiwon-accent/30 transition-colors border border-goshiwon-accent/20"
                 >
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -116,7 +116,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                       dailyFocus.suggestedTopic!.id,
                     )
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 transition-colors border border-goshiwon-yellow/20"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-goshiwon-yellow/10 text-goshiwon-yellow/80 hover:bg-goshiwon-yellow/20 transition-colors border border-goshiwon-yellow/20"
                 >
                   {dailyFocus.reason === "unvisited" ? "Start" : "Review"}: {dailyFocus.suggestedTopic.title}
                 </button>
@@ -151,11 +151,11 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
               {/* Top-right badges — hidden on mobile to save width */}
               <div className="absolute top-1 right-1.5 sm:top-1.5 sm:right-2 flex items-center gap-1">
                 {visited && (
-                  <span className="hidden sm:inline text-[9px] text-goshiwon-yellow/60 italic">
+                  <span className="hidden sm:inline text-xs text-goshiwon-yellow/60 italic">
                     studied
                   </span>
                 )}
-                <span className={`text-[7px] sm:text-[8px] font-medium px-1 sm:px-1.5 py-px rounded-full border ${diffConfig.className}`}>
+                <span className={`text-xs sm:text-xs font-medium px-1 sm:px-1.5 py-px rounded-full border ${diffConfig.className}`}>
                   {diffConfig.label}
                 </span>
               </div>
@@ -177,11 +177,11 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                   <div className="text-xs sm:text-sm font-medium text-goshiwon-text truncate">
                     {topic.titleKr}
                   </div>
-                  <div className="text-[10px] sm:text-xs text-goshiwon-text-muted truncate">
+                  <div className="text-xs sm:text-xs text-goshiwon-text-muted truncate">
                     {topic.title}
                   </div>
                   {!isUnlocked && topic.requiredRank && (
-                    <div className="text-[8px] sm:text-[9px] text-goshiwon-accent-light/60 mt-0.5">
+                    <div className="text-xs sm:text-xs text-goshiwon-accent-light/60 mt-0.5">
                       🔒 {getRankDisplayName(topic.requiredRank)}
                     </div>
                   )}
@@ -197,7 +197,7 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
         Or simply type a message below. Moon-jo is always... watching.
       </p>
       {(!rank || rank.id === "new_resident") && (
-        <p className="hidden sm:block mt-1 text-[10px] text-goshiwon-text-muted italic text-center">
+        <p className="hidden sm:block mt-1 text-xs text-goshiwon-text-muted italic text-center">
           Tip: Write in Korean to earn XP and rise through the ranks.
         </p>
       )}
