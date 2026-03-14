@@ -7,7 +7,7 @@
 A cinematic Korean language learning app set in a fictional goshiwon,<br>
 inspired by the K-drama *Strangers from Hell* (타인은 지옥이다).
 
-![Nunchi — Welcome Screen](screenshot.png)
+![Nunchi — Welcome Screen](screenshot.png?v=2)
 
 [Quick Start](#quick-start) · [Features](#features) · [How It Works](#how-it-works) · [Tech Stack](#tech-stack) · [Project Structure](#project-structure)
 
