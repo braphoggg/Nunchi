@@ -99,7 +99,8 @@ function TopBar({
 
       <div className="flex-1 min-w-0">
         <h1 className="font-medium text-goshiwon-text text-sm leading-tight truncate font-serif-display">
-          서문조 (Seo Moon-jo)
+          <span className="sm:hidden">서문조</span>
+          <span className="hidden sm:inline">서문조 (Seo Moon-jo)</span>
         </h1>
       </div>
 
