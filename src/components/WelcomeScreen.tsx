@@ -148,18 +148,6 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                   : "border-t-goshiwon-border opacity-60 cursor-not-allowed"
               }`}
             >
-              {/* Top-right badges — hidden on mobile to save width */}
-              <div className="absolute top-1 right-1.5 sm:top-1.5 sm:right-2 flex items-center gap-1">
-                {visited && (
-                  <span className="hidden sm:inline text-xs text-goshiwon-yellow/60 italic">
-                    studied
-                  </span>
-                )}
-                <span className={`text-xs sm:text-xs font-medium px-1 sm:px-1.5 py-px rounded-full border ${diffConfig.className}`}>
-                  {diffConfig.label}
-                </span>
-              </div>
-
               <div className="flex items-center gap-2 sm:gap-3">
                 <span className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-full border text-sm sm:text-lg shrink-0 transition-all duration-300 ${
                   isUnlocked
@@ -173,18 +161,31 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                     </svg>
                   )}
                 </span>
-                <div className="min-w-0">
-                  <div className="text-xs sm:text-sm font-medium text-goshiwon-text truncate">
-                    {topic.titleKr}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm font-medium text-goshiwon-text truncate">
+                      {topic.titleKr}
+                    </span>
+                    <span className={`hidden sm:inline text-xs font-medium px-1.5 py-px rounded-full border whitespace-nowrap ${diffConfig.className}`}>
+                      {diffConfig.label}
+                    </span>
+                    {visited && (
+                      <span className="hidden sm:inline text-xs text-goshiwon-yellow/60 italic">
+                        studied
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs sm:text-xs text-goshiwon-text-muted truncate">
+                  <div className="text-xs text-goshiwon-text-muted truncate">
                     {topic.title}
                   </div>
                   {!isUnlocked && topic.requiredRank && (
-                    <div className="text-xs sm:text-xs text-goshiwon-accent-light/60 mt-0.5">
+                    <div className="text-xs text-goshiwon-accent-light/60 mt-0.5">
                       🔒 {getRankDisplayName(topic.requiredRank)}
                     </div>
                   )}
+                  <span className={`sm:hidden inline-block mt-0.5 text-xs font-medium px-1 py-px rounded-full border whitespace-nowrap ${diffConfig.className}`}>
+                    {diffConfig.label}
+                  </span>
                 </div>
               </div>
             </button>
