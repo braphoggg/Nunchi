@@ -100,6 +100,7 @@ export default function ChatInput({
             handleInput();
           }}
           onKeyDown={handleKeyDown}
+          aria-label="Message input"
           placeholder={placeholder}
           className="flex-1 bg-goshiwon-input rounded-lg px-4 py-3 text-goshiwon-text text-sm placeholder:text-goshiwon-text-muted focus:outline-none focus:ring-1 focus:ring-goshiwon-accent/50 border border-goshiwon-border focus:border-goshiwon-accent/50 transition-colors auto-grow-textarea"
           disabled={isLoading}

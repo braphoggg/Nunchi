@@ -30,15 +30,17 @@ function Toggle({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-        checked ? "bg-goshiwon-accent" : "bg-goshiwon-border"
-      }`}
+      className="relative min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
     >
-      <span
-        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-goshiwon-text transition-transform ${
-          checked ? "translate-x-5" : ""
-        }`}
-      />
+      <span className={`relative w-10 h-5 rounded-full transition-colors ${
+        checked ? "bg-goshiwon-accent" : "bg-goshiwon-border"
+      }`}>
+        <span
+          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-goshiwon-text transition-transform ${
+            checked ? "translate-x-5" : ""
+          }`}
+        />
+      </span>
     </button>
   );
 }
@@ -290,18 +292,18 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
                 onChange={(e) => onSetVolume(Number(e.target.value))}
                 aria-label="Volume"
                 disabled={isMuted}
-                className="w-full h-1.5 rounded-full appearance-none cursor-pointer
+                className="w-full h-2 rounded-full appearance-none cursor-pointer
                   bg-goshiwon-border
                   [&::-webkit-slider-thumb]:appearance-none
-                  [&::-webkit-slider-thumb]:w-4
-                  [&::-webkit-slider-thumb]:h-4
+                  [&::-webkit-slider-thumb]:w-6
+                  [&::-webkit-slider-thumb]:h-6
                   [&::-webkit-slider-thumb]:rounded-full
                   [&::-webkit-slider-thumb]:bg-goshiwon-accent-light
                   [&::-webkit-slider-thumb]:border-2
                   [&::-webkit-slider-thumb]:border-goshiwon-surface
                   [&::-webkit-slider-thumb]:shadow-sm
-                  [&::-moz-range-thumb]:w-4
-                  [&::-moz-range-thumb]:h-4
+                  [&::-moz-range-thumb]:w-6
+                  [&::-moz-range-thumb]:h-6
                   [&::-moz-range-thumb]:rounded-full
                   [&::-moz-range-thumb]:bg-goshiwon-accent-light
                   [&::-moz-range-thumb]:border-2

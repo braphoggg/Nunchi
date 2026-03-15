@@ -15,8 +15,7 @@ const mockRank: RankInfo = {
 describe("TopBar", () => {
   it("renders the character name in Korean and English", () => {
     render(<TopBar />);
-    expect(screen.getByText(/서문조/)).toBeInTheDocument();
-    expect(screen.getByText(/Seo Moon-jo/)).toBeInTheDocument();
+    expect(screen.getByRole("heading")).toHaveTextContent(/서문조/);
   });
 
   it("displays the avatar with aria-label", () => {

@@ -53,7 +53,7 @@ function NavButton({
     >
       {badge}
       {children}
-      <span className="text-xs leading-none text-goshiwon-text-muted/70">
+      <span className="text-xs leading-none text-goshiwon-text-muted">
         {label}
       </span>
     </button>
