@@ -42,6 +42,14 @@ describe("createBackup", () => {
     expect(Object.keys(backup.data)).toHaveLength(1);
     expect(backup.data["nunchi-vocabulary"]).toBe("[]");
   });
+
+  it("includes achievements and daily-challenges keys", () => {
+    store["nunchi-achievements"] = '{"unlockedIds":["first_word"]}';
+    store["nunchi-daily-challenges"] = '{"date":"2024-01-01"}';
+    const backup = createBackup();
+    expect(backup.data["nunchi-achievements"]).toBe('{"unlockedIds":["first_word"]}');
+    expect(backup.data["nunchi-daily-challenges"]).toBe('{"date":"2024-01-01"}');
+  });
 });
 
 describe("validateBackup", () => {

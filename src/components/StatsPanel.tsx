@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Modal from "./Modal";
 import { isDueForReview } from "@/lib/srs";
 import { useGamificationContext } from "@/contexts/GamificationContext";
+import { ACHIEVEMENTS } from "@/lib/achievements";
 
 interface StatsPanelProps {
   onClose: () => void;
@@ -13,7 +14,7 @@ export default function StatsPanel({ onClose }: StatsPanelProps) {
   const {
     rank, rankProgress, nextRank, totalXP,
     currentStreak, longestStreak, stats,
-    vocabCount, words,
+    vocabCount, words, achievementProgress,
   } = useGamificationContext();
   // SRS analytics
   const srsInsights = useMemo(() => {
@@ -211,6 +212,39 @@ export default function StatsPanel({ onClose }: StatsPanelProps) {
             </div>
           </div>
         )}
+
+        {/* Achievement Badge Gallery */}
+        <div className="bg-goshiwon-surface rounded-lg p-3 border border-goshiwon-border">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-goshiwon-text-secondary text-xs">Achievements</p>
+            <span className="text-goshiwon-text-muted text-xs">
+              {achievementProgress.unlockedIds.length}/{ACHIEVEMENTS.length}
+            </span>
+          </div>
+          <div className="badge-grid gap-2">
+            {ACHIEVEMENTS.map((ach) => {
+              const unlocked = achievementProgress.unlockedIds.includes(ach.id);
+              return (
+                <div
+                  key={ach.id}
+                  className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-all ${
+                    unlocked
+                      ? "bg-goshiwon-yellow/10 border border-goshiwon-yellow/30"
+                      : "opacity-30 grayscale"
+                  }`}
+                  title={unlocked ? `${ach.title} — ${ach.description}` : `??? — ${ach.description}`}
+                >
+                  <span className="text-lg" role="img" aria-label={unlocked ? ach.title : "Locked"}>
+                    {unlocked ? ach.icon : "🔒"}
+                  </span>
+                  <span className="text-[9px] text-goshiwon-text-muted text-center leading-tight truncate w-full">
+                    {unlocked ? ach.titleKr : "???"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </Modal>
   );

@@ -39,6 +39,7 @@ vi.mock("@/contexts/GamificationContext", () => ({
     stats,
     vocabCount: 18,
     words: [],
+    achievementProgress: { unlockedIds: [], unlockTimestamps: {} },
   }),
 }));
 

@@ -12,6 +12,7 @@ interface VocabularyPanelProps {
   onClose: () => void;
   onStartStudy?: () => void;
   onStartQuiz?: () => void;
+  onStartWriting?: () => void;
   studyableCount?: number;
   quizReady?: boolean;
   dueCount?: number;
@@ -24,6 +25,7 @@ function VocabularyPanel({
   onClose,
   onStartStudy,
   onStartQuiz,
+  onStartWriting,
   studyableCount = 0,
   quizReady = false,
   dueCount = 0,
@@ -135,6 +137,19 @@ function VocabularyPanel({
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           Quick Quiz
+        </button>
+      )}
+      {onStartWriting && studyableCount >= 4 && (
+        <button
+          onClick={onStartWriting}
+          aria-label="Writing practice"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-400/80 hover:bg-emerald-500/20 transition-colors"
+        >
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          Write
         </button>
       )}
     </>

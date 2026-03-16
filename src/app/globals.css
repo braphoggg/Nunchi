@@ -466,3 +466,9 @@ button:not(:disabled),
 .font-korean {
   font-family: var(--font-korean), "Nanum Myeongjo", serif;
 }
+
+/* Badge gallery grid — explicit 5-column (Tailwind v4 doesn't auto-detect grid-cols-5) */
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}

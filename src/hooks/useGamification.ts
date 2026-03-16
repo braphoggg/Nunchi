@@ -247,6 +247,7 @@ export function useGamification(vocabCount: number) {
   return {
     // XP
     totalXP: data.xp.totalXP,
+    xpHistory: data.xp.history,
     recentXPGain,
     koreanHint,
 

@@ -13,6 +13,8 @@ const APP_KEYS = [
   "nunchi-tutorial-completed",
   "nunchi-onboarded",
   "nunchi-visited-topics",
+  "nunchi-achievements",
+  "nunchi-daily-challenges",
 ] as const;
 
 export interface BackupData {

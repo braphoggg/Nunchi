@@ -6,6 +6,8 @@ import { RANK_LADDER } from "@/lib/gamification";
 import { getDailyFocus } from "@/lib/daily-planner";
 import { useSettingsContext } from "@/contexts/SettingsContext";
 import type { RankInfo, LessonDifficulty, ResidentRank } from "@/types";
+import type { DailyChallengeState } from "@/lib/daily-challenges";
+import { getChallenge } from "@/lib/daily-challenges";
 
 /** Atmospheric welcome greetings per rank */
 const WELCOME_GREETINGS: Record<string, { korean: string; english: string }> = {
@@ -125,9 +127,10 @@ interface WelcomeScreenProps {
   visitedTopics?: Set<string>;
   dueCount?: number;
   onStartStudy?: () => void;
+  challengeState?: DailyChallengeState;
 }
 
-export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueCount = 0, onStartStudy }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueCount = 0, onStartStudy, challengeState }: WelcomeScreenProps) {
   const { apiKey, setApiKey } = useSettingsContext();
   const greeting = WELCOME_GREETINGS[rank?.id ?? "new_resident"] ?? WELCOME_GREETINGS.new_resident;
   const currentRankId = rank?.id ?? "new_resident";
@@ -194,6 +197,50 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                   {dailyFocus.reason === "unvisited" ? "Start" : "Review"}: {dailyFocus.suggestedTopic.title}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Challenges */}
+      {challengeState && challengeState.challengeIds.length > 0 && (
+        <div className="w-full max-w-lg mb-1.5 sm:mb-4">
+          <div className="bg-goshiwon-surface/80 border border-goshiwon-border rounded-lg p-2 sm:p-3">
+            <p className="text-xs text-goshiwon-text-muted uppercase tracking-wider mb-2">
+              Daily Challenges
+            </p>
+            <div className="space-y-1.5">
+              {challengeState.challengeIds.map((id) => {
+                const def = getChallenge(id);
+                if (!def) return null;
+                const progress = challengeState.progress[id] ?? 0;
+                const completed = challengeState.completedIds.includes(id);
+                const pct = Math.min((progress / def.target) * 100, 100);
+                return (
+                  <div key={id} className={`flex items-center gap-2 ${completed ? "opacity-60" : ""}`}>
+                    <span className="text-sm shrink-0" role="img" aria-hidden="true">{def.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs truncate ${completed ? "text-goshiwon-text-muted line-through" : "text-goshiwon-text"}`}>
+                          {def.description}
+                        </span>
+                        <span className="text-xs text-goshiwon-text-muted shrink-0 ml-2">
+                          {Math.min(progress, def.target)}/{def.target}
+                        </span>
+                      </div>
+                      <div className="w-full h-1 bg-goshiwon-border rounded-full mt-0.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${completed ? "bg-emerald-500/70" : "bg-goshiwon-yellow/70"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    {completed && (
+                      <span className="text-emerald-400 text-xs shrink-0">✓</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

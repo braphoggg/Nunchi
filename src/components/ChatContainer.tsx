@@ -11,6 +11,7 @@ import WelcomeScreen from "./WelcomeScreen";
 import VocabularyPanel from "./VocabularyPanel";
 import FlashcardMode from "./FlashcardMode";
 import QuizMode from "./QuizMode";
+import WritingMode from "./WritingMode";
 import GoshiwonEventBubble from "./GoshiwonEventBubble";
 import StatsBar from "./StatsBar";
 import StatsPanel from "./StatsPanel";
@@ -34,6 +35,10 @@ import { useViewportHeight } from "@/hooks/useViewportHeight";
 import { useGamification } from "@/hooks/useGamification";
 import { useLessonHistory } from "@/hooks/useLessonHistory";
 import { useApiKey } from "@/hooks/useApiKey";
+import { useAchievements } from "@/hooks/useAchievements";
+import { useDailyChallenges } from "@/hooks/useDailyChallenges";
+import AchievementToast from "./AchievementToast";
+import LessonComplete from "./LessonComplete";
 import { resetTimestampCounter } from "@/lib/timestamps";
 import { getTextContent } from "@/lib/message-utils";
 import { LESSON_TOPICS } from "@/lib/lesson-topics";
@@ -166,6 +171,11 @@ export default function ChatContainer() {
   const startQuiz = useCallback(() => setQuizActive(true), []);
   const endQuiz = useCallback(() => setQuizActive(false), []);
 
+  // Writing practice mode
+  const [writingActive, setWritingActive] = useState(false);
+  const startWriting = useCallback(() => setWritingActive(true), []);
+  const endWriting = useCallback(() => setWritingActive(false), []);
+
   // SRS: update word after flashcard grading
   const handleWordGraded = useCallback(
     (wordId: string, grade: FlashcardGrade) => {
@@ -181,6 +191,7 @@ export default function ChatContainer() {
   // Gamification
   const {
     totalXP,
+    xpHistory,
     recentXPGain,
     koreanHint,
     currentStreak,
@@ -196,8 +207,14 @@ export default function ChatContainer() {
     recordWordSaved,
   } = useGamification(wordCount);
 
+  // Achievements
+  const { progress: achievementProgress, recentAchievement, checkAndUnlock } = useAchievements();
+
+  // Daily challenges
+  const { challengeState, recordProgress: recordChallengeProgress } = useDailyChallenges();
+
   // Atmosphere: ambient sound, night mode, mood, goshiwon events
-  const { styleOverrides, activeEvent, dismissEvent, currentMood } = useAtmosphere({
+  const { styleOverrides, activeEvent, dismissEvent, currentMood, nightStage } = useAtmosphere({
     messages,
     isLoading,
     recentXPGain,
@@ -205,12 +222,37 @@ export default function ChatContainer() {
     tutorial,
   });
 
+  // Check achievements whenever relevant state changes
+  useEffect(() => {
+    const fullKoreanCount = xpHistory.filter((e) => e.action === "message_full_korean").length;
+    const perfectQuizCount = xpHistory.filter((e) => e.action === "quiz_perfect").length;
+    const perfectFlashcardCount = xpHistory.filter((e) => e.action === "flashcard_perfect").length;
+    checkAndUnlock({
+      totalXP,
+      vocabCount: wordCount,
+      currentStreak,
+      longestStreak,
+      totalMessages: stats.totalMessages,
+      totalFlashcardSessions: stats.totalFlashcardSessions,
+      totalTranslations: stats.totalTranslations,
+      messagesWithoutTranslate: stats.messagesWithoutTranslate,
+      rankId: rank.id,
+      fullKoreanMessageCount: fullKoreanCount,
+      nightStage,
+      perfectQuizCount,
+      perfectFlashcardCount,
+    });
+  }, [totalXP, wordCount, currentStreak, longestStreak, stats, rank.id, nightStage, xpHistory, checkAndUnlock]);
+
   // Quiz completion handler
   const handleQuizComplete = useCallback(
     (result: { correct: number; total: number }) => {
       recordQuizComplete(result.correct, result.total);
+      if (result.correct === result.total && result.total > 0) {
+        recordChallengeProgress("quiz_perfect", 1);
+      }
     },
-    [recordQuizComplete],
+    [recordQuizComplete, recordChallengeProgress],
   );
 
   // Build context for the system prompt (sent with each chat request)
@@ -391,6 +433,16 @@ export default function ChatContainer() {
   // Farewell state for reset
   const [showFarewell, setShowFarewell] = useState(false);
 
+  // Lesson completion state
+  const [lessonComplete, setLessonComplete] = useState<{
+    topicTitle: string;
+    topicTitleKr: string;
+    wordsLearned: number;
+    xpEarned: number;
+  } | null>(null);
+  const sessionStartXPRef = useRef(totalXP);
+  const sessionStartWordCountRef = useRef(wordCount);
+
   // Error dismiss
   const [errorDismissed, setErrorDismissed] = useState(false);
 
@@ -420,11 +472,23 @@ export default function ChatContainer() {
     if (error) setErrorDismissed(false);
   }, [error]);
 
-  // Reset conversation
+  // Final reset — clear everything and return to welcome
+  const doReset = useCallback(() => {
+    setMessages([]);
+    setShowFarewell(false);
+    setLessonComplete(null);
+    setInput("");
+    setActiveTopic(null);
+    resetTimestampCounter();
+    prevMessageCountRef.current = 0;
+  }, [setMessages]);
+
+  // Reset conversation — show lesson complete if a topic was active
   const handleReset = useCallback(() => {
     setConfirmLeave(false);
     endQuiz();
     endFlashcards();
+    endWriting();
     closePanel();
     closeStats();
     closeHistory();
@@ -434,23 +498,41 @@ export default function ChatContainer() {
         messages.map((m) => ({ role: m.role, text: getTextContent(m) }))
       );
     }
-    setShowFarewell(true);
-    sound.playFarewell();
-    setTimeout(() => {
-      setMessages([]);
-      setShowFarewell(false);
-      setInput("");
-      setActiveTopic(null);
-      resetTimestampCounter();
-      prevMessageCountRef.current = 0;
-    }, 2000);
-  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, closeSettings, saveConversation, sound]);
+
+    // Show lesson completion screen if a topic was active
+    if (activeTopic && messages.length > 1) {
+      const topic = LESSON_TOPICS.find((t) => t.id === activeTopic.id);
+      setLessonComplete({
+        topicTitle: topic?.title ?? activeTopic.id,
+        topicTitleKr: activeTopic.titleKr,
+        wordsLearned: Math.max(0, wordCount - sessionStartWordCountRef.current),
+        xpEarned: Math.max(0, totalXP - sessionStartXPRef.current),
+      });
+      // Clear messages but keep lessonComplete overlay
+      setShowFarewell(true);
+      sound.playFarewell();
+      setTimeout(() => {
+        setMessages([]);
+        setShowFarewell(false);
+        setActiveTopic(null);
+        resetTimestampCounter();
+        prevMessageCountRef.current = 0;
+      }, 1500);
+    } else {
+      setShowFarewell(true);
+      sound.playFarewell();
+      setTimeout(doReset, 2000);
+    }
+  }, [setMessages, messages, closePanel, endFlashcards, closeStats, closeHistory, closeSettings, saveConversation, sound, activeTopic, wordCount, totalXP, doReset]);
 
   const handleTopicSelect = useCallback((message: string, topicId: string) => {
     if (!sendMessage) {
       console.error("[ChatContainer] sendMessage not available");
       return;
     }
+    // Snapshot start state for lesson completion summary
+    sessionStartXPRef.current = totalXP;
+    sessionStartWordCountRef.current = wordCount;
     sound.playTopicSelect();
     tutorial.notifyInteraction("topics");
     markTopicVisited(topicId);
@@ -481,13 +563,14 @@ export default function ChatContainer() {
     sendMessage({ text }, { body: { context: chatContextRef.current } });
   };
 
-  // Wrap addWords to also record XP for saved words
+  // Wrap addWords to also record XP for saved words + daily challenges
   const handleSaveWords = useCallback(
     (newWords: Parameters<typeof addWords>[0]) => {
       addWords(newWords);
       recordWordSaved(newWords.length);
+      recordChallengeProgress("words_saved", newWords.length);
     },
-    [addWords, recordWordSaved]
+    [addWords, recordWordSaved, recordChallengeProgress]
   );
 
   const settingsCtx = useMemo(
@@ -497,15 +580,16 @@ export default function ChatContainer() {
 
   const gamificationCtx = useMemo(
     () => ({
-      totalXP, recentXPGain, koreanHint, currentStreak, longestStreak,
+      totalXP, xpHistory, recentXPGain, koreanHint, currentStreak, longestStreak,
       rank, rankProgress, nextRank, stats,
       recordMessage, recordTranslation, recordFlashcardComplete, recordQuizComplete, recordWordSaved,
       vocabCount: wordCount, words,
+      achievementProgress,
     }),
-    [totalXP, recentXPGain, koreanHint, currentStreak, longestStreak,
+    [totalXP, xpHistory, recentXPGain, koreanHint, currentStreak, longestStreak,
      rank, rankProgress, nextRank, stats,
      recordMessage, recordTranslation, recordFlashcardComplete, recordQuizComplete, recordWordSaved,
-     wordCount, words],
+     wordCount, words, achievementProgress],
   );
 
   return (
@@ -561,6 +645,19 @@ export default function ChatContainer() {
         </div>
       )}
 
+      {/* Lesson complete overlay */}
+      {lessonComplete && (
+        <LessonComplete
+          topicTitle={lessonComplete.topicTitle}
+          topicTitleKr={lessonComplete.topicTitleKr}
+          wordsLearned={lessonComplete.wordsLearned}
+          xpEarned={lessonComplete.xpEarned}
+          currentStreak={currentStreak}
+          onReviewVocabulary={() => { setLessonComplete(null); togglePanel(); startFlashcards(); }}
+          onReturnHome={() => { setLessonComplete(null); doReset(); }}
+        />
+      )}
+
       {/* Help modal */}
       {helpOpen && (
         <HelpModal
@@ -595,7 +692,7 @@ export default function ChatContainer() {
         <SettingsPanel onClose={closeSettings} />
       )}
 
-      {panelOpen && !flashcardActive && !quizActive && (
+      {panelOpen && !flashcardActive && !quizActive && !writingActive && (
         <VocabularyPanel
           words={words}
           onRemoveWord={removeWord}
@@ -603,6 +700,7 @@ export default function ChatContainer() {
           onClose={closePanel}
           onStartStudy={startFlashcards}
           onStartQuiz={startQuiz}
+          onStartWriting={startWriting}
           studyableCount={studyableCount}
           quizReady={quizReady}
           dueCount={dueCount}
@@ -626,6 +724,15 @@ export default function ChatContainer() {
         />
       )}
 
+      {panelOpen && writingActive && (
+        <WritingMode
+          words={words}
+          onClose={endWriting}
+          onSessionComplete={recordFlashcardComplete}
+          onWordGraded={handleWordGraded}
+        />
+      )}
+
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
         {/* Farewell overlay */}
         {showFarewell && (
@@ -644,6 +751,7 @@ export default function ChatContainer() {
               visitedTopics={visitedTopics}
               dueCount={dueCount}
               onStartStudy={() => { togglePanel(); startFlashcards(); }}
+              challengeState={challengeState}
             />
           </div>
         ) : !showFarewell ? (
@@ -715,6 +823,11 @@ export default function ChatContainer() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Achievement Toast */}
+      {recentAchievement && (
+        <AchievementToast achievement={recentAchievement} />
+      )}
 
       {/* XP Toast */}
       {recentXPGain && (
