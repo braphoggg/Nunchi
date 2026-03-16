@@ -33,7 +33,13 @@ cd Nunchi
 npm install
 ```
 
-**2. Add your API key**
+**2. Add your API key** (choose one)
+
+**Option A — In-app (recommended for deployed use)**
+
+Launch the app and enter your Gemini API key when prompted on the welcome screen. The key is stored in your browser's localStorage and sent directly to Google — never stored on any server.
+
+**Option B — Environment variable (local development)**
 
 Create `.env.local`:
 
@@ -129,7 +135,15 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 - Copy as plain text
 - Native Web Share on supported devices
 
+#### Bring Your Own Key (BYOK)
+- Enter your own Google Gemini API key in the app — no server-side key needed
+- Key stored in browser localStorage, sent directly to Google over HTTPS
+- API key gate on first visit — prompts for key before unlocking the app
+- Manage key in Settings: view masked key, show/hide, remove
+- Never included in data backups or exports
+
 #### Settings & Data
+- API key management (enter, view masked, show/hide, remove)
 - Theme (dark / light), font scale, romanization toggle, reduce animations
 - Sound volume and mute controls
 - Full data backup/restore as JSON
@@ -163,7 +177,9 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 
 **Spaced Repetition** — SM-2 algorithm with ease factor (starting at 2.5), growing intervals, and due-date scheduling. SRS state persists on each vocabulary item.
 
-**Data** — All progress lives in localStorage (XP, vocabulary, lesson history, settings). No account required. Data backup/restore exports everything as validated JSON.
+**BYOK (Bring Your Own Key)** — Each user provides their own free Google Gemini API key. The key is stored in the browser's localStorage, sent to Google via `x-api-key` header per request, and never logged or stored server-side. For local development, an environment variable fallback is supported.
+
+**Data** — All progress lives in localStorage (XP, vocabulary, lesson history, settings). No account required. Data backup/restore exports everything as validated JSON (API keys are intentionally excluded from backups).
 
 <details>
 <summary><strong>Technical details</strong></summary>
@@ -186,7 +202,9 @@ Supports 19 initial consonants, 21 medial vowels, 28 final positions, complex co
 - Input validation (≤50 messages, ≤2,000 chars)
 - Content sanitization (HTML stripping, null byte filtering)
 - XP anti-tampering (burst rate, max amounts, total ceiling)
-- Security headers (nosniff, DENY framing, XSS protection)
+- Security headers (nosniff, DENY framing, XSS protection, HSTS, CSP)
+- BYOK: API key travels over HTTPS only, used transiently per request, never logged or persisted server-side, excluded from data backups
+- Prototype pollution defense on localStorage data restoration
 
 #### Data Storage
 | Key | Contents |
@@ -195,6 +213,12 @@ Supports 19 initial consonants, 21 medial vowels, 28 final positions, complex co
 | `nunchi-vocabulary` | Saved words + SRS state (max 5,000) |
 | `nunchi-lesson-history` | Saved conversations (max 20) |
 | `nunchi-settings` | Theme, font, romanization, animations |
+| `nunchi-api-key` | User's Gemini API key (excluded from backups) |
+| `nunchi-sound-muted` | Mute state |
+| `nunchi-sound-volume` | Volume level (0–100) |
+| `nunchi-tutorial-completed` | Tutorial completion flag |
+| `nunchi-onboarded` | Onboarding completion flag |
+| `nunchi-visited-topics` | Visited lesson topic IDs |
 
 </details>
 
@@ -223,7 +247,14 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-764+ tests across 55 test files covering API routes, all UI components, hooks, libraries, and edge cases.
+830+ tests across 58 test files covering API routes, all UI components, hooks, libraries, security edge cases, and BYOK flows.
+
+Test categories include:
+- **Unit tests** — Pure functions (SRS, gamification, Hangul composition, security)
+- **Component tests** — React component rendering and interaction
+- **API route tests** — Request validation, response format, error handling
+- **Break tests** — Adversarial inputs, error leakage, prompt injection surface
+- **Fuzz tests** — Random/malformed input handling
 
 ---
 
@@ -255,7 +286,7 @@ src/
 │   ├── HangulKeyboard.tsx         # On-screen Korean keyboard
 │   ├── LessonHistory.tsx          # Browse + search saved conversations
 │   ├── LessonReview.tsx           # Read-only conversation replay
-│   ├── SettingsPanel.tsx          # Theme, font, sound, data backup
+│   ├── SettingsPanel.tsx          # API key, theme, font, sound, data backup
 │   ├── ShareButton.tsx            # Export as PNG / text / share
 │   ├── HelpModal.tsx              # Feature guide
 │   ├── OnboardingOverlay.tsx      # First-visit welcome
@@ -279,7 +310,8 @@ src/
 │   ├── useViewportHeight.ts       # Mobile viewport height fix
 │   ├── useGoshiwonEvents.ts       # Random atmospheric interruptions
 │   ├── useNightProgression.ts     # UI darkening over time
-│   └── useLessonHistory.ts        # Conversation save/load/delete
+│   ├── useLessonHistory.ts        # Conversation save/load/delete
+│   └── useApiKey.ts               # BYOK API key management
 ├── lib/
 │   ├── system-prompt.ts           # Moon-jo's character definition
 │   ├── gamification.ts            # XP values, rank definitions
@@ -294,7 +326,7 @@ src/
 │   ├── format-message.ts          # Bold/strikethrough tokenizer
 │   ├── goshiwon-events.ts         # 15 atmospheric events
 │   ├── security.ts                # Rate limiting, validation
-│   ├── ai-model.ts                # Configurable Gemini model
+│   ├── ai-model.ts                # BYOK Gemini model factory
 │   ├── tutorial-steps.ts          # Tutorial step definitions
 │   ├── timestamps.ts              # 1–3 AM timestamp generator
 │   └── message-utils.ts           # UIMessage text extraction
