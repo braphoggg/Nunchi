@@ -16,11 +16,12 @@ vi.mock("ai", async () => {
 
 import { POST } from "../route";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai-model";
 
-function createRequest(body: unknown): Request {
+function createRequest(body: unknown, headers?: Record<string, string>): Request {
   return new Request("http://localhost:3000/api/translate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
 }
@@ -94,5 +95,33 @@ describe("POST /api/translate", () => {
     const body = await response.json();
     // Error message is sanitized — no raw error details leaked
     expect(body.error).toBe("An unexpected error occurred");
+  });
+
+  // ─── BYOK (Bring Your Own Key) ─────────────────────────────────
+
+  it("extracts x-api-key header and passes it to getModel", async () => {
+    const req = createRequest(
+      { text: "안녕하세요" },
+      { "x-api-key": "user-translate-key" },
+    );
+    await POST(req);
+    expect(getModel).toHaveBeenCalledWith("user-translate-key");
+  });
+
+  it("passes undefined apiKey to getModel when no x-api-key header", async () => {
+    const req = createRequest({ text: "안녕하세요" });
+    await POST(req);
+    expect(getModel).toHaveBeenCalledWith(undefined);
+  });
+
+  it("returns 401 when getModel throws 'No API key provided'", async () => {
+    vi.mocked(getModel).mockImplementationOnce(() => {
+      throw new Error("No API key provided");
+    });
+    const req = createRequest({ text: "안녕하세요" });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error).toBe("API key required");
   });
 });

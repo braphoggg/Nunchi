@@ -1,9 +1,20 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WelcomeScreen from "../WelcomeScreen";
 import { LESSON_TOPICS, meetsRankRequirement } from "@/lib/lesson-topics";
 import type { RankInfo } from "@/types";
+
+const mockSetApiKey = vi.fn();
+const mockSettingsCtx = {
+  settings: { theme: "dark" as const, fontScale: 1, reduceAnimations: false, showRomanization: true },
+  setTheme: vi.fn(), setFontScale: vi.fn(), setReduceAnimations: vi.fn(), setShowRomanization: vi.fn(),
+  apiKey: "test-key" as string | null, setApiKey: mockSetApiKey, clearApiKey: vi.fn(),
+};
+
+vi.mock("@/contexts/SettingsContext", () => ({
+  useSettingsContext: () => mockSettingsCtx,
+}));
 
 // ─── helpers ───────────────────────────────────────────────────────
 
@@ -212,5 +223,63 @@ describe("WelcomeScreen", () => {
     expect(
       screen.queryByText(/Write in Korean to earn XP/),
     ).not.toBeInTheDocument();
+  });
+
+  // ─── BYOK: API key gate ─────────────────────────────────────────
+
+  describe("when no API key is set", () => {
+    beforeEach(() => {
+      mockSettingsCtx.apiKey = null;
+    });
+
+    afterEach(() => {
+      mockSettingsCtx.apiKey = "test-key";
+    });
+
+    it("shows API key gate instead of topics", () => {
+      render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+      expect(screen.getByText(/API 키가 필요합니다/)).toBeInTheDocument();
+      // Topics should NOT be rendered
+      expect(screen.queryByText(/환영합니다/)).not.toBeInTheDocument();
+    });
+
+    it("shows API key input field", () => {
+      render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+      expect(screen.getByLabelText("Gemini API key")).toBeInTheDocument();
+    });
+
+    it("shows Google AI Studio link", () => {
+      render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+      const link = screen.getByText("Google AI Studio");
+      expect(link).toBeInTheDocument();
+      expect(link.closest("a")).toHaveAttribute(
+        "href",
+        "https://aistudio.google.com/apikey",
+      );
+    });
+
+    it("Save button is disabled when input is empty", () => {
+      render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+      const saveButton = screen.getByRole("button", { name: /save/i });
+      expect(saveButton).toBeDisabled();
+    });
+
+    it("calls setApiKey when saving a valid key", async () => {
+      render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+      const input = screen.getByLabelText("Gemini API key");
+      await userEvent.type(input, "AIzaSyTest123");
+      const saveButton = screen.getByRole("button", { name: /save/i });
+      await userEvent.click(saveButton);
+      expect(mockSetApiKey).toHaveBeenCalledWith("AIzaSyTest123");
+    });
+
+    it("does not call setApiKey when saving whitespace-only key", async () => {
+      render(<WelcomeScreen onSelectTopic={onSelectTopic} />);
+      const input = screen.getByLabelText("Gemini API key");
+      await userEvent.type(input, "   ");
+      const saveButton = screen.getByRole("button", { name: /save/i });
+      // Button should be disabled since trimmed value is empty
+      expect(saveButton).toBeDisabled();
+    });
   });
 });

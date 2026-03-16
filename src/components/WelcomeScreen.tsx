@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { LESSON_TOPICS, meetsRankRequirement } from "@/lib/lesson-topics";
 import { RANK_LADDER } from "@/lib/gamification";
 import { getDailyFocus } from "@/lib/daily-planner";
+import { useSettingsContext } from "@/contexts/SettingsContext";
 import type { RankInfo, LessonDifficulty, ResidentRank } from "@/types";
 
 /** Atmospheric welcome greetings per rank */
@@ -52,6 +53,72 @@ function getRankDisplayName(rankId: ResidentRank): string {
   return rank?.english ?? rankId;
 }
 
+function ApiKeyGate({ onSave }: { onSave: (key: string) => void }) {
+  const [value, setValue] = useState("");
+
+  const handleSave = () => {
+    const trimmed = value.trim();
+    if (trimmed) onSave(trimmed);
+  };
+
+  return (
+    <div className="w-full flex flex-col items-center px-4 py-8 sm:py-16">
+      <div className="w-full max-w-md text-center space-y-6">
+        {/* Key icon */}
+        <div className="mx-auto w-14 h-14 rounded-full bg-goshiwon-yellow/10 border border-goshiwon-yellow/20 flex items-center justify-center">
+          <svg className="w-7 h-7 text-goshiwon-yellow/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+          </svg>
+        </div>
+
+        <div>
+          <h2 className="text-lg sm:text-xl font-light text-goshiwon-text mb-2 font-serif-display">
+            API 키가 필요합니다
+          </h2>
+          <p className="text-sm text-goshiwon-text-secondary">
+            To start learning Korean with Moon-jo, enter your Google Gemini API key.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              placeholder="AIza..."
+              aria-label="Gemini API key"
+              autoFocus
+              className="flex-1 px-4 py-3 rounded-lg border border-goshiwon-border bg-goshiwon-input text-sm text-goshiwon-text placeholder:text-goshiwon-text-muted focus:outline-none focus:ring-1 focus:ring-goshiwon-accent/50 focus:border-goshiwon-accent/50 transition-colors"
+            />
+            <button
+              onClick={handleSave}
+              disabled={!value.trim()}
+              className="px-5 py-3 rounded-lg bg-goshiwon-yellow/15 text-sm font-medium text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
+
+          <p className="text-xs text-goshiwon-text-muted leading-relaxed">
+            Get a free key from{" "}
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-goshiwon-yellow/80 hover:text-goshiwon-yellow underline underline-offset-2"
+            >
+              Google AI Studio
+            </a>
+            . Your key stays in your browser — it is never stored on our servers.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface WelcomeScreenProps {
   onSelectTopic: (message: string, topicId: string) => void;
   rank?: RankInfo;
@@ -61,6 +128,7 @@ interface WelcomeScreenProps {
 }
 
 export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueCount = 0, onStartStudy }: WelcomeScreenProps) {
+  const { apiKey, setApiKey } = useSettingsContext();
   const greeting = WELCOME_GREETINGS[rank?.id ?? "new_resident"] ?? WELCOME_GREETINGS.new_resident;
   const currentRankId = rank?.id ?? "new_resident";
 
@@ -68,6 +136,11 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
     () => getDailyFocus(visitedTopics ?? new Set(), dueCount, currentRankId),
     [visitedTopics, dueCount, currentRankId],
   );
+
+  // API key gate — shown before topics when no key is set
+  if (!apiKey) {
+    return <ApiKeyGate onSave={setApiKey} />;
+  }
 
   return (
     <div className="w-full flex flex-col items-center px-3 sm:px-4 py-1 sm:py-8">

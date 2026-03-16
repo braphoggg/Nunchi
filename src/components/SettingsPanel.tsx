@@ -141,6 +141,86 @@ function DataBackupSection() {
   );
 }
 
+function ApiKeySection() {
+  const { apiKey, setApiKey, clearApiKey } = useSettingsContext();
+  const [inputValue, setInputValue] = useState("");
+  const [showKey, setShowKey] = useState(false);
+
+  const masked = apiKey
+    ? apiKey.slice(0, 4) + "..." + apiKey.slice(-4)
+    : null;
+
+  const handleSave = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed) {
+      setApiKey(trimmed);
+      setInputValue("");
+      setShowKey(false);
+    }
+  };
+
+  return (
+    <section>
+      <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
+        API 키 (API Key)
+      </h3>
+      <div className="space-y-3">
+        {apiKey ? (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 px-3 py-2.5 rounded-lg border border-goshiwon-border bg-goshiwon-surface text-sm text-goshiwon-text-secondary font-mono truncate">
+              {showKey ? apiKey : masked}
+            </div>
+            <button
+              onClick={() => setShowKey((s) => !s)}
+              className="px-3 py-2.5 rounded-lg border border-goshiwon-border bg-goshiwon-surface text-sm text-goshiwon-text-secondary hover:border-goshiwon-text-muted transition-colors"
+              aria-label={showKey ? "Hide API key" : "Show API key"}
+            >
+              {showKey ? "Hide" : "Show"}
+            </button>
+            <button
+              onClick={clearApiKey}
+              className="px-3 py-2.5 rounded-lg border border-goshiwon-accent/40 bg-goshiwon-accent/10 text-sm text-goshiwon-accent-light hover:bg-goshiwon-accent/20 transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              placeholder="AIza..."
+              aria-label="Gemini API key"
+              className="flex-1 px-3 py-2.5 rounded-lg border border-goshiwon-border bg-goshiwon-input text-sm text-goshiwon-text placeholder:text-goshiwon-text-muted focus:outline-none focus:ring-1 focus:ring-goshiwon-accent/50 focus:border-goshiwon-accent/50 transition-colors"
+            />
+            <button
+              onClick={handleSave}
+              disabled={!inputValue.trim()}
+              className="px-4 py-2.5 rounded-lg bg-goshiwon-yellow/15 text-sm font-medium text-[#d4a843] border border-goshiwon-yellow/30 hover:bg-goshiwon-yellow/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
+        )}
+        <p className="text-xs text-goshiwon-text-muted">
+          Get a free key from{" "}
+          <a
+            href="https://aistudio.google.com/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-goshiwon-yellow/80 hover:text-goshiwon-yellow underline underline-offset-2"
+          >
+            Google AI Studio
+          </a>
+          . Your key is stored locally and sent directly to Google. Never stored on our servers.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { settings, setTheme: onSetTheme, setFontScale: onSetFontScale, setReduceAnimations: onSetReduceAnimations, setShowRomanization: onSetShowRomanization } = useSettingsContext();
   const { muted: isMuted, toggleMute: onToggleMute, volume, setVolume: onSetVolume } = useSound();
@@ -149,6 +229,9 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
     <Modal onClose={onClose} title="설정 (Settings)" stickyHeader closeAriaLabel="Close settings">
       {/* Body */}
       <div className="p-4 space-y-6">
+        {/* API Key */}
+        <ApiKeySection />
+
         {/* Theme */}
         <section>
           <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">

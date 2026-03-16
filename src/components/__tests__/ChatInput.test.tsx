@@ -1,7 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatInput from "../ChatInput";
+
+const mockSettingsContext = {
+  settings: { theme: "dark" as const, fontScale: 1, reduceAnimations: false, showRomanization: true },
+  setTheme: vi.fn(), setFontScale: vi.fn(), setReduceAnimations: vi.fn(), setShowRomanization: vi.fn(),
+  apiKey: "test-key" as string | null, setApiKey: vi.fn(), clearApiKey: vi.fn(),
+};
+
+vi.mock("@/contexts/SettingsContext", () => ({
+  useSettingsContext: () => mockSettingsContext,
+}));
 
 describe("ChatInput", () => {
   const defaultProps = {
@@ -77,5 +87,36 @@ describe("ChatInput", () => {
     const button = screen.getByLabelText("Send message");
     // Spinner SVG has animate-spin class
     expect(button.querySelector(".animate-spin")).toBeInTheDocument();
+  });
+
+  // ─── BYOK: no API key state ──────────────────────────────────────
+
+  describe("when no API key is set", () => {
+    beforeEach(() => {
+      mockSettingsContext.apiKey = null;
+    });
+
+    afterEach(() => {
+      mockSettingsContext.apiKey = "test-key";
+    });
+
+    it("disables the textarea when no API key", () => {
+      render(<ChatInput {...defaultProps} />);
+      const textarea = screen.getByLabelText("Message input");
+      expect(textarea).toBeDisabled();
+    });
+
+    it("shows API key placeholder when no API key", () => {
+      render(<ChatInput {...defaultProps} />);
+      expect(
+        screen.getByPlaceholderText(/Enter your API key in Settings/),
+      ).toBeInTheDocument();
+    });
+
+    it("disables submit button when no API key even with input", () => {
+      render(<ChatInput {...defaultProps} input="hello" />);
+      const button = screen.getByLabelText("Send message");
+      expect(button).toBeDisabled();
+    });
   });
 });

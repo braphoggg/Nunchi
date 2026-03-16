@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useRef, useState, useEffect, KeyboardEvent } from "react";
+import { useSettingsContext } from "@/contexts/SettingsContext";
 
 interface ChatInputProps {
   input: string;
@@ -19,8 +20,10 @@ export default function ChatInput({
   keyboardVisible,
   onToggleKeyboard,
 }: ChatInputProps) {
+  const { apiKey } = useSettingsContext();
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const noKey = !apiKey;
 
   // Shorter placeholder on mobile to prevent text wrapping
   const SHORT_PH = "메시지를 입력하세요...";
@@ -101,14 +104,14 @@ export default function ChatInput({
           }}
           onKeyDown={handleKeyDown}
           aria-label="Message input"
-          placeholder={placeholder}
+          placeholder={noKey ? "Enter your API key in Settings to start" : placeholder}
           className="flex-1 bg-goshiwon-input rounded-lg px-4 py-3 text-goshiwon-text text-sm placeholder:text-goshiwon-text-muted focus:outline-none focus:ring-1 focus:ring-goshiwon-accent/50 border border-goshiwon-border focus:border-goshiwon-accent/50 transition-colors auto-grow-textarea"
-          disabled={isLoading}
+          disabled={isLoading || noKey}
           autoFocus
         />
         <button
           type="submit"
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !input.trim() || noKey}
           aria-label="Send message"
           className="bg-goshiwon-accent hover:bg-goshiwon-accent-light min-w-[48px] min-h-[48px] px-4 py-3 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-goshiwon-text flex items-center justify-center"
         >

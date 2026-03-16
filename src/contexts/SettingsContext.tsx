@@ -9,6 +9,9 @@ export interface SettingsContextValue {
   setFontScale: (scale: number) => void;
   setReduceAnimations: (reduce: boolean) => void;
   setShowRomanization: (show: boolean) => void;
+  apiKey: string | null;
+  setApiKey: (key: string) => void;
+  clearApiKey: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);

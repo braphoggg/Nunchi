@@ -41,8 +41,11 @@ interface MessageBubbleProps {
 
 function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: MessageBubbleProps) {
   const sound = useSound();
-  const { settings } = useSettingsContext();
+  const { settings, apiKey } = useSettingsContext();
   const showRomanization = settings.showRomanization;
+  const authHeaders: Record<string, string> = apiKey
+    ? { "Content-Type": "application/json", "x-api-key": apiKey }
+    : { "Content-Type": "application/json" };
   const isAssistant = message.role === "assistant";
   const content = getTextContent(message);
 
@@ -114,7 +117,7 @@ function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: M
       try {
         const res = await fetch("/api/vocabulary-translate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
           body: JSON.stringify({
             words: needsTranslation.map((w) => w.korean),
           }),
@@ -156,7 +159,7 @@ function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: M
       try {
         const res = await fetch("/api/vocabulary-translate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
           body: JSON.stringify({ words: [item.korean] }),
         });
         if (res.ok) {

@@ -24,6 +24,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const apiKey = req.headers.get("x-api-key") ?? undefined;
+
     const body = await req.json();
     const { messages, context } = body;
 
@@ -86,7 +88,7 @@ export async function POST(req: Request) {
     const modelMessages = await convertToModelMessages(cleanedMessages);
 
     const result = streamText({
-      model: getModel(),
+      model: getModel(apiKey),
       system: systemPrompt,
       messages: modelMessages,
       temperature: 0.7,
@@ -98,9 +100,14 @@ export async function POST(req: Request) {
     // Log full error server-side only; never leak internals to the client
     console.error("[chat route error]", error);
 
+    const message = error instanceof Error && error.message === "No API key provided"
+      ? "API key required"
+      : "An unexpected error occurred";
+    const status = message === "API key required" ? 401 : 500;
+
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: message }),
+      { status, headers: { "Content-Type": "application/json" } }
     );
   }
 }

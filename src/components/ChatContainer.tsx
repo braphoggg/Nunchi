@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TopBar from "./TopBar";
 import MessageBubble from "./MessageBubble";
@@ -32,6 +33,7 @@ import { useOverlayState } from "@/hooks/useOverlayState";
 import { useViewportHeight } from "@/hooks/useViewportHeight";
 import { useGamification } from "@/hooks/useGamification";
 import { useLessonHistory } from "@/hooks/useLessonHistory";
+import { useApiKey } from "@/hooks/useApiKey";
 import { resetTimestampCounter } from "@/lib/timestamps";
 import { getTextContent } from "@/lib/message-utils";
 import { LESSON_TOPICS } from "@/lib/lesson-topics";
@@ -84,10 +86,18 @@ const RANK_UP_MESSAGES: Record<ResidentRank, { korean: string; english: string }
 };
 
 export default function ChatContainer() {
+  const { apiKey, setApiKey, clearApiKey } = useApiKey();
+
   // Active lesson topic (set when user picks a topic from WelcomeScreen)
   const [activeTopic, setActiveTopic] = useState<{ id: string; titleKr: string; difficulty: string } | null>(null);
 
-  const { messages, sendMessage, regenerate, status, error, setMessages } = useChat();
+  const chatTransport = useMemo(
+    () => new DefaultChatTransport({ headers: apiKey ? { "x-api-key": apiKey } : undefined }),
+    [apiKey],
+  );
+  const { messages, sendMessage, regenerate, status, error, setMessages } = useChat({
+    transport: chatTransport,
+  });
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
   inputRef.current = input;
@@ -481,8 +491,8 @@ export default function ChatContainer() {
   );
 
   const settingsCtx = useMemo(
-    () => ({ settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization }),
-    [settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization],
+    () => ({ settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey }),
+    [settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey],
   );
 
   const gamificationCtx = useMemo(

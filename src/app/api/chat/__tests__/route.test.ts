@@ -31,11 +31,12 @@ vi.mock("ai", async () => {
 // Import after mocks are set up
 import { POST } from "../route";
 import { streamText, convertToModelMessages } from "ai";
+import { getModel } from "@/lib/ai-model";
 
-function createRequest(body: unknown): Request {
+function createRequest(body: unknown, headers?: Record<string, string>): Request {
   return new Request("http://localhost:3000/api/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
 }
@@ -125,5 +126,39 @@ describe("POST /api/chat", () => {
     });
     const response = await POST(req);
     expect(response.status).toBe(400);
+  });
+
+  // ─── BYOK (Bring Your Own Key) ─────────────────────────────────
+
+  it("extracts x-api-key header and passes it to getModel", async () => {
+    const messages = [
+      { role: "user", parts: [{ type: "text", text: "Hello" }] },
+    ];
+    const req = createRequest({ messages }, { "x-api-key": "user-key-123" });
+    await POST(req);
+    expect(getModel).toHaveBeenCalledWith("user-key-123");
+  });
+
+  it("passes undefined apiKey to getModel when no x-api-key header", async () => {
+    const messages = [
+      { role: "user", parts: [{ type: "text", text: "Hello" }] },
+    ];
+    const req = createRequest({ messages });
+    await POST(req);
+    expect(getModel).toHaveBeenCalledWith(undefined);
+  });
+
+  it("returns 401 when getModel throws 'No API key provided'", async () => {
+    vi.mocked(getModel).mockImplementationOnce(() => {
+      throw new Error("No API key provided");
+    });
+    const messages = [
+      { role: "user", parts: [{ type: "text", text: "Hello" }] },
+    ];
+    const req = createRequest({ messages });
+    const response = await POST(req);
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error).toBe("API key required");
   });
 });

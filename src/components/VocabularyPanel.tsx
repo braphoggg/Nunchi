@@ -28,7 +28,7 @@ function VocabularyPanel({
   quizReady = false,
   dueCount = 0,
 }: VocabularyPanelProps) {
-  const { settings } = useSettingsContext();
+  const { settings, apiKey } = useSettingsContext();
   const showRomanization = settings.showRomanization;
   const sortedWords = [...words].sort(
     (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
@@ -75,7 +75,7 @@ function VocabularyPanel({
       const koreanWords = targetWords.map((w) => w.korean).slice(0, 20);
       const res = await fetch("/api/vocabulary-translate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(apiKey ? { "x-api-key": apiKey } : {}) },
         body: JSON.stringify({ words: koreanWords }),
       });
       if (res.ok) {

@@ -26,6 +26,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const apiKey = req.headers.get("x-api-key") ?? undefined;
+
     const body = await req.json();
     const { words } = body;
 
@@ -65,7 +67,7 @@ export async function POST(req: Request) {
       .join("\n");
 
     const result = await generateText({
-      model: getModel(),
+      model: getModel(apiKey),
       system:
         "You are a Korean-English dictionary. For each Korean word or phrase given, " +
         "provide ONLY its concise English translation (1-5 words, lowercase). " +
@@ -105,9 +107,14 @@ export async function POST(req: Request) {
     // Log full error server-side only; never leak internals to the client
     console.error("[vocabulary-translate route error]", error);
 
+    const message = error instanceof Error && error.message === "No API key provided"
+      ? "API key required"
+      : "An unexpected error occurred";
+    const status = message === "API key required" ? 401 : 500;
+
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: message }),
+      { status, headers: { "Content-Type": "application/json" } }
     );
   }
 }

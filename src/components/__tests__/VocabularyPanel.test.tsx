@@ -15,6 +15,9 @@ vi.mock("@/contexts/SettingsContext", () => ({
     setFontScale: vi.fn(),
     setReduceAnimations: vi.fn(),
     setShowRomanization: vi.fn(),
+    apiKey: "test-key",
+    setApiKey: vi.fn(),
+    clearApiKey: vi.fn(),
   }),
 }));
 
