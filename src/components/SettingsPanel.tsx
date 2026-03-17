@@ -89,7 +89,7 @@ function DataBackupSection() {
   return (
     <section>
       <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
-        데이터 (Data)
+        {"데이터 (Data)"}
       </h3>
       <div className="space-y-3">
         <div className="flex gap-2">
@@ -162,7 +162,7 @@ function ApiKeySection() {
   return (
     <section>
       <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
-        API 키 (API Key)
+        {"API 키 (API Key)"}
       </h3>
       <div className="space-y-3">
         {apiKey ? (
@@ -222,11 +222,11 @@ function ApiKeySection() {
 }
 
 export default function SettingsPanel({ onClose }: SettingsPanelProps) {
-  const { settings, setTheme: onSetTheme, setFontScale: onSetFontScale, setReduceAnimations: onSetReduceAnimations, setShowRomanization: onSetShowRomanization } = useSettingsContext();
+  const { settings, setTheme: onSetTheme, setFontScale: onSetFontScale, setReduceAnimations: onSetReduceAnimations, setShowRomanization: onSetShowRomanization, setTTSRate: onSetTTSRate } = useSettingsContext();
   const { muted: isMuted, toggleMute: onToggleMute, volume, setVolume: onSetVolume } = useSound();
 
   return (
-    <Modal onClose={onClose} title="설정 (Settings)" stickyHeader closeAriaLabel="Close settings">
+    <Modal onClose={onClose} title={"\uC124\uC815 (Settings)"} stickyHeader closeAriaLabel="Close settings">
       {/* Body */}
       <div className="p-4 space-y-6">
         {/* API Key */}
@@ -235,7 +235,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         {/* Theme */}
         <section>
           <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
-            테마 (Theme)
+            {"\uD14C\uB9C8 (Theme)"}
           </h3>
           <div className="flex gap-2">
             {([
@@ -262,7 +262,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         {/* Font Size */}
         <section>
           <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
-            글자 크기 (Font Size)
+            {"\uAE00\uC790 \uD06C\uAE30 (Font Size)"}
           </h3>
           <div className="flex gap-2">
             {FONT_SCALES.map(({ value, label }) => (
@@ -280,7 +280,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
             ))}
           </div>
           <p className="mt-2 text-center text-goshiwon-text-muted" style={{ fontSize: `${14 * settings.fontScale}px` }}>
-            가나다라 — Preview
+            {"\uAC00\uB098\uB2E4\uB77C \u2014 Preview"}
           </p>
         </section>
 
@@ -321,10 +321,57 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         {/* Data Backup */}
         <DataBackupSection />
 
+        {/* TTS Speech Speed */}
+        <section>
+          <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
+            {"\uBC1C\uC74C \uC18D\uB3C4 (Speech Speed)"}
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-goshiwon-text">TTS playback rate</span>
+              <span className="text-xs text-goshiwon-text-muted tabular-nums font-mono">
+                {(settings.ttsRate ?? 0.85).toFixed(2)}x
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-goshiwon-text-muted shrink-0">Slow</span>
+              <input
+                type="range"
+                min={50}
+                max={150}
+                step={5}
+                value={Math.round((settings.ttsRate ?? 0.85) * 100)}
+                onChange={(e) => onSetTTSRate(Number(e.target.value) / 100)}
+                aria-label="Speech speed"
+                className="flex-1 h-2 rounded-full appearance-none cursor-pointer
+                  bg-goshiwon-border
+                  [&::-webkit-slider-thumb]:appearance-none
+                  [&::-webkit-slider-thumb]:w-6
+                  [&::-webkit-slider-thumb]:h-6
+                  [&::-webkit-slider-thumb]:rounded-full
+                  [&::-webkit-slider-thumb]:bg-goshiwon-accent-light
+                  [&::-webkit-slider-thumb]:border-2
+                  [&::-webkit-slider-thumb]:border-goshiwon-surface
+                  [&::-webkit-slider-thumb]:shadow-sm
+                  [&::-moz-range-thumb]:w-6
+                  [&::-moz-range-thumb]:h-6
+                  [&::-moz-range-thumb]:rounded-full
+                  [&::-moz-range-thumb]:bg-goshiwon-accent-light
+                  [&::-moz-range-thumb]:border-2
+                  [&::-moz-range-thumb]:border-goshiwon-surface"
+              />
+              <span className="text-xs text-goshiwon-text-muted shrink-0">Fast</span>
+            </div>
+            <p className="text-xs text-goshiwon-text-muted">
+              Controls Korean text-to-speech speed for messages and vocabulary.
+            </p>
+          </div>
+        </section>
+
         {/* Sound */}
         <section>
           <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
-            소리 (Sound)
+            {"\uC18C\uB9AC (Sound)"}
           </h3>
           <div className="space-y-4">
             {/* Mute toggle */}

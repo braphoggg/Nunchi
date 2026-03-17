@@ -11,6 +11,7 @@ export interface AppSettings {
   fontScale: number;
   reduceAnimations: boolean;
   showRomanization: boolean;
+  ttsRate: number; // Speech speed: 0.5 to 1.5, default 0.85
 }
 
 const STORAGE_KEY = "nunchi-settings";
@@ -28,18 +29,24 @@ function getDefaults(): AppSettings {
     fontScale: 1,
     reduceAnimations: prefersReduced,
     showRomanization: true,
+    ttsRate: 0.85,
   };
 }
 
 function isValidSettings(val: unknown): val is AppSettings {
   if (typeof val !== "object" || val === null || Array.isArray(val)) return false;
   const obj = val as Record<string, unknown>;
-  return (
+  const baseValid =
     VALID_THEMES.has(obj.theme as string) &&
     VALID_SCALES.has(obj.fontScale as number) &&
     typeof obj.reduceAnimations === "boolean" &&
-    typeof obj.showRomanization === "boolean"
-  );
+    typeof obj.showRomanization === "boolean";
+  if (!baseValid) return false;
+  // ttsRate is optional for backward compat — validate if present
+  if ("ttsRate" in obj && obj.ttsRate !== undefined) {
+    if (typeof obj.ttsRate !== "number" || obj.ttsRate < 0.5 || obj.ttsRate > 1.5) return false;
+  }
+  return true;
 }
 
 function loadFromStorage(): AppSettings {
@@ -48,7 +55,7 @@ function loadFromStorage(): AppSettings {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return getDefaults();
     const parsed = JSON.parse(stored);
-    if (isValidSettings(parsed)) return parsed;
+    if (isValidSettings(parsed)) return { ...getDefaults(), ...parsed };
     return getDefaults();
   } catch {
     return getDefaults();
@@ -119,6 +126,11 @@ export function useSettings() {
     setSettings((prev) => ({ ...prev, showRomanization }));
   }, []);
 
+  const setTTSRate = useCallback((ttsRate: number) => {
+    if (ttsRate < 0.5 || ttsRate > 1.5) return;
+    setSettings((prev) => ({ ...prev, ttsRate: Math.round(ttsRate * 100) / 100 }));
+  }, []);
+
   return {
     settings,
     resolvedTheme,
@@ -126,5 +138,6 @@ export function useSettings() {
     setFontScale,
     setReduceAnimations,
     setShowRomanization,
+    setTTSRate,
   };
 }

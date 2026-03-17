@@ -5,6 +5,13 @@ import Modal from "./Modal";
 import { isDueForReview } from "@/lib/srs";
 import { useGamificationContext } from "@/contexts/GamificationContext";
 import { ACHIEVEMENTS, type Achievement } from "@/lib/achievements";
+import type { XPEvent, VocabularyItem } from "@/types";
+import {
+  getXPPerDay,
+  getVocabGrowth,
+  getActivityDays,
+  getLastNDays,
+} from "@/lib/progress-analytics";
 
 interface StatsPanelProps {
   onClose: () => void;
@@ -12,7 +19,7 @@ interface StatsPanelProps {
 
 export default function StatsPanel({ onClose }: StatsPanelProps) {
   const {
-    rank, rankProgress, nextRank, totalXP,
+    rank, rankProgress, nextRank, totalXP, xpHistory,
     currentStreak, longestStreak, stats,
     vocabCount, words, achievementProgress,
   } = useGamificationContext();
@@ -213,6 +220,16 @@ export default function StatsPanel({ onClose }: StatsPanelProps) {
           </div>
         )}
 
+        {/* ─── Progress Analytics ─────────────────────────────────────── */}
+        {/* XP Per Day (14 days) */}
+        <XPBarChart xpHistory={xpHistory} />
+
+        {/* Vocabulary Growth (14 days) */}
+        <VocabGrowthChart words={words} />
+
+        {/* 30-Day Activity Calendar */}
+        <ActivityCalendar xpHistory={xpHistory} />
+
         {/* Achievement Badge Gallery — English labels, tappable */}
         <AchievementGallery achievementProgress={achievementProgress} />
       </div>
@@ -225,6 +242,205 @@ function StatRow({ label, value }: { label: string; value: number }) {
     <div className="flex items-center justify-between text-xs">
       <span className="text-goshiwon-text-muted">{label}</span>
       <span className="text-goshiwon-text">{value}</span>
+    </div>
+  );
+}
+
+// ─── Progress Chart Components ──────────────────────────────────────
+
+/** XP earned per day — 14-day bar chart */
+function XPBarChart({ xpHistory }: { xpHistory: XPEvent[] }) {
+  const data = useMemo(() => getXPPerDay(xpHistory, 14), [xpHistory]);
+  const maxXP = Math.max(...data.map((d) => d.xp), 1);
+  const totalWeek = data.slice(-7).reduce((sum, d) => sum + d.xp, 0);
+
+  if (xpHistory.length === 0) return null;
+
+  const chartW = 280;
+  const chartH = 80;
+  const barGap = 3;
+  const barW = (chartW - barGap * (data.length - 1)) / data.length;
+
+  return (
+    <div className="bg-goshiwon-surface rounded-lg p-3 border border-goshiwon-border">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-goshiwon-text-secondary text-xs">14-Day XP</p>
+        <span className="text-goshiwon-text-muted text-xs">
+          {totalWeek} XP this week
+        </span>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${chartW} ${chartH}`}
+        className="w-full"
+        role="img"
+        aria-label="XP earned per day over the last 14 days"
+      >
+        {data.map((d, i) => {
+          const barH = Math.max((d.xp / maxXP) * 55, d.xp > 0 ? 3 : 1);
+          const x = i * (barW + barGap);
+          const y = 58 - barH;
+          const isToday = i === data.length - 1;
+
+          return (
+            <g key={d.date}>
+              <rect
+                x={x}
+                y={y}
+                width={barW}
+                height={barH}
+                rx={2}
+                style={{
+                  fill: isToday
+                    ? "var(--color-goshiwon-yellow)"
+                    : d.xp > 0
+                      ? "var(--color-goshiwon-yellow)"
+                      : "var(--color-goshiwon-border)",
+                  opacity: isToday ? 1 : d.xp > 0 ? 0.4 : 0.3,
+                }}
+              />
+              {/* Day label — show every other day + today */}
+              {(i % 2 === 0 || isToday) && (
+                <text
+                  x={x + barW / 2}
+                  y={73}
+                  textAnchor="middle"
+                  style={{ fill: "var(--color-goshiwon-text-muted)", fontSize: "7px" }}
+                >
+                  {isToday ? "Today" : d.label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/** Vocabulary growth — 14-day cumulative line chart */
+function VocabGrowthChart({ words }: { words: VocabularyItem[] }) {
+  const data = useMemo(() => getVocabGrowth(words, 14), [words]);
+  const addedThisWeek = data.slice(-7).reduce((sum, d) => sum + d.added, 0);
+
+  if (words.length === 0) return null;
+
+  const chartW = 280;
+  const chartH = 60;
+  const maxCum = Math.max(...data.map((d) => d.cumulative), 1);
+  const minCum = Math.min(...data.map((d) => d.cumulative));
+  const range = maxCum - minCum || 1;
+
+  // Build SVG polyline points
+  const points = data
+    .map((d, i) => {
+      const x = (i / (data.length - 1)) * chartW;
+      const y = chartH - 5 - ((d.cumulative - minCum) / range) * (chartH - 10);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  // Area fill points (close the path at bottom)
+  const areaPoints = `0,${chartH} ${points} ${chartW},${chartH}`;
+
+  return (
+    <div className="bg-goshiwon-surface rounded-lg p-3 border border-goshiwon-border">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-goshiwon-text-secondary text-xs">Vocabulary Growth</p>
+        <span className="text-goshiwon-text-muted text-xs">
+          +{addedThisWeek} this week
+        </span>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${chartW} ${chartH}`}
+        className="w-full"
+        role="img"
+        aria-label="Vocabulary growth over the last 14 days"
+      >
+        {/* Area fill */}
+        <polygon
+          points={areaPoints}
+          style={{ fill: "var(--color-goshiwon-yellow)", opacity: 0.1 }}
+        />
+        {/* Line */}
+        <polyline
+          points={points}
+          fill="none"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ stroke: "var(--color-goshiwon-yellow)", opacity: 0.7 }}
+        />
+        {/* End dot (today) */}
+        {data.length > 0 && (() => {
+          const last = data[data.length - 1];
+          const x = chartW;
+          const y = chartH - 5 - ((last.cumulative - minCum) / range) * (chartH - 10);
+          return (
+            <circle cx={x} cy={y} r={3} style={{ fill: "var(--color-goshiwon-yellow)" }} />
+          );
+        })()}
+      </svg>
+
+      <div className="flex justify-between text-[10px] mt-1" style={{ color: "var(--color-goshiwon-text-muted)" }}>
+        <span>{minCum} words</span>
+        <span>{maxCum} words</span>
+      </div>
+    </div>
+  );
+}
+
+/** 30-Day Activity Calendar — dot grid */
+function ActivityCalendar({ xpHistory }: { xpHistory: XPEvent[] }) {
+  const activeDays = useMemo(() => getActivityDays(xpHistory, 30), [xpHistory]);
+  const days = useMemo(() => getLastNDays(30), []);
+
+  if (xpHistory.length === 0) return null;
+
+  return (
+    <div className="bg-goshiwon-surface rounded-lg p-3 border border-goshiwon-border">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-goshiwon-text-secondary text-xs">30-Day Activity</p>
+        <span className="text-goshiwon-text-muted text-xs">
+          {activeDays.size} active {activeDays.size === 1 ? "day" : "days"}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-1 justify-center">
+        {days.map((date) => {
+          const active = activeDays.has(date);
+          const isToday = date === days[days.length - 1];
+          return (
+            <div
+              key={date}
+              title={`${date}${active ? " — active" : ""}`}
+              className={`w-3.5 h-3.5 rounded-sm transition-colors ${
+                active
+                  ? isToday
+                    ? "bg-goshiwon-yellow"
+                    : "bg-goshiwon-yellow/50"
+                  : "bg-goshiwon-border/40"
+              }`}
+            />
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-center gap-3 mt-2">
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-sm bg-goshiwon-border/40" />
+          <span className="text-[10px] text-goshiwon-text-muted">Inactive</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-sm bg-goshiwon-yellow/50" />
+          <span className="text-[10px] text-goshiwon-text-muted">Active</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-sm bg-goshiwon-yellow" />
+          <span className="text-[10px] text-goshiwon-text-muted">Today</span>
+        </div>
+      </div>
     </div>
   );
 }

@@ -120,7 +120,7 @@ export default function ChatContainer() {
   const sound = useSoundEngine();
 
   // Accessibility settings
-  const { settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization } = useSettings();
+  const { settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, setTTSRate } = useSettings();
 
   // Network status
   const { isOnline, wasOffline, dismissReconnected } = useNetworkStatus();
@@ -579,8 +579,8 @@ export default function ChatContainer() {
   );
 
   const settingsCtx = useMemo(
-    () => ({ settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey }),
-    [settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey],
+    () => ({ settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, setTTSRate, apiKey, setApiKey, clearApiKey }),
+    [settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, setTTSRate, apiKey, setApiKey, clearApiKey],
   );
 
   const gamificationCtx = useMemo(

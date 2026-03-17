@@ -278,7 +278,7 @@ describe("VocabularyPanel", () => {
     const utterance = mockSpeak.mock.calls[0][0];
     expect(utterance.text).toBe("안녕하세요");
     expect(utterance.lang).toBe("ko-KR");
-    expect(utterance.rate).toBe(0.9);
+    expect(utterance.rate).toBe(0.85);
   });
 
   it("shows stop label when word is being spoken", () => {

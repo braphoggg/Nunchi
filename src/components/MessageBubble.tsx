@@ -84,7 +84,7 @@ function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: M
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(koreanText);
     utterance.lang = "ko-KR";
-    utterance.rate = 0.85;
+    utterance.rate = settings.ttsRate ?? 0.85;
     utterance.onend = () => setSpeaking(false);
     utterance.onerror = () => setSpeaking(false);
     speechSynthesis.speak(utterance);

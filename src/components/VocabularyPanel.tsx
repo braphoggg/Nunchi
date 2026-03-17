@@ -4,6 +4,11 @@ import { useState, useEffect, useCallback, memo } from "react";
 import type { VocabularyItem } from "@/types";
 import Modal from "./Modal";
 import { useSettingsContext } from "@/contexts/SettingsContext";
+import {
+  exportToCSV,
+  exportToAnkiTSV,
+  downloadFile,
+} from "@/lib/vocabulary-export";
 
 interface VocabularyPanelProps {
   words: VocabularyItem[];
@@ -32,6 +37,7 @@ function VocabularyPanel({
 }: VocabularyPanelProps) {
   const { settings, apiKey } = useSettingsContext();
   const showRomanization = settings.showRomanization;
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const sortedWords = [...words].sort(
     (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
   );
@@ -57,7 +63,7 @@ function VocabularyPanel({
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(word.korean);
     utterance.lang = "ko-KR";
-    utterance.rate = 0.9;
+    utterance.rate = settings.ttsRate ?? 0.85;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);
     speechSynthesis.speak(utterance);
@@ -151,6 +157,46 @@ function VocabularyPanel({
           </svg>
           Write
         </button>
+      )}
+      {words.length > 0 && (
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu((v) => !v)}
+            aria-label="Export vocabulary"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-goshiwon-border/50 text-goshiwon-text-muted hover:bg-goshiwon-border hover:text-goshiwon-text-secondary transition-colors"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export
+          </button>
+          {showExportMenu && (
+            <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-goshiwon-surface border border-goshiwon-border rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => {
+                  downloadFile(exportToCSV(words), "nunchi-vocabulary.csv", "text/csv;charset=utf-8");
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-2.5 text-left text-xs text-goshiwon-text-secondary hover:bg-goshiwon-surface-hover transition-colors flex items-center gap-2"
+              >
+                <span className="text-goshiwon-text-muted font-mono">CSV</span>
+                <span>Spreadsheet</span>
+              </button>
+              <button
+                onClick={() => {
+                  downloadFile(exportToAnkiTSV(words), "nunchi-vocabulary-anki.txt", "text/tab-separated-values;charset=utf-8");
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-3 py-2.5 text-left text-xs text-goshiwon-text-secondary hover:bg-goshiwon-surface-hover transition-colors flex items-center gap-2 border-t border-goshiwon-border/50"
+              >
+                <span className="text-goshiwon-text-muted font-mono">TSV</span>
+                <span>Anki Import</span>
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </>
   );

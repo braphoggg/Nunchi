@@ -34,6 +34,7 @@ vi.mock("@/contexts/GamificationContext", () => ({
     rankProgress: 0.35,
     nextRank,
     totalXP: 240,
+    xpHistory: [],
     currentStreak: 5,
     longestStreak: 12,
     stats,

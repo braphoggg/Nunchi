@@ -146,6 +146,33 @@ describe("useSettings — setters", () => {
     act(() => result.current.setShowRomanization(false));
     expect(result.current.settings.showRomanization).toBe(false);
   });
+
+  it("setTTSRate updates speech speed", () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.setTTSRate(1.2));
+    expect(result.current.settings.ttsRate).toBe(1.2);
+  });
+
+  it("setTTSRate ignores out-of-range values", () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.setTTSRate(0.3)); // below 0.5
+    expect(result.current.settings.ttsRate).toBe(0.85); // unchanged
+    act(() => result.current.setTTSRate(2.0)); // above 1.5
+    expect(result.current.settings.ttsRate).toBe(0.85); // unchanged
+  });
+
+  it("setTTSRate accepts boundary values", () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.setTTSRate(0.5));
+    expect(result.current.settings.ttsRate).toBe(0.5);
+    act(() => result.current.setTTSRate(1.5));
+    expect(result.current.settings.ttsRate).toBe(1.5);
+  });
+
+  it("returns ttsRate 0.85 by default", () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.ttsRate).toBe(0.85);
+  });
 });
 
 // ─── persistence ───────────────────────────────────────────────────
@@ -164,6 +191,7 @@ describe("useSettings — persistence", () => {
       fontScale: 1.15,
       reduceAnimations: true,
       showRomanization: false,
+      ttsRate: 1.1,
     };
     storage[STORAGE_KEY] = JSON.stringify(saved);
 
@@ -172,6 +200,22 @@ describe("useSettings — persistence", () => {
     expect(result.current.settings.fontScale).toBe(1.15);
     expect(result.current.settings.reduceAnimations).toBe(true);
     expect(result.current.settings.showRomanization).toBe(false);
+    expect(result.current.settings.ttsRate).toBe(1.1);
+  });
+
+  it("loads old settings without ttsRate (backward compat)", () => {
+    // Old format without ttsRate — should still load and merge defaults
+    const saved = {
+      theme: "dark",
+      fontScale: 1,
+      reduceAnimations: false,
+      showRomanization: true,
+    };
+    storage[STORAGE_KEY] = JSON.stringify(saved);
+
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.settings.ttsRate).toBe(0.85); // default merged
   });
 
   it("loads system theme from localStorage", () => {
@@ -180,6 +224,7 @@ describe("useSettings — persistence", () => {
       fontScale: 1,
       reduceAnimations: false,
       showRomanization: true,
+      ttsRate: 0.85,
     };
     storage[STORAGE_KEY] = JSON.stringify(saved);
 
