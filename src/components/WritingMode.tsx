@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { VocabularyItem } from "@/types";
 import type { FlashcardSummary } from "@/hooks/useFlashcards";
 import Modal from "./Modal";
+import HangulKeyboard from "./HangulKeyboard";
 import { useSound } from "@/contexts/SoundContext";
 
 interface WritingModeProps {
@@ -95,10 +96,39 @@ export default function WritingMode({
   const [result, setResult] = useState<"exact" | "close" | "wrong" | null>(null);
   const [results, setResults] = useState<Map<string, "exact" | "close" | "wrong">>(new Map());
   const [isComplete, setIsComplete] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(true);
   const completionReported = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const userInputRef = useRef(userInput);
 
   const currentWord = deck[currentIndex] ?? null;
+
+  // Keep ref in sync for use in keyboard Enter handler (avoids stale closure)
+  useEffect(() => { userInputRef.current = userInput; }, [userInput]);
+
+  // ─── Hangul keyboard handlers ───────────────────────────────────────
+  const handleKeyboardInput = useCallback((text: string) => {
+    setUserInput((prev) => {
+      const next = prev + text;
+      userInputRef.current = next; // sync ref immediately for keyboard Enter
+      return next;
+    });
+  }, []);
+
+  const handleKeyboardDelete = useCallback(() => {
+    setUserInput((prev) => {
+      const next = prev.slice(0, -1);
+      userInputRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const toggleKeyboard = useCallback(() => {
+    setKeyboardVisible((v) => {
+      sound.playKeyboardToggle(!v);
+      return !v;
+    });
+  }, [sound]);
 
   // Focus input on mount and when moving to next word
   useEffect(() => {
@@ -109,7 +139,8 @@ export default function WritingMode({
 
   const handleSubmit = useCallback(() => {
     if (!currentWord || result !== null) return;
-    const trimmed = userInput.trim();
+    // Use ref for freshest value (keyboard Enter fires before React re-renders)
+    const trimmed = userInputRef.current.trim();
     if (!trimmed) return;
 
     const answerResult = checkAnswer(trimmed, currentWord.korean);
@@ -129,7 +160,7 @@ export default function WritingMode({
         sound.playFlashcardGrade("again");
       }
     }
-  }, [currentWord, userInput, result, onWordGraded, sound]);
+  }, [currentWord, result, onWordGraded, sound]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < deck.length - 1) {
@@ -151,17 +182,23 @@ export default function WritingMode({
     handleNext();
   }, [currentWord, onWordGraded, handleNext]);
 
-  // Keyboard shortcuts
+  /** Shared Enter logic — used by both physical keyboard and HangulKeyboard.
+   *  Uses userInputRef so the HangulKeyboard's delayed onSubmit (10ms after
+   *  onInput) sees the freshly-committed text even before React re-renders. */
+  const handleEnterAction = useCallback(() => {
+    if (result !== null) {
+      handleNext();
+    } else if (userInputRef.current.trim()) {
+      handleSubmit();
+    }
+  }, [result, handleNext, handleSubmit]);
+
+  // Keyboard shortcuts (physical keyboard)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Enter" && !e.shiftKey) {
-        if (result !== null) {
-          e.preventDefault();
-          handleNext();
-        } else if (userInput.trim()) {
-          e.preventDefault();
-          handleSubmit();
-        }
+        e.preventDefault();
+        handleEnterAction();
       }
       if (e.key === "Tab" && !result) {
         e.preventDefault();
@@ -170,7 +207,7 @@ export default function WritingMode({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [result, userInput, handleNext, handleSubmit, handleSkip]);
+  }, [result, handleEnterAction, handleSkip]);
 
   // Report completion
   useEffect(() => {
@@ -309,22 +346,38 @@ export default function WritingMode({
           </div>
         )}
 
-        {/* Input */}
+        {/* Input row */}
         <div className="space-y-3">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            disabled={result !== null}
-            placeholder="Type Korean here..."
-            className="w-full px-4 py-3 text-lg text-center font-korean bg-goshiwon-input border border-goshiwon-border rounded-lg text-goshiwon-text placeholder:text-goshiwon-text-muted/50 focus:outline-none focus:border-goshiwon-yellow/50 disabled:opacity-60 min-h-[44px]"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            lang="ko"
-            aria-label="Write Korean word"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleKeyboard}
+              aria-label={keyboardVisible ? "Hide Korean keyboard" : "Show Korean keyboard"}
+              className={`min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg border transition-colors shrink-0 ${
+                keyboardVisible
+                  ? "bg-goshiwon-yellow/15 border-goshiwon-yellow/30 text-goshiwon-yellow"
+                  : "bg-goshiwon-surface border-goshiwon-border text-goshiwon-text-muted hover:text-goshiwon-text"
+              }`}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8" />
+              </svg>
+            </button>
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              disabled={result !== null}
+              placeholder="Type Korean here..."
+              className="flex-1 px-4 py-3 text-lg text-center font-korean bg-goshiwon-input border border-goshiwon-border rounded-lg text-goshiwon-text placeholder:text-goshiwon-text-muted/50 focus:outline-none focus:border-goshiwon-yellow/50 disabled:opacity-60 min-h-[44px]"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              lang="ko"
+              aria-label="Write Korean word"
+            />
+          </div>
 
           {/* Result feedback */}
           {result !== null && currentWord && (
@@ -386,6 +439,16 @@ export default function WritingMode({
           )}
         </div>
       </div>
+
+      {/* Korean keyboard — hidden during feedback and completion */}
+      {result === null && (
+        <HangulKeyboard
+          onInput={handleKeyboardInput}
+          onDeleteChar={handleKeyboardDelete}
+          onSubmit={handleEnterAction}
+          visible={keyboardVisible}
+        />
+      )}
     </Modal>
   );
 }

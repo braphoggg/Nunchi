@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Modal from "./Modal";
 import { isDueForReview } from "@/lib/srs";
 import { useGamificationContext } from "@/contexts/GamificationContext";
-import { ACHIEVEMENTS } from "@/lib/achievements";
+import { ACHIEVEMENTS, type Achievement } from "@/lib/achievements";
 
 interface StatsPanelProps {
   onClose: () => void;
@@ -213,38 +213,8 @@ export default function StatsPanel({ onClose }: StatsPanelProps) {
           </div>
         )}
 
-        {/* Achievement Badge Gallery */}
-        <div className="bg-goshiwon-surface rounded-lg p-3 border border-goshiwon-border">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-goshiwon-text-secondary text-xs">Achievements</p>
-            <span className="text-goshiwon-text-muted text-xs">
-              {achievementProgress.unlockedIds.length}/{ACHIEVEMENTS.length}
-            </span>
-          </div>
-          <div className="badge-grid gap-2">
-            {ACHIEVEMENTS.map((ach) => {
-              const unlocked = achievementProgress.unlockedIds.includes(ach.id);
-              return (
-                <div
-                  key={ach.id}
-                  className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-all ${
-                    unlocked
-                      ? "bg-goshiwon-yellow/10 border border-goshiwon-yellow/30"
-                      : "opacity-30 grayscale"
-                  }`}
-                  title={unlocked ? `${ach.title} — ${ach.description}` : `??? — ${ach.description}`}
-                >
-                  <span className="text-lg" role="img" aria-label={unlocked ? ach.title : "Locked"}>
-                    {unlocked ? ach.icon : "🔒"}
-                  </span>
-                  <span className="text-[9px] text-goshiwon-text-muted text-center leading-tight truncate w-full">
-                    {unlocked ? ach.titleKr : "???"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Achievement Badge Gallery — English labels, tappable */}
+        <AchievementGallery achievementProgress={achievementProgress} />
       </div>
     </Modal>
   );
@@ -255,6 +225,100 @@ function StatRow({ label, value }: { label: string; value: number }) {
     <div className="flex items-center justify-between text-xs">
       <span className="text-goshiwon-text-muted">{label}</span>
       <span className="text-goshiwon-text">{value}</span>
+    </div>
+  );
+}
+
+/** Interactive achievement gallery with tappable badges and detail card */
+function AchievementGallery({ achievementProgress }: { achievementProgress: { unlockedIds: string[]; unlockTimestamps: Record<string, string> } }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedAch = selectedId ? ACHIEVEMENTS.find((a) => a.id === selectedId) : null;
+  const selectedUnlocked = selectedId ? achievementProgress.unlockedIds.includes(selectedId) : false;
+
+  return (
+    <div className="bg-goshiwon-surface rounded-lg p-3 border border-goshiwon-border">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-goshiwon-text-secondary text-xs">Achievements</p>
+        <span className="text-goshiwon-text-muted text-xs">
+          {achievementProgress.unlockedIds.length}/{ACHIEVEMENTS.length}
+        </span>
+      </div>
+
+      {/* Badge Grid */}
+      <div className="badge-grid gap-2">
+        {ACHIEVEMENTS.map((ach) => {
+          const unlocked = achievementProgress.unlockedIds.includes(ach.id);
+          const isSelected = selectedId === ach.id;
+          return (
+            <button
+              key={ach.id}
+              onClick={() => setSelectedId(isSelected ? null : ach.id)}
+              className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-all ${
+                isSelected
+                  ? "bg-goshiwon-yellow/20 border border-goshiwon-yellow/50 ring-1 ring-goshiwon-yellow/30"
+                  : unlocked
+                  ? "bg-goshiwon-yellow/10 border border-goshiwon-yellow/30"
+                  : "opacity-40 grayscale border border-transparent"
+              }`}
+              aria-label={unlocked ? ach.title : "Locked achievement"}
+              aria-pressed={isSelected}
+            >
+              <span className="text-lg" role="img" aria-hidden="true">
+                {unlocked ? ach.icon : "🔒"}
+              </span>
+              <span className="text-[9px] text-goshiwon-text-muted text-center leading-tight truncate w-full">
+                {unlocked ? ach.title : "???"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Detail Card — shown when a badge is tapped */}
+      {selectedAch && (
+        <div className={`mt-3 p-3 rounded-lg border transition-all ${
+          selectedUnlocked
+            ? "bg-goshiwon-yellow/5 border-goshiwon-yellow/20"
+            : "bg-goshiwon-bg/50 border-goshiwon-border"
+        }`}>
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0" role="img" aria-hidden="true">
+              {selectedUnlocked ? selectedAch.icon : "🔒"}
+            </span>
+            <div className="min-w-0 flex-1">
+              {selectedUnlocked ? (
+                <>
+                  <p className="text-sm font-medium text-goshiwon-yellow">
+                    {selectedAch.title}
+                  </p>
+                  <p className="text-xs text-goshiwon-text-muted font-korean">
+                    {selectedAch.titleKr}
+                  </p>
+                  <p className="text-xs text-goshiwon-text mt-1.5">
+                    {selectedAch.description}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-goshiwon-text-muted">
+                    Locked
+                  </p>
+                  <p className="text-xs text-goshiwon-text-muted mt-1 italic">
+                    {selectedAch.hint}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tap hint — only show when no badge is selected */}
+      {!selectedId && (
+        <p className="text-center text-[10px] text-goshiwon-text-muted/50 mt-2">
+          Tap a badge to see details
+        </p>
+      )}
     </div>
   );
 }
