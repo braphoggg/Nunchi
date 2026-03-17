@@ -151,7 +151,7 @@ export default function Modal({
               <p className="text-xs text-goshiwon-text-muted">{subtitle}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {headerContent}
             {!backButton && (
               <button

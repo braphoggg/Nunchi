@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SettingsPanel from "../SettingsPanel";
 
@@ -9,11 +9,13 @@ const mockSetApiKey = vi.fn();
 const mockClearApiKey = vi.fn();
 
 const mockSettingsCtx = {
-  settings: { theme: "dark" as const, fontScale: 1, reduceAnimations: false, showRomanization: true },
+  settings: { theme: "dark" as const, fontScale: 1, reduceAnimations: false, showRomanization: true, ttsRate: 0.85 },
+  resolvedTheme: "dark" as const,
   setTheme: vi.fn(),
   setFontScale: vi.fn(),
   setReduceAnimations: vi.fn(),
   setShowRomanization: vi.fn(),
+  setTTSRate: vi.fn(),
   apiKey: null as string | null,
   setApiKey: mockSetApiKey,
   clearApiKey: mockClearApiKey,
@@ -48,6 +50,7 @@ describe("SettingsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSettingsCtx.apiKey = null;
+    mockSettingsCtx.settings.ttsRate = 0.85;
   });
 
   it("renders the settings title", () => {
@@ -195,5 +198,41 @@ describe("SettingsPanel", () => {
   it("renders Show romanization toggle", () => {
     render(<SettingsPanel onClose={onClose} />);
     expect(screen.getByText("Show romanization")).toBeInTheDocument();
+  });
+
+  // ─── TTS Speech Speed ───────────────────────────────────────────
+
+  describe("TTS Speech Speed", () => {
+    it("renders the speech speed section heading", () => {
+      render(<SettingsPanel onClose={onClose} />);
+      expect(screen.getByText(/발음 속도/)).toBeInTheDocument();
+    });
+
+    it("shows the current TTS rate value", () => {
+      render(<SettingsPanel onClose={onClose} />);
+      expect(screen.getByText("0.85x")).toBeInTheDocument();
+    });
+
+    it("renders the range input with correct min, max, and step", () => {
+      render(<SettingsPanel onClose={onClose} />);
+      const slider = screen.getByRole("slider", { name: "Speech speed" });
+      expect(slider).toHaveAttribute("min", "50");
+      expect(slider).toHaveAttribute("max", "150");
+      expect(slider).toHaveAttribute("step", "5");
+    });
+
+    it("calls setTTSRate with the new value when slider changes", () => {
+      render(<SettingsPanel onClose={onClose} />);
+      const slider = screen.getByRole("slider", { name: "Speech speed" });
+      fireEvent.change(slider, { target: { value: "120" } });
+      expect(mockSettingsCtx.setTTSRate).toHaveBeenCalledWith(1.2);
+    });
+
+    it("reflects settings.ttsRate as the slider value", () => {
+      mockSettingsCtx.settings.ttsRate = 1.1;
+      render(<SettingsPanel onClose={onClose} />);
+      const slider = screen.getByRole("slider", { name: "Speech speed" });
+      expect(slider).toHaveValue("110");
+    });
   });
 });

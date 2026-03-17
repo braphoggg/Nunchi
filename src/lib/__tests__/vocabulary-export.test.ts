@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   exportToCSV,
   exportToAnkiTSV,
+  downloadFile,
 } from "../vocabulary-export";
 import type { VocabularyItem } from "@/types";
 
@@ -99,5 +100,116 @@ describe("exportToAnkiTSV", () => {
 
   it("returns empty string when all words lack english", () => {
     expect(exportToAnkiTSV([makeWord({ english: "" })])).toBe("");
+  });
+
+  it("escapes HTML entities in output", () => {
+    const tsv = exportToAnkiTSV([
+      makeWord({ korean: "<script>", romanization: "test", english: "a & b" }),
+    ]);
+    const [front, back] = tsv.split("\t");
+    expect(front).toContain("&lt;script&gt;");
+    expect(back).toBe("a &amp; b");
+  });
+
+  it("replaces tab characters in values with spaces", () => {
+    const tsv = exportToAnkiTSV([
+      makeWord({ english: "hello\tworld" }),
+    ]);
+    const back = tsv.split("\t")[1];
+    expect(back).toBe("hello world");
+    expect(back).not.toContain("\t");
+  });
+
+  it("replaces newlines in values with <br>", () => {
+    const tsv = exportToAnkiTSV([
+      makeWord({ english: "line1\nline2" }),
+    ]);
+    const back = tsv.split("\t")[1];
+    expect(back).toBe("line1<br>line2");
+  });
+});
+
+describe("CSV formula injection defense", () => {
+  it("prefixes = with single quote and wraps in quotes", () => {
+    const csv = exportToCSV([makeWord({ english: "=SUM(A1)" })]);
+    expect(csv).toContain("\"'=SUM(A1)\"");
+  });
+
+  it("prefixes + with single quote and wraps in quotes", () => {
+    const csv = exportToCSV([makeWord({ english: "+cmd" })]);
+    expect(csv).toContain("\"'+cmd\"");
+  });
+
+  it("prefixes - with single quote and wraps in quotes", () => {
+    const csv = exportToCSV([makeWord({ english: "-1+1" })]);
+    expect(csv).toContain("\"'-1+1\"");
+  });
+
+  it("prefixes @ with single quote and wraps in quotes", () => {
+    const csv = exportToCSV([makeWord({ english: "@import" })]);
+    expect(csv).toContain("\"'@import\"");
+  });
+});
+
+describe("CSV newline handling", () => {
+  it("wraps fields containing newlines in quotes", () => {
+    const csv = exportToCSV([makeWord({ english: "line1\nline2" })]);
+    expect(csv).toContain('"line1\nline2"');
+  });
+
+  it("wraps fields containing newlines and escapes inner quotes", () => {
+    const csv = exportToCSV([makeWord({ english: 'say "hi"\nthere' })]);
+    expect(csv).toContain('"say ""hi""\nthere"');
+  });
+});
+
+describe("downloadFile", () => {
+  it("creates blob with correct content and MIME type, sets filename, clicks, and revokes URL", () => {
+    const mockClick = vi.fn();
+    const mockAnchor = {
+      href: "",
+      download: "",
+      click: mockClick,
+    } as unknown as HTMLAnchorElement;
+
+    const createElementSpy = vi
+      .spyOn(document, "createElement")
+      .mockReturnValue(mockAnchor as unknown as HTMLElement);
+    const appendChildSpy = vi
+      .spyOn(document.body, "appendChild")
+      .mockImplementation((node) => node);
+    const removeChildSpy = vi
+      .spyOn(document.body, "removeChild")
+      .mockImplementation((node) => node);
+
+    const fakeUrl = "blob:http://localhost/fake-uuid";
+    const createObjectURLSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue(fakeUrl);
+    const revokeObjectURLSpy = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+
+    downloadFile("test content", "vocab.csv", "text/csv;charset=utf-8");
+
+    expect(createElementSpy).toHaveBeenCalledWith("a");
+
+    const blobArg = createObjectURLSpy.mock.calls[0][0] as Blob;
+    expect(blobArg).toBeInstanceOf(Blob);
+    expect(blobArg.type).toBe("text/csv;charset=utf-8");
+
+    expect(mockAnchor.href).toBe(fakeUrl);
+    expect(mockAnchor.download).toBe("vocab.csv");
+
+    expect(appendChildSpy).toHaveBeenCalledWith(mockAnchor);
+    expect(mockClick).toHaveBeenCalledOnce();
+    expect(removeChildSpy).toHaveBeenCalledWith(mockAnchor);
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith(fakeUrl);
+
+    createElementSpy.mockRestore();
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
+    createObjectURLSpy.mockRestore();
+    revokeObjectURLSpy.mockRestore();
   });
 });

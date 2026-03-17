@@ -334,7 +334,7 @@ function VocabGrowthChart({ words }: { words: VocabularyItem[] }) {
   // Build SVG polyline points
   const points = data
     .map((d, i) => {
-      const x = (i / (data.length - 1)) * chartW;
+      const x = data.length <= 1 ? chartW / 2 : (i / (data.length - 1)) * chartW;
       const y = chartH - 5 - ((d.cumulative - minCum) / range) * (chartH - 10);
       return `${x},${y}`;
     })
@@ -407,13 +407,15 @@ function ActivityCalendar({ xpHistory }: { xpHistory: XPEvent[] }) {
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-1 justify-center">
+      <div className="flex flex-wrap gap-1 justify-center" role="grid" aria-label="30-day activity calendar">
         {days.map((date) => {
           const active = activeDays.has(date);
           const isToday = date === days[days.length - 1];
           return (
             <div
               key={date}
+              role="gridcell"
+              aria-label={`${date}${isToday ? " (today)" : ""}${active ? " — active" : " — inactive"}`}
               title={`${date}${active ? " — active" : ""}`}
               className={`w-3.5 h-3.5 rounded-sm transition-colors ${
                 active

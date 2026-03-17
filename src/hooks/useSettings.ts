@@ -84,6 +84,8 @@ export function useSettings() {
   // Load from storage on mount
   useEffect(() => {
     setSettings(loadFromStorage());
+    // Mark initialized after load so the persist effect doesn't fire on hydration
+    initialized.current = true;
   }, []);
 
   // Listen for OS theme changes
@@ -96,12 +98,9 @@ export function useSettings() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Persist on change (skip initial mount)
+  // Persist on change (skip initial hydration)
   useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      return;
-    }
+    if (!initialized.current) return;
     saveToStorage(settings);
   }, [settings]);
 

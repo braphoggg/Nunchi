@@ -321,7 +321,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         {/* Data Backup */}
         <DataBackupSection />
 
-        {/* TTS Speech Speed */}
+        {/* TTS Speech Speed – recompile trigger */}
         <section>
           <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
             {"\uBC1C\uC74C \uC18D\uB3C4 (Speech Speed)"}

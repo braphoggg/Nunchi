@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import type { VocabularyItem } from "@/types";
 import Modal from "./Modal";
 import { useSettingsContext } from "@/contexts/SettingsContext";
@@ -38,6 +38,20 @@ function VocabularyPanel({
   const { settings, apiKey } = useSettingsContext();
   const showRomanization = settings.showRomanization;
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showExportMenu]);
+
   const sortedWords = [...words].sort(
     (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
   );
@@ -159,7 +173,7 @@ function VocabularyPanel({
         </button>
       )}
       {words.length > 0 && (
-        <div className="relative">
+        <div className="relative" ref={exportMenuRef}>
           <button
             onClick={() => setShowExportMenu((v) => !v)}
             aria-label="Export vocabulary"

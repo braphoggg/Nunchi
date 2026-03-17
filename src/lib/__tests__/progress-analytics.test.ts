@@ -81,6 +81,36 @@ describe("getXPPerDay", () => {
       expect(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]).toContain(d.label);
     });
   });
+
+  it("days=1 returns exactly 1 entry (today only)", () => {
+    const result = getXPPerDay([], 1);
+    expect(result.length).toBe(1);
+    expect(result[0].date).toBe("2025-01-20");
+  });
+
+  it("multiple events on same day with different amounts correctly sum", () => {
+    const events = [
+      makeXPEvent(0, 5),
+      makeXPEvent(0, 12),
+      makeXPEvent(0, 3),
+    ];
+    const result = getXPPerDay(events, 3);
+    const today = result[result.length - 1];
+    expect(today.xp).toBe(20);
+  });
+
+  it("event exactly at midnight is attributed to correct day", () => {
+    // Create an event at midnight UTC on 2025-01-19 (1 day ago from noon on the 20th)
+    const midnightEvent: XPEvent = {
+      action: "word_saved",
+      amount: 50,
+      timestamp: "2025-01-19T00:00:00Z",
+    };
+    const result = getXPPerDay([midnightEvent], 7);
+    const jan19 = result.find((d) => d.date === "2025-01-19");
+    expect(jan19).toBeDefined();
+    expect(jan19!.xp).toBe(50);
+  });
 });
 
 // ─── getVocabGrowth ─────────────────────────────────────────────────
@@ -120,6 +150,29 @@ describe("getVocabGrowth", () => {
     const today = result[result.length - 1];
     expect(today.added).toBe(3);
   });
+
+  it("days=1 returns 1 entry", () => {
+    const result = getVocabGrowth([], 1);
+    expect(result.length).toBe(1);
+    expect(result[0].date).toBe("2025-01-20");
+  });
+
+  it("all words before window — cumulative starts at word count, added=0 for all entries", () => {
+    const words = [makeWord(60), makeWord(45), makeWord(35)]; // all well before 7-day window
+    const result = getVocabGrowth(words, 7);
+    result.forEach((entry) => {
+      expect(entry.added).toBe(0);
+      expect(entry.cumulative).toBe(3);
+    });
+  });
+
+  it("empty words array returns all zeros", () => {
+    const result = getVocabGrowth([], 5);
+    result.forEach((entry) => {
+      expect(entry.added).toBe(0);
+      expect(entry.cumulative).toBe(0);
+    });
+  });
 });
 
 // ─── getActivityDays ────────────────────────────────────────────────
@@ -146,6 +199,23 @@ describe("getActivityDays", () => {
     const active = getActivityDays(events, 30);
     expect(active.size).toBe(1);
   });
+
+  it("event exactly at cutoff boundary (30 days ago) is included", () => {
+    // cutoff = now - 30 days = 2024-12-21T12:00:00Z; event at exactly that time uses >=
+    const boundaryEvent: XPEvent = {
+      action: "word_saved",
+      amount: 10,
+      timestamp: "2024-12-21T12:00:00Z",
+    };
+    const active = getActivityDays([boundaryEvent], 30);
+    expect(active.size).toBe(1);
+  });
+
+  it("event at 31 days ago is excluded", () => {
+    const oldEvent = makeXPEvent(31);
+    const active = getActivityDays([oldEvent], 30);
+    expect(active.size).toBe(0);
+  });
 });
 
 // ─── getLastNDays ───────────────────────────────────────────────────
@@ -166,5 +236,19 @@ describe("getLastNDays", () => {
     expect(days[0]).toBe("2025-01-18");
     expect(days[1]).toBe("2025-01-19");
     expect(days[2]).toBe("2025-01-20");
+  });
+
+  it("days=1 returns just today", () => {
+    const days = getLastNDays(1);
+    expect(days.length).toBe(1);
+    expect(days[0]).toBe("2025-01-20");
+  });
+
+  it("all dates are in YYYY-MM-DD format", () => {
+    const days = getLastNDays(30);
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    days.forEach((date) => {
+      expect(date).toMatch(datePattern);
+    });
   });
 });

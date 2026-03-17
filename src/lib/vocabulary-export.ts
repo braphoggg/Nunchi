@@ -29,11 +29,21 @@ export function exportToAnkiTSV(words: VocabularyItem[]): string {
   const rows = words
     .filter((w) => w.english?.trim())
     .map((w) => {
-      const front = `${w.korean} (${w.romanization})`;
-      const back = w.english;
+      const front = ankiEscape(`${w.korean} (${w.romanization})`);
+      const back = ankiEscape(w.english || "");
       return `${front}\t${back}`;
     });
   return rows.join("\n");
+}
+
+/** Escape HTML entities and replace tabs/newlines for Anki TSV fields */
+function ankiEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\t/g, " ")
+    .replace(/\n/g, "<br>");
 }
 
 function getSRSStage(w: VocabularyItem): string {
@@ -43,10 +53,15 @@ function getSRSStage(w: VocabularyItem): string {
 }
 
 function csvEscape(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Neutralize formula injection characters (=, +, -, @, tab, CR)
+  let safe = value;
+  if (/^[=+\-@\t\r]/.test(safe)) {
+    safe = `'${safe}`;
   }
-  return value;
+  if (safe.includes(",") || safe.includes('"') || safe.includes("\n") || safe !== value) {
+    return `"${safe.replace(/"/g, '""')}"`;
+  }
+  return safe;
 }
 
 /**

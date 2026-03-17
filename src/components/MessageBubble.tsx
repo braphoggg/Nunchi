@@ -89,7 +89,7 @@ function MessageBubble({ message, onSaveWords, isWordSaved, onTranslateUsed }: M
     utterance.onerror = () => setSpeaking(false);
     speechSynthesis.speak(utterance);
     setSpeaking(true);
-  }, [canSpeak, speaking, koreanText]);
+  }, [canSpeak, speaking, koreanText, settings.ttsRate]);
 
   // Check if all vocabulary in this message is already saved
   const allWordsSaved = useMemo(() => {
