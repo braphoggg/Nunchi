@@ -36,7 +36,9 @@ import { useGamification } from "@/hooks/useGamification";
 import { useLessonHistory } from "@/hooks/useLessonHistory";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useAchievements } from "@/hooks/useAchievements";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useDailyChallenges } from "@/hooks/useDailyChallenges";
+import NetworkBanner from "./NetworkBanner";
 import AchievementToast from "./AchievementToast";
 import LessonComplete from "./LessonComplete";
 import { resetTimestampCounter } from "@/lib/timestamps";
@@ -118,7 +120,10 @@ export default function ChatContainer() {
   const sound = useSoundEngine();
 
   // Accessibility settings
-  const { settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization } = useSettings();
+  const { settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization } = useSettings();
+
+  // Network status
+  const { isOnline, wasOffline, dismissReconnected } = useNetworkStatus();
 
   // Interactive tutorial
   const tutorial = useTutorial();
@@ -574,8 +579,8 @@ export default function ChatContainer() {
   );
 
   const settingsCtx = useMemo(
-    () => ({ settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey }),
-    [settings, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey],
+    () => ({ settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey }),
+    [settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, apiKey, setApiKey, clearApiKey],
   );
 
   const gamificationCtx = useMemo(
@@ -597,11 +602,12 @@ export default function ChatContainer() {
     <SettingsProvider value={settingsCtx}>
     <GamificationProvider value={gamificationCtx}>
     <div
-      style={{ ...(settings.theme === "light" ? LIGHT_THEME : styleOverrides), zoom: settings.fontScale }}
+      style={{ ...(resolvedTheme === "light" ? LIGHT_THEME : styleOverrides), zoom: settings.fontScale }}
       data-reduce-motion={settings.reduceAnimations ? "true" : "false"}
-      data-theme={settings.theme}
+      data-theme={resolvedTheme}
       className="relative flex flex-col overflow-hidden app-height max-w-2xl mx-auto border-x border-goshiwon-border night-transition bg-goshiwon-bg goshiwon-atmosphere"
     >
+      <NetworkBanner isOnline={isOnline} wasOffline={wasOffline} onDismiss={dismissReconnected} />
       <TopBar
         onReset={messages.length > 0 ? promptLeave : undefined}
         onToggleHistory={handleToggleHistory}
@@ -861,6 +867,7 @@ export default function ChatContainer() {
           onChange={setInput}
           onSubmit={handleSubmit}
           isLoading={isLoading}
+          isOffline={!isOnline}
           keyboardVisible={keyboardVisible}
           onToggleKeyboard={toggleKeyboard}
         />

@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { AppSettings } from "@/hooks/useSettings";
+import type { AppSettings, ThemeSetting, ResolvedTheme } from "@/hooks/useSettings";
 
 export interface SettingsContextValue {
   settings: AppSettings;
-  setTheme: (theme: "dark" | "light") => void;
+  resolvedTheme: ResolvedTheme;
+  setTheme: (theme: ThemeSetting) => void;
   setFontScale: (scale: number) => void;
   setReduceAnimations: (reduce: boolean) => void;
   setShowRomanization: (show: boolean) => void;

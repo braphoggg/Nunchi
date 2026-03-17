@@ -101,6 +101,8 @@ describe("getDailyFocus", () => {
   it("cycles through visited topics when all are done", () => {
     const allVisited = new Set([
       "greetings", "survival", "numbers", "food", "feelings", "politeness",
+      "directions", "shopping", "weather", "phone", "doctor",
+      "proverbs", "opinions", "people",
     ]);
     const focus = getDailyFocus(allVisited, 0, "floor_senior", NOW);
     expect(focus.reason).toBe("review");

@@ -18,8 +18,15 @@ beforeEach(() => {
     }),
   });
 
-  // Mock matchMedia for prefers-reduced-motion
-  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
+  // Mock matchMedia — supports both prefers-reduced-motion and prefers-color-scheme
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  );
 });
 
 afterEach(() => {
@@ -31,9 +38,28 @@ const STORAGE_KEY = "nunchi-settings";
 // ─── defaults ──────────────────────────────────────────────────────
 
 describe("useSettings — defaults", () => {
-  it("returns dark theme by default", () => {
+  it("returns system theme by default", () => {
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.settings.theme).toBe("system");
+  });
+
+  it("resolvedTheme defaults to dark when OS prefers dark", () => {
+    const { result } = renderHook(() => useSettings());
+    // matchMedia returns matches: false for "(prefers-color-scheme: light)"
+    expect(result.current.resolvedTheme).toBe("dark");
+  });
+
+  it("resolvedTheme resolves to light when OS prefers light", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true, // "(prefers-color-scheme: light)" matches
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.resolvedTheme).toBe("light");
   });
 
   it("returns fontScale 1 by default", () => {
@@ -52,7 +78,14 @@ describe("useSettings — defaults", () => {
   });
 
   it("returns reduceAnimations true when OS prefers reduced motion", () => {
-    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
     const { result } = renderHook(() => useSettings());
     expect(result.current.settings.reduceAnimations).toBe(true);
   });
@@ -61,10 +94,25 @@ describe("useSettings — defaults", () => {
 // ─── setters ───────────────────────────────────────────────────────
 
 describe("useSettings — setters", () => {
-  it("setTheme updates theme", () => {
+  it("setTheme updates theme to light", () => {
     const { result } = renderHook(() => useSettings());
     act(() => result.current.setTheme("light"));
     expect(result.current.settings.theme).toBe("light");
+    expect(result.current.resolvedTheme).toBe("light");
+  });
+
+  it("setTheme updates theme to dark", () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.setTheme("dark"));
+    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.resolvedTheme).toBe("dark");
+  });
+
+  it("setTheme supports system option", () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.setTheme("light"));
+    act(() => result.current.setTheme("system"));
+    expect(result.current.settings.theme).toBe("system");
   });
 
   it("setFontScale updates fontScale for valid values", () => {
@@ -120,36 +168,48 @@ describe("useSettings — persistence", () => {
     storage[STORAGE_KEY] = JSON.stringify(saved);
 
     const { result } = renderHook(() => useSettings());
-    // useEffect runs after mount
     expect(result.current.settings.theme).toBe("light");
     expect(result.current.settings.fontScale).toBe(1.15);
     expect(result.current.settings.reduceAnimations).toBe(true);
     expect(result.current.settings.showRomanization).toBe(false);
   });
 
+  it("loads system theme from localStorage", () => {
+    const saved: AppSettings = {
+      theme: "system",
+      fontScale: 1,
+      reduceAnimations: false,
+      showRomanization: true,
+    };
+    storage[STORAGE_KEY] = JSON.stringify(saved);
+
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.theme).toBe("system");
+  });
+
   it("falls back to defaults when localStorage has invalid data", () => {
     storage[STORAGE_KEY] = JSON.stringify({ theme: "neon", fontScale: 99 });
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.settings.theme).toBe("system");
     expect(result.current.settings.fontScale).toBe(1);
   });
 
   it("falls back to defaults when localStorage has corrupted JSON", () => {
     storage[STORAGE_KEY] = "not-json{{{";
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.settings.theme).toBe("system");
   });
 
   it("falls back to defaults when localStorage has null", () => {
     storage[STORAGE_KEY] = "null";
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.settings.theme).toBe("system");
   });
 
   it("falls back to defaults when localStorage has an array", () => {
     storage[STORAGE_KEY] = "[]";
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("dark");
+    expect(result.current.settings.theme).toBe("system");
   });
 
   it("survives localStorage.setItem throwing (full storage)", () => {
@@ -159,7 +219,6 @@ describe("useSettings — persistence", () => {
       },
     );
     const { result } = renderHook(() => useSettings());
-    // Should not throw — silently fails
     act(() => result.current.setTheme("light"));
     expect(result.current.settings.theme).toBe("light");
   });

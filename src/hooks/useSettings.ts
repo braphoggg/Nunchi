@@ -2,8 +2,12 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 
+export type ThemeSetting = "dark" | "light" | "system";
+/** The resolved (actual) theme applied to the UI */
+export type ResolvedTheme = "dark" | "light";
+
 export interface AppSettings {
-  theme: "dark" | "light";
+  theme: ThemeSetting;
   fontScale: number;
   reduceAnimations: boolean;
   showRomanization: boolean;
@@ -11,7 +15,7 @@ export interface AppSettings {
 
 const STORAGE_KEY = "nunchi-settings";
 
-const VALID_THEMES = new Set(["dark", "light"]);
+const VALID_THEMES = new Set(["dark", "light", "system"]);
 const VALID_SCALES = new Set([1, 1.15, 1.3]);
 
 function getDefaults(): AppSettings {
@@ -20,7 +24,7 @@ function getDefaults(): AppSettings {
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   return {
-    theme: "dark",
+    theme: "system" as ThemeSetting,
     fontScale: 1,
     reduceAnimations: prefersReduced,
     showRomanization: true,
@@ -59,13 +63,30 @@ function saveToStorage(settings: AppSettings): void {
   }
 }
 
+/** Resolve "system" to the actual OS preference */
+function getSystemTheme(): ResolvedTheme {
+  if (typeof window === "undefined") return "dark";
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(getDefaults);
+  const [systemPreference, setSystemPreference] = useState<ResolvedTheme>(() => getSystemTheme());
   const initialized = useRef(false);
 
   // Load from storage on mount
   useEffect(() => {
     setSettings(loadFromStorage());
+  }, []);
+
+  // Listen for OS theme changes
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const handler = (e: MediaQueryListEvent) => {
+      setSystemPreference(e.matches ? "light" : "dark");
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
   // Persist on change (skip initial mount)
@@ -77,7 +98,11 @@ export function useSettings() {
     saveToStorage(settings);
   }, [settings]);
 
-  const setTheme = useCallback((theme: "dark" | "light") => {
+  /** The actual theme applied to the UI (resolves "system") */
+  const resolvedTheme: ResolvedTheme =
+    settings.theme === "system" ? systemPreference : settings.theme;
+
+  const setTheme = useCallback((theme: ThemeSetting) => {
     setSettings((prev) => ({ ...prev, theme }));
   }, []);
 
@@ -96,6 +121,7 @@ export function useSettings() {
 
   return {
     settings,
+    resolvedTheme,
     setTheme,
     setFontScale,
     setReduceAnimations,

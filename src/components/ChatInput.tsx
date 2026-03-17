@@ -8,6 +8,7 @@ interface ChatInputProps {
   onChange: (value: string) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   isLoading: boolean;
+  isOffline?: boolean;
   keyboardVisible?: boolean;
   onToggleKeyboard?: () => void;
 }
@@ -17,6 +18,7 @@ export default function ChatInput({
   onChange,
   onSubmit,
   isLoading,
+  isOffline = false,
   keyboardVisible,
   onToggleKeyboard,
 }: ChatInputProps) {
@@ -24,6 +26,7 @@ export default function ChatInput({
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const noKey = !apiKey;
+  const disabled = isLoading || noKey || isOffline;
 
   // Shorter placeholder on mobile to prevent text wrapping
   const SHORT_PH = "메시지를 입력하세요...";
@@ -44,7 +47,7 @@ export default function ChatInput({
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (input.trim() && !isLoading) {
+      if (input.trim() && !disabled) {
         formRef.current?.requestSubmit();
       }
     }
@@ -104,14 +107,14 @@ export default function ChatInput({
           }}
           onKeyDown={handleKeyDown}
           aria-label="Message input"
-          placeholder={noKey ? "Enter your API key in Settings to start" : placeholder}
+          placeholder={noKey ? "Enter your API key in Settings to start" : isOffline ? "You're offline..." : placeholder}
           className="flex-1 bg-goshiwon-input rounded-lg px-4 py-3 text-goshiwon-text text-sm placeholder:text-goshiwon-text-muted focus:outline-none focus:ring-1 focus:ring-goshiwon-accent/50 border border-goshiwon-border focus:border-goshiwon-accent/50 transition-colors auto-grow-textarea"
-          disabled={isLoading || noKey}
+          disabled={disabled}
           autoFocus
         />
         <button
           type="submit"
-          disabled={isLoading || !input.trim() || noKey}
+          disabled={disabled || !input.trim()}
           aria-label="Send message"
           className="bg-goshiwon-accent hover:bg-goshiwon-accent-light min-w-[48px] min-h-[48px] px-4 py-3 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-goshiwon-text flex items-center justify-center"
         >
