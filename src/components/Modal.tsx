@@ -1,6 +1,6 @@
 "use client";
 
-// Modal component — shared across all panel overlays
+// Modal component — shared overlay for all panels and study modes
 import { useEffect, useRef, useCallback, type ReactNode } from "react";
 
 export interface ModalProps {
@@ -118,9 +118,8 @@ export default function Modal({
       role="dialog"
       aria-modal="true"
       tabIndex={-1}
-      style={{ zIndex }}
       onKeyDown={handleKeyDown}
-      className="absolute inset-0 bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in"
+      className="absolute inset-0 z-[60] bg-goshiwon-bg/95 backdrop-blur-sm flex flex-col animate-vocab-panel-in"
     >
       {/* Header */}
       {customHeader !== undefined ? (

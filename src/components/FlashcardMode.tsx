@@ -197,7 +197,7 @@ function FlashcardMode({
   // Not enough words
   if (studyable.length < MIN_QUIZ_WORDS) {
     return (
-      <Modal title="Study" backButton onClose={onClose} zIndex={10} closeAriaLabel="Back to vocabulary">
+      <Modal title="Study" backButton onClose={onClose} zIndex={60} closeAriaLabel="Back to vocabulary">
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <p className="text-goshiwon-text-secondary text-sm">
             Not enough words to study.
@@ -216,8 +216,8 @@ function FlashcardMode({
     const feedback = getMoonjoFeedback(pct);
 
     return (
-      <Modal title="Study Complete" onClose={onClose} zIndex={10}>
-        <div className="flex-1 flex flex-col items-center justify-center px-6 animate-summary-in">
+      <Modal title="Study Complete" onClose={onClose} zIndex={60}>
+        <div className="flex-1 flex flex-col items-center pt-6 sm:justify-center px-6 animate-summary-in">
           {/* Score circle */}
           <div className="relative w-24 h-24 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
@@ -318,7 +318,7 @@ function FlashcardMode({
   );
 
   return (
-    <Modal title="Study" onClose={onClose} zIndex={10} customHeader={studyHeader} closeAriaLabel="Back to vocabulary">
+    <Modal title="Study" onClose={onClose} zIndex={60} customHeader={studyHeader} closeAriaLabel="Back to vocabulary">
       {/* Progress bar */}
       <div className="h-0.5 bg-goshiwon-border">
         <div

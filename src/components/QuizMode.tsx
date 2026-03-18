@@ -147,7 +147,7 @@ function QuizMode({
   // Not enough words
   if (studyable.length < MIN_QUIZ_WORDS) {
     return (
-      <Modal title="Quiz" backButton onClose={onClose} zIndex={10} closeAriaLabel="Back to vocabulary">
+      <Modal title="Quiz" backButton onClose={onClose} zIndex={60} closeAriaLabel="Back to vocabulary">
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <p className="text-goshiwon-text-secondary text-sm">
             Not enough words for a quiz.
@@ -166,8 +166,8 @@ function QuizMode({
     const feedback = getMoonjoQuizFeedback(pct);
 
     return (
-      <Modal title="Quiz Complete" onClose={onClose} zIndex={10}>
-        <div className="flex-1 flex flex-col items-center justify-center px-6 animate-summary-in">
+      <Modal title="Quiz Complete" onClose={onClose} zIndex={60}>
+        <div className="flex-1 flex flex-col items-center pt-6 sm:justify-center px-6 animate-summary-in">
           {/* Score circle */}
           <div className="relative w-24 h-24 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
@@ -268,7 +268,7 @@ function QuizMode({
   );
 
   return (
-    <Modal title="Quiz" onClose={onClose} zIndex={10} customHeader={quizHeader} closeAriaLabel="Exit quiz">
+    <Modal title="Quiz" onClose={onClose} zIndex={60} customHeader={quizHeader} closeAriaLabel="Exit quiz">
       {/* Progress bar */}
       <div className="h-0.5 bg-goshiwon-border">
         <div

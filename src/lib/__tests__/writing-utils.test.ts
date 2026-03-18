@@ -143,3 +143,59 @@ describe("WritingMode getMoonjoFeedback()", () => {
     expect(getMoonjoFeedback(39).korean).toContain("다시 쓰세요");
   });
 });
+
+describe("checkAnswer close detection edge cases", () => {
+  it("returns close for exactly 3-char target with 1 char different", () => {
+    // "가나다" (3 chars) vs "가나라" (1 char diff at position 2)
+    expect(checkAnswer("가나라", "가나다")).toBe("close");
+  });
+
+  it("returns wrong for exactly 3-char target with 2 chars different", () => {
+    // "가나다" vs "가라마" (2 chars differ)
+    expect(checkAnswer("가라마", "가나다")).toBe("wrong");
+  });
+
+  it("returns close for 3-char target when input has 1 extra char", () => {
+    // "가나다" (3 chars) vs "가나다라" (4 chars, 1 extra)
+    expect(checkAnswer("가나다라", "가나다")).toBe("close");
+  });
+
+  it("returns close for 3-char target when input is missing 1 char", () => {
+    // "가나다" (3 chars) vs "가나" (2 chars, 1 missing)
+    expect(checkAnswer("가나", "가나다")).toBe("close");
+  });
+
+  it("returns wrong for 3-char target when input is only 1 char", () => {
+    // "가나다" (3 chars) vs "가" (1 char) — length diff of 2
+    expect(checkAnswer("가", "가나다")).toBe("wrong");
+  });
+
+  it("returns exact when both strings are empty", () => {
+    expect(checkAnswer("", "")).toBe("exact");
+  });
+
+  it("treats Korean jamo and composed syllables as different characters", () => {
+    // ㅎㅏㄴ (3 jamo) vs 한 (1 composed syllable) are completely different strings
+    expect(checkAnswer("ㅎㅏㄴ", "한글이")).toBe("wrong");
+  });
+
+  it("handles mixed Korean and Latin through normalize", () => {
+    // normalize lowercases and strips whitespace
+    expect(checkAnswer("ABC", "abc")).toBe("exact");
+    expect(checkAnswer("한국ABC", "한국abc")).toBe("exact");
+    expect(checkAnswer("한국Abc", "한국abd")).toBe("close");
+  });
+
+  it("returns close for very long strings with 1 char difference", () => {
+    // 20+ char Korean string with a single character substitution
+    const target = "가나다라마바사아자차카타파하가나다라마바";
+    const input = "가나다라마바사아자차카타파하가나다라마빠";
+    expect(target.length).toBeGreaterThanOrEqual(20);
+    expect(checkAnswer(input, target)).toBe("close");
+  });
+
+  it("returns wrong when input and target are same length but completely different", () => {
+    // Same length (5 chars) but no characters in common
+    expect(checkAnswer("가나다라마", "바사아자차")).toBe("wrong");
+  });
+});

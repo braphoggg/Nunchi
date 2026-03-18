@@ -186,3 +186,164 @@ describe("getSRSState", () => {
     expect(state.lastGrade).toBe("good");
   });
 });
+
+describe("computeNextSRS edge cases", () => {
+  it("floors ease at 1.3 after multiple consecutive 'again' grades", () => {
+    // Start at 2.5, each "again" subtracts 0.54 (clamped to 1.3)
+    let state = makeState({ easeFactor: 2.5 });
+    state = computeNextSRS(state, "again", NOW); // 2.5 - 0.54 = 1.96
+    expect(state.easeFactor).toBe(1.96);
+    state = computeNextSRS(state, "again", NOW); // 1.96 - 0.54 = 1.42
+    expect(state.easeFactor).toBe(1.42);
+    state = computeNextSRS(state, "again", NOW); // 1.42 - 0.54 = 0.88 → clamped to 1.3
+    expect(state.easeFactor).toBe(1.3);
+    state = computeNextSRS(state, "again", NOW); // stays at 1.3
+    expect(state.easeFactor).toBe(1.3);
+  });
+
+  it("clamps ease to 1.3 when close to minimum then 'again'", () => {
+    // 1.35 - 0.54 = 0.81 → clamped to 1.3
+    const state = computeNextSRS(makeState({ easeFactor: 1.35 }), "again", NOW);
+    expect(state.easeFactor).toBe(1.3);
+  });
+
+  it("grows a large interval correctly with 'good'", () => {
+    // interval=365, repetitions=5, easeFactor=2.5
+    // ease: 2.5 - 0.14 = 2.36
+    // interval: round(365 * 2.36) = round(861.4) = 861
+    const state = makeState({ interval: 365, repetitions: 5, easeFactor: 2.5 });
+    const result = computeNextSRS(state, "good", NOW);
+    expect(result.easeFactor).toBe(2.36);
+    expect(result.interval).toBe(Math.round(365 * 2.36)); // 861
+    expect(result.repetitions).toBe(6);
+  });
+
+  it("gives 'easy' on a brand new card interval of round(1*1.3)=1", () => {
+    // rep=0 → interval=1, then easy bonus: round(1*1.3) = 1
+    // ease: 2.5 + 0.1 = 2.6
+    const result = computeNextSRS(makeState(), "easy", NOW);
+    expect(result.interval).toBe(Math.round(1 * 1.3)); // 1
+    expect(result.easeFactor).toBe(2.6);
+    expect(result.repetitions).toBe(1);
+  });
+
+  it("resets and regrows correctly with alternating good/again/good", () => {
+    let state = makeState(); // ease=2.5, rep=0, interval=0
+
+    // good: rep 0→1, interval=1, ease=2.5-0.14=2.36
+    state = computeNextSRS(state, "good", NOW);
+    expect(state.interval).toBe(1);
+    expect(state.repetitions).toBe(1);
+    expect(state.easeFactor).toBe(2.36);
+
+    // again: rep→0, interval→0, ease=2.36-0.54=1.82
+    state = computeNextSRS(state, "again", NOW);
+    expect(state.interval).toBe(0);
+    expect(state.repetitions).toBe(0);
+    expect(state.easeFactor).toBe(1.82);
+
+    // good: rep 0→1, interval=1 (first rep after reset), ease=1.82-0.14=1.68
+    state = computeNextSRS(state, "good", NOW);
+    expect(state.interval).toBe(1);
+    expect(state.repetitions).toBe(1);
+    expect(state.easeFactor).toBe(1.68);
+  });
+
+  it("maintains ease factor precision after many operations", () => {
+    let state = makeState();
+    for (let i = 0; i < 20; i++) {
+      state = computeNextSRS(state, "good", NOW);
+    }
+    const decimals = state.easeFactor.toString().split(".")[1];
+    expect(!decimals || decimals.length <= 2).toBe(true);
+  });
+
+  it("resets interval to 0 on 'again' after many 'good' grades", () => {
+    let state = makeState();
+    for (let i = 0; i < 10; i++) {
+      state = computeNextSRS(state, "good", NOW);
+    }
+    expect(state.interval).toBeGreaterThan(0);
+    state = computeNextSRS(state, "again", NOW);
+    expect(state.interval).toBe(0);
+    expect(state.repetitions).toBe(0);
+  });
+
+  it("accelerates growth with three consecutive 'easy' grades", () => {
+    let state = makeState(); // ease=2.5
+
+    // easy #1: rep 0→1, interval=1, easy bonus round(1*1.3)=1, ease=2.6
+    state = computeNextSRS(state, "easy", NOW);
+    expect(state.interval).toBe(1);
+    expect(state.easeFactor).toBe(2.6);
+
+    // easy #2: rep 1→2, interval=6, easy bonus round(6*1.3)=8, ease=2.7
+    state = computeNextSRS(state, "easy", NOW);
+    expect(state.interval).toBe(Math.round(6 * 1.3)); // 8
+    expect(state.easeFactor).toBe(2.7);
+
+    // easy #3: rep 2→3, interval=round(8*2.8)=22, easy bonus round(22*1.3)=29, ease=2.8
+    state = computeNextSRS(state, "easy", NOW);
+    const baseInterval = Math.round(8 * 2.8); // 22
+    expect(state.interval).toBe(Math.round(baseInterval * 1.3)); // 29
+    expect(state.easeFactor).toBe(2.8);
+  });
+});
+
+describe("formatNextReview edge cases", () => {
+  it("shows 'in 1 week' for exactly 7 days", () => {
+    // 7 days from NOW
+    const sevenDays = new Date(NOW);
+    sevenDays.setDate(sevenDays.getDate() + 7);
+    expect(formatNextReview(sevenDays.toISOString(), NOW)).toBe("in 1 week");
+  });
+
+  it("shows 'in 1 month' for exactly 30 days", () => {
+    // 30 days from NOW
+    const thirtyDays = new Date(NOW);
+    thirtyDays.setDate(thirtyDays.getDate() + 30);
+    expect(formatNextReview(thirtyDays.toISOString(), NOW)).toBe("in 1 month");
+  });
+
+  it("shows months for 365 days in the future", () => {
+    const farFuture = new Date(NOW);
+    farFuture.setDate(farFuture.getDate() + 365);
+    // Math.ceil(365/30) = 13
+    expect(formatNextReview(farFuture.toISOString(), NOW)).toBe("in 13 months");
+  });
+
+  it("shows 'tomorrow' for 1 millisecond in the future", () => {
+    // 1ms ahead: diffMs=1, Math.ceil(1/(86400000))=1 → "tomorrow"
+    const oneMs = new Date(NOW.getTime() + 1);
+    expect(formatNextReview(oneMs.toISOString(), NOW)).toBe("tomorrow");
+  });
+});
+
+describe("countDueWords edge cases", () => {
+  it("counts all words when all are due", () => {
+    const words = [
+      { english: "cat", nextReview: "2025-06-14T00:00:00Z" },
+      { english: "dog", nextReview: "2025-06-10T00:00:00Z" },
+      { english: "bird" }, // no nextReview → due
+    ];
+    expect(countDueWords(words, NOW)).toBe(3);
+  });
+
+  it("returns 0 when no words are due", () => {
+    const words = [
+      { english: "cat", nextReview: "2025-06-20T00:00:00Z" },
+      { english: "dog", nextReview: "2025-07-01T00:00:00Z" },
+    ];
+    expect(countDueWords(words, NOW)).toBe(0);
+  });
+
+  it("excludes words with whitespace-only english", () => {
+    const words = [
+      { english: "   ", nextReview: "2025-06-14T00:00:00Z" },
+      { english: "\t", nextReview: "2025-06-14T00:00:00Z" },
+      { english: "\n", nextReview: "2025-06-14T00:00:00Z" },
+      { english: "valid", nextReview: "2025-06-14T00:00:00Z" },
+    ];
+    expect(countDueWords(words, NOW)).toBe(1);
+  });
+});

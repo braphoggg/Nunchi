@@ -224,4 +224,88 @@ describe("useFlashcards", () => {
     act(() => result.current.grade("easy")); // should do nothing
     expect(result.current.currentIndex).toBe(indexBefore);
   });
+
+  it("exactly 4 studyable words is the minimum to start", () => {
+    const words = [
+      makeWord({ id: "1", korean: "가", english: "a" }),
+      makeWord({ id: "2", korean: "나", english: "b" }),
+      makeWord({ id: "3", korean: "다", english: "c" }),
+      makeWord({ id: "4", korean: "라", english: "d" }),
+    ];
+    const { result } = renderHook(() => useFlashcards(words));
+    act(() => result.current.startSession());
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.totalCards).toBe(4);
+  });
+
+  it("3 studyable + 1 empty english should NOT start session", () => {
+    const words = [
+      makeWord({ id: "1", korean: "가", english: "a" }),
+      makeWord({ id: "2", korean: "나", english: "b" }),
+      makeWord({ id: "3", korean: "다", english: "c" }),
+      makeWord({ id: "4", korean: "라", english: "" }),
+    ];
+    const { result } = renderHook(() => useFlashcards(words));
+    act(() => result.current.startSession());
+    expect(result.current.isActive).toBe(false);
+  });
+
+  it("start → end → start again resets properly", () => {
+    const { result } = renderHook(() => useFlashcards(sampleWords));
+    act(() => result.current.startSession());
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.endSession());
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.summary).toEqual({ again: 0, good: 0, easy: 0, total: 0 });
+    act(() => result.current.startSession());
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.currentIndex).toBe(0);
+    expect(result.current.totalCards).toBe(4);
+  });
+
+  it("all 'again' grades produce correct summary", () => {
+    const { result } = renderHook(() => useFlashcards(sampleWords));
+    act(() => result.current.startSession());
+    act(() => result.current.grade("again"));
+    act(() => result.current.grade("again"));
+    act(() => result.current.grade("again"));
+    act(() => result.current.grade("again"));
+    expect(result.current.summary).toEqual({ again: 4, good: 0, easy: 0, total: 4 });
+  });
+
+  it("all 'easy' grades produce correct summary", () => {
+    const { result } = renderHook(() => useFlashcards(sampleWords));
+    act(() => result.current.startSession());
+    act(() => result.current.grade("easy"));
+    act(() => result.current.grade("easy"));
+    act(() => result.current.grade("easy"));
+    act(() => result.current.grade("easy"));
+    expect(result.current.summary).toEqual({ again: 0, good: 0, easy: 4, total: 4 });
+  });
+
+  it("next does nothing when session is complete", () => {
+    const { result } = renderHook(() => useFlashcards(sampleWords));
+    act(() => result.current.startSession());
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    expect(result.current.isComplete).toBe(true);
+    const indexBefore = result.current.currentIndex;
+    act(() => result.current.next());
+    expect(result.current.currentIndex).toBe(indexBefore);
+  });
+
+  it("flip does nothing when session is complete", () => {
+    const { result } = renderHook(() => useFlashcards(sampleWords));
+    act(() => result.current.startSession());
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    act(() => result.current.grade("good"));
+    expect(result.current.isComplete).toBe(true);
+    act(() => result.current.flip());
+    expect(result.current.flipped).toBe(false);
+  });
 });

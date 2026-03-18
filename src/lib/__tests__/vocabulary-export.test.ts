@@ -163,6 +163,75 @@ describe("CSV newline handling", () => {
   });
 });
 
+describe("exportToCSV edge cases", () => {
+  it("returns only BOM + header for empty array", () => {
+    const csv = exportToCSV([]);
+    const lines = csv.split("\n");
+    expect(lines.length).toBe(1);
+    expect(lines[0]).toContain("Korean,Romanization,English,SRS Stage,Saved Date");
+  });
+
+  it("SRS stage boundary: interval=20 is Learning", () => {
+    const csv = exportToCSV([makeWord({ repetitions: 3, interval: 20 })]);
+    expect(csv).toContain("Learning");
+    expect(csv).not.toContain("Mastered");
+  });
+
+  it("SRS stage boundary: interval=21 is Mastered", () => {
+    const csv = exportToCSV([makeWord({ repetitions: 3, interval: 21 })]);
+    expect(csv).toContain("Mastered");
+  });
+
+  it("repetitions=0 always produces New regardless of interval", () => {
+    const csv = exportToCSV([makeWord({ repetitions: 0, interval: 100 })]);
+    expect(csv).toContain("New");
+  });
+
+  it("handles carriage returns in fields", () => {
+    const csv = exportToCSV([makeWord({ english: "hello\r\nworld" })]);
+    expect(csv).toContain('"hello\r\nworld"');
+  });
+
+  it("produces correct number of data rows for multiple words", () => {
+    const words = [
+      makeWord({ id: "1", korean: "가" }),
+      makeWord({ id: "2", korean: "나" }),
+      makeWord({ id: "3", korean: "다" }),
+    ];
+    const csv = exportToCSV(words);
+    // BOM + header + 3 data rows
+    const lines = csv.split("\n");
+    expect(lines.length).toBe(4);
+  });
+});
+
+describe("exportToAnkiTSV edge cases", () => {
+  it("handles romanization with spaces", () => {
+    const tsv = exportToAnkiTSV([
+      makeWord({ korean: "감사합니다", romanization: "gam sa ham ni da", english: "thank you" }),
+    ]);
+    expect(tsv).toContain("감사합니다 (gam sa ham ni da)");
+  });
+
+  it("handles multiple words producing correct line count", () => {
+    const words = [
+      makeWord({ id: "1", korean: "가", english: "a" }),
+      makeWord({ id: "2", korean: "나", english: "b" }),
+      makeWord({ id: "3", korean: "다", english: "c" }),
+    ];
+    const tsv = exportToAnkiTSV(words);
+    const lines = tsv.split("\n");
+    expect(lines.length).toBe(3);
+  });
+
+  it("escapes ampersand in Korean field", () => {
+    const tsv = exportToAnkiTSV([
+      makeWord({ korean: "A&B", romanization: "ab", english: "test" }),
+    ]);
+    expect(tsv).toContain("A&amp;B");
+  });
+});
+
 describe("downloadFile", () => {
   it("creates blob with correct content and MIME type, sets filename, clicks, and revokes URL", () => {
     const mockClick = vi.fn();

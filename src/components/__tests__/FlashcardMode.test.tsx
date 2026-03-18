@@ -329,6 +329,63 @@ describe("FlashcardMode", () => {
     expect(utterance.rate).toBe(0.9);
   });
 
+  // Moon-jo feedback tier tests
+  it("shows >=70% feedback for 3/4 correct (75%)", () => {
+    render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
+    // Q1 correct, Q2 wrong, Q3 correct, Q4 correct = 75%
+    fireEvent.click(screen.getByLabelText(/^Option 1:/)); // correct
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/)); // wrong
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 1:/)); // correct
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 1:/)); // correct
+    fireEvent.click(screen.getByText("See Results"));
+    expect(screen.getByText(/이 복도에서 실수는 오래 기억돼요/)).toBeInTheDocument();
+  });
+
+  it("shows >=40% feedback for 2/4 correct (50%)", () => {
+    render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
+    // Q1 correct, Q2 wrong, Q3 correct, Q4 wrong = 50%
+    fireEvent.click(screen.getByLabelText(/^Option 1:/)); // correct
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/)); // wrong
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 1:/)); // correct
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/)); // wrong
+    fireEvent.click(screen.getByText("See Results"));
+    expect(screen.getByText(/아직 부족해요/)).toBeInTheDocument();
+  });
+
+  it("shows <40% feedback for 1/4 correct (25%)", () => {
+    render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
+    // Q1 correct, Q2-Q4 wrong = 25%
+    fireEvent.click(screen.getByLabelText(/^Option 1:/)); // correct
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/)); // wrong
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/)); // wrong
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/)); // wrong
+    fireEvent.click(screen.getByText("See Results"));
+    expect(screen.getByText(/실망이에요/)).toBeInTheDocument();
+  });
+
+  it("shows <40% feedback for 0/4 correct (0%)", () => {
+    render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
+    // All wrong
+    fireEvent.click(screen.getByLabelText(/^Option 2:/));
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/));
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/));
+    fireEvent.click(screen.getByText("Next"));
+    fireEvent.click(screen.getByLabelText(/^Option 2:/));
+    fireEvent.click(screen.getByText("See Results"));
+    expect(screen.getByText(/실망이에요/)).toBeInTheDocument();
+  });
+
   it("disables options after one is selected", () => {
     render(<FlashcardMode words={sampleWords} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText(/^Option 1:/));

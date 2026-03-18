@@ -227,7 +227,7 @@ export default function WritingMode({
   // Not enough words
   if (studyable.length < MIN_WRITING_WORDS) {
     return (
-      <Modal onClose={onClose} title="Writing Practice" stickyHeader closeAriaLabel="Close writing practice">
+      <Modal onClose={onClose} title="Writing Practice" stickyHeader zIndex={60} closeAriaLabel="Close writing practice">
         <div className="flex flex-col items-center justify-center p-8 text-center gap-4">
           <span className="text-4xl">✍️</span>
           <p className="text-goshiwon-text text-sm">
@@ -248,7 +248,7 @@ export default function WritingMode({
     const feedback = getMoonjoFeedback(pct);
 
     return (
-      <Modal onClose={onClose} title="Writing Practice" stickyHeader closeAriaLabel="Close writing practice">
+      <Modal onClose={onClose} title="Writing Practice" stickyHeader zIndex={60} closeAriaLabel="Close writing practice">
         <div className="p-6 space-y-5">
           {/* Score circle */}
           <div className="flex flex-col items-center gap-3">
@@ -310,7 +310,7 @@ export default function WritingMode({
 
   // Main writing UI
   return (
-    <Modal onClose={onClose} title="Writing Practice" stickyHeader closeAriaLabel="Close writing practice">
+    <Modal onClose={onClose} title="Writing Practice" stickyHeader zIndex={60} closeAriaLabel="Close writing practice">
       <div className="p-4 space-y-6">
         {/* Progress */}
         <div className="flex items-center gap-2">
