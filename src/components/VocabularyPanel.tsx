@@ -118,7 +118,7 @@ function VocabularyPanel({
   }, [onUpdateWord]);
 
   const vocabHeaderContent = (
-    <>
+    <div className="flex items-center gap-1.5 flex-wrap justify-end">
       {onUpdateWord && untranslatedWords.length > 0 && (
         <button
           onClick={() => handleRetryTranslation(untranslatedWords)}
@@ -212,7 +212,7 @@ function VocabularyPanel({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 
   return (
@@ -221,8 +221,11 @@ function VocabularyPanel({
       title="나의 단어장"
       subtitle={`My Vocabulary — ${words.length} ${words.length === 1 ? "word" : "words"}`}
       closeAriaLabel="Close vocabulary panel"
-      headerContent={vocabHeaderContent}
     >
+      {/* Action toolbar — wraps on mobile */}
+      <div className="relative flex items-center gap-1.5 px-4 py-2 border-b border-goshiwon-border/50 flex-wrap">
+        {vocabHeaderContent}
+      </div>
       {/* Word list */}
       <div className="p-4 space-y-2">
         {sortedWords.length === 0 ? (

@@ -1,5 +1,6 @@
 "use client";
 
+// Modal component — shared across all panel overlays
 import { useEffect, useRef, useCallback, type ReactNode } from "react";
 
 export interface ModalProps {
@@ -108,8 +109,8 @@ export default function Modal({
   );
 
   const headerClasses = stickyHeader
-    ? "sticky top-0 flex items-center justify-between px-4 py-3 bg-goshiwon-surface border-b border-goshiwon-border z-10"
-    : "flex items-center justify-between px-4 py-3 border-b border-goshiwon-border";
+    ? "sticky top-0 flex items-center justify-between gap-2 px-4 py-3 bg-goshiwon-surface border-b border-goshiwon-border z-10 overflow-hidden"
+    : "flex items-center justify-between gap-2 px-4 py-3 border-b border-goshiwon-border overflow-hidden";
 
   return (
     <div
@@ -151,7 +152,7 @@ export default function Modal({
               <p className="text-xs text-goshiwon-text-muted">{subtitle}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-2 flex-wrap justify-end min-w-0 shrink">
             {headerContent}
             {!backButton && (
               <button
