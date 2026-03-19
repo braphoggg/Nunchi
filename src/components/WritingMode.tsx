@@ -94,7 +94,8 @@ export default function WritingMode({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
   const [result, setResult] = useState<"exact" | "close" | "wrong" | null>(null);
-  const [results, setResults] = useState<Map<string, "exact" | "close" | "wrong">>(new Map());
+  const [resultWord, setResultWord] = useState<VocabularyItem | null>(null);
+  const [results, setResults] = useState<Map<string, "exact" | "close" | "wrong" | "skipped">>(new Map());
   const [isComplete, setIsComplete] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(true);
   const completionReported = useRef(false);
@@ -145,6 +146,7 @@ export default function WritingMode({
 
     const answerResult = checkAnswer(trimmed, currentWord.korean);
     setResult(answerResult);
+    setResultWord(currentWord);
     setResults((prev) => new Map(prev).set(currentWord.id, answerResult));
 
     // Grade for SRS
@@ -167,6 +169,7 @@ export default function WritingMode({
       setCurrentIndex((prev) => prev + 1);
       setUserInput("");
       setResult(null);
+      setResultWord(null);
     } else {
       setIsComplete(true);
       sound.playSessionComplete();
@@ -175,10 +178,7 @@ export default function WritingMode({
 
   const handleSkip = useCallback(() => {
     if (!currentWord) return;
-    setResults((prev) => new Map(prev).set(currentWord.id, "wrong"));
-    if (onWordGraded) {
-      onWordGraded(currentWord.id, "again");
-    }
+    setResults((prev) => new Map(prev).set(currentWord.id, "skipped"));
     handleNext();
   }, [currentWord, onWordGraded, handleNext]);
 
@@ -213,13 +213,15 @@ export default function WritingMode({
   useEffect(() => {
     if (isComplete && !completionReported.current && onSessionComplete) {
       completionReported.current = true;
-      const correctCount = Array.from(results.values()).filter((r) => r === "exact" || r === "close").length;
-      const againCount = Array.from(results.values()).filter((r) => r === "wrong").length;
+      const vals = Array.from(results.values());
+      const attemptedVals = vals.filter((r) => r !== "skipped");
+      const correctCount = attemptedVals.filter((r) => r === "exact" || r === "close").length;
+      const againCount = attemptedVals.filter((r) => r === "wrong").length;
       onSessionComplete({
         again: againCount,
         good: correctCount,
-        easy: Array.from(results.values()).filter((r) => r === "exact").length,
-        total: results.size,
+        easy: attemptedVals.filter((r) => r === "exact").length,
+        total: attemptedVals.length,
       });
     }
   }, [isComplete, results, onSessionComplete]);
@@ -243,8 +245,10 @@ export default function WritingMode({
 
   // Completion screen
   if (isComplete) {
-    const correctCount = Array.from(results.values()).filter((r) => r !== "wrong").length;
-    const pct = results.size > 0 ? Math.round((correctCount / results.size) * 100) : 0;
+    const attempted = Array.from(results.values()).filter((r) => r !== "skipped");
+    const correctCount = attempted.filter((r) => r === "exact" || r === "close").length;
+    const pct = attempted.length > 0 ? Math.round((correctCount / attempted.length) * 100) : 0;
+    const skippedCount = Array.from(results.values()).filter((r) => r === "skipped").length;
     const feedback = getMoonjoFeedback(pct);
 
     return (
@@ -268,7 +272,7 @@ export default function WritingMode({
               </span>
             </div>
             <p className="text-sm text-goshiwon-text">
-              {correctCount}/{results.size} correct
+              {correctCount}/{attempted.length} correct{skippedCount > 0 ? ` · ${skippedCount} skipped` : ""}
             </p>
           </div>
 
@@ -289,8 +293,8 @@ export default function WritingMode({
               return (
                 <div key={word.id} className="flex items-center justify-between text-xs">
                   <span className="text-goshiwon-text font-korean">{word.korean}</span>
-                  <span className={r === "exact" ? "text-emerald-400" : r === "close" ? "text-amber-400" : "text-red-400"}>
-                    {r === "exact" ? "✓ Exact" : r === "close" ? "~ Close" : "✗ Wrong"}
+                  <span className={r === "exact" ? "text-emerald-400" : r === "close" ? "text-amber-400" : r === "skipped" ? "text-goshiwon-text-muted" : "text-red-400"}>
+                    {r === "exact" ? "✓ Exact" : r === "close" ? "~ Close" : r === "skipped" ? "⊘ Skipped" : "✗ Wrong"}
                   </span>
                 </div>
               );
@@ -380,7 +384,7 @@ export default function WritingMode({
           </div>
 
           {/* Result feedback */}
-          {result !== null && currentWord && (
+          {result !== null && resultWord && (
             <div className={`text-center p-3 rounded-lg border ${
               result === "exact"
                 ? "bg-emerald-500/10 border-emerald-500/30"
@@ -395,7 +399,7 @@ export default function WritingMode({
                 <>
                   <p className="text-amber-400 text-sm font-medium">Close!</p>
                   <p className="text-goshiwon-text text-sm font-korean mt-1">
-                    {currentWord.korean}
+                    {resultWord.korean}
                   </p>
                 </>
               )}
@@ -403,7 +407,7 @@ export default function WritingMode({
                 <>
                   <p className="text-red-400 text-sm font-medium">Incorrect</p>
                   <p className="text-goshiwon-text text-sm font-korean mt-1">
-                    {currentWord.korean}
+                    {resultWord.korean}
                   </p>
                 </>
               )}

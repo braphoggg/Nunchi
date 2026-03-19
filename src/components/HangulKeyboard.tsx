@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
 import {
   createCompositionState,
   feedJamo,
@@ -10,6 +10,11 @@ import {
   type CompositionState,
 } from "@/lib/hangul-compose";
 import { useSound } from "@/contexts/SoundContext";
+
+export interface HangulKeyboardHandle {
+  /** Flush any in-progress composition to the parent input and reset keyboard state */
+  flushComposition: () => void;
+}
 
 interface HangulKeyboardProps {
   /** Called with committed text to insert into the input */
@@ -34,7 +39,7 @@ const ROWS_SHIFT = [
   ["ㅋ","ㅌ","ㅊ","ㅍ","ㅠ","ㅜ","ㅡ"],
 ];
 
-export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visible }: HangulKeyboardProps) {
+const HangulKeyboard = forwardRef<HangulKeyboardHandle, HangulKeyboardProps>(function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visible }, ref) {
   const sound = useSound();
   const [shifted, setShifted] = useState(false);
   // Use a ref for composition state to avoid React strict mode double-invocation
@@ -102,9 +107,10 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
     rerender();
   }, [onInput, rerender, sound]);
 
-  const handleCommitComposing = useCallback(() => {
+  /** Flush any in-progress composition to the parent input and reset state */
+  const flushComposition = useCallback(() => {
     const prev = compRef.current;
-    if (!prev.composing) return;
+    if (!prev.composing && prev.committed.length === 0) return;
     const text = commitAll(prev);
     if (text.length > prevCommittedLenRef.current) {
       onInput(text.slice(prevCommittedLenRef.current));
@@ -114,24 +120,23 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
     rerender();
   }, [onInput, rerender]);
 
+  // Expose flushComposition to parent via ref
+  useImperativeHandle(ref, () => ({ flushComposition }), [flushComposition]);
+
+  const handleCommitComposing = useCallback(() => {
+    const prev = compRef.current;
+    if (!prev.composing) return;
+    flushComposition();
+  }, [flushComposition]);
+
   const handleEnter = useCallback(() => {
     sound.playSpecialKey("enter");
-    const prev = compRef.current;
-    const text = commitAll(prev);
-
-    if (text.length > prevCommittedLenRef.current) {
-      const newText = text.slice(prevCommittedLenRef.current);
-      onInput(newText);
-    }
-
-    compRef.current = createCompositionState();
-    prevCommittedLenRef.current = 0;
+    flushComposition();
     setShifted(false);
-    rerender();
 
-    // Delay submit slightly so onInput fires first
+    // Delay submit slightly so onInput state update fires first
     setTimeout(onSubmit, 10);
-  }, [onInput, onSubmit, rerender, sound]);
+  }, [flushComposition, onSubmit, sound]);
 
   // Get the currently composing character for preview
   const comp = compRef.current;
@@ -222,4 +227,6 @@ export default function HangulKeyboard({ onInput, onDeleteChar, onSubmit, visibl
       </div>
     </div>
   );
-}
+});
+
+export default HangulKeyboard;

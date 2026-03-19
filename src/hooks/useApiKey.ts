@@ -25,6 +25,11 @@ function saveKey(key: string | null): void {
   }
 }
 
+/** Check if a string looks like a valid Gemini API key (starts with AIza) */
+export function isValidGeminiKey(key: string): boolean {
+  return /^AIza[A-Za-z0-9_-]{20,}$/.test(key.trim());
+}
+
 export function useApiKey() {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const initialized = useRef(false);

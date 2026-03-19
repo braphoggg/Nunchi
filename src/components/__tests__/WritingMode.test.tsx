@@ -198,11 +198,11 @@ describe("WritingMode", () => {
       expect(screen.getByText("2/5")).toBeTruthy();
     });
 
-    it("calls onWordGraded with 'again' when skipping", () => {
+    it("does not call onWordGraded when skipping", () => {
       const onWordGraded = vi.fn();
       render(<WritingMode {...defaultProps} onWordGraded={onWordGraded} />);
       fireEvent.click(screen.getByText("Skip (Tab)"));
-      expect(onWordGraded).toHaveBeenCalledWith(expect.any(String), "again");
+      expect(onWordGraded).not.toHaveBeenCalled();
     });
   });
 
@@ -213,10 +213,11 @@ describe("WritingMode", () => {
       for (let i = 0; i < 5; i++) {
         fireEvent.click(screen.getByText("Skip (Tab)"));
       }
-      // Should show completion
+      // Should show completion — all skipped so 0/0 attempted, 5 skipped
       expect(screen.getByText("Done")).toBeTruthy();
       expect(screen.getByText("0%")).toBeTruthy();
-      expect(screen.getByText("0/5 correct")).toBeTruthy();
+      expect(screen.getByText(/0\/0 correct/)).toBeTruthy();
+      expect(screen.getByText(/5 skipped/)).toBeTruthy();
     });
 
     it("shows Moon-jo feedback on completion", () => {
@@ -228,17 +229,17 @@ describe("WritingMode", () => {
       expect(screen.getByText(/다시 쓰세요/)).toBeTruthy();
     });
 
-    it("calls onSessionComplete with correct counts", () => {
+    it("calls onSessionComplete with correct counts (skipped excluded)", () => {
       const onSessionComplete = vi.fn();
       render(<WritingMode {...defaultProps} onSessionComplete={onSessionComplete} />);
       for (let i = 0; i < 5; i++) {
         fireEvent.click(screen.getByText("Skip (Tab)"));
       }
       expect(onSessionComplete).toHaveBeenCalledWith({
-        again: 5,
+        again: 0,
         good: 0,
         easy: 0,
-        total: 5,
+        total: 0,
       });
     });
 
@@ -257,9 +258,9 @@ describe("WritingMode", () => {
       for (let i = 0; i < 5; i++) {
         fireEvent.click(screen.getByText("Skip (Tab)"));
       }
-      // All should be marked wrong
-      const wrongMarks = screen.getAllByText("✗ Wrong");
-      expect(wrongMarks.length).toBe(5);
+      // All should be marked skipped
+      const skippedMarks = screen.getAllByText("⊘ Skipped");
+      expect(skippedMarks.length).toBe(5);
     });
   });
 

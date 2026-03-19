@@ -145,6 +145,7 @@ function ApiKeySection() {
   const { apiKey, setApiKey, clearApiKey } = useSettingsContext();
   const [inputValue, setInputValue] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [error, setError] = useState("");
 
   const masked = apiKey
     ? apiKey.slice(0, 4) + "..." + apiKey.slice(-4)
@@ -152,11 +153,15 @@ function ApiKeySection() {
 
   const handleSave = () => {
     const trimmed = inputValue.trim();
-    if (trimmed) {
-      setApiKey(trimmed);
-      setInputValue("");
-      setShowKey(false);
+    if (!trimmed) return;
+    if (!trimmed.startsWith("AIza")) {
+      setError("Key should start with \"AIza\".");
+      return;
     }
+    setError("");
+    setApiKey(trimmed);
+    setInputValue("");
+    setShowKey(false);
   };
 
   return (
@@ -204,6 +209,7 @@ function ApiKeySection() {
             </button>
           </div>
         )}
+        {error && <p className="text-xs text-red-400">{error}</p>}
         <p className="text-xs text-goshiwon-text-muted">
           Get a free key from{" "}
           <a

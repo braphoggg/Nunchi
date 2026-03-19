@@ -330,7 +330,7 @@ function QuizMode({
                   className={`w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 ${optionClass} disabled:cursor-default`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 flex items-center justify-center rounded-full border border-current/50 text-xs font-medium shrink-0 opacity-80">
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full border border-goshiwon-border text-xs font-medium shrink-0 text-goshiwon-text-muted">
                       {idx + 1}
                     </span>
                     <span className={`text-sm ${answered && isCorrect ? "font-medium" : ""} ${!answered ? "text-goshiwon-text" : ""}`}>

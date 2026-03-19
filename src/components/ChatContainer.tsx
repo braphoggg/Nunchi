@@ -23,7 +23,7 @@ import OnboardingOverlay from "./OnboardingOverlay";
 import TutorialOverlay from "./TutorialOverlay";
 import SettingsPanel from "./SettingsPanel";
 import { useShareConversation } from "./ShareButton";
-import HangulKeyboard from "./HangulKeyboard";
+import HangulKeyboard, { type HangulKeyboardHandle } from "./HangulKeyboard";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
 import { useSettings } from "@/hooks/useSettings";
 import { useTutorial } from "@/hooks/useTutorial";
@@ -110,6 +110,7 @@ export default function ChatContainer() {
   inputRef.current = input;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
+  const hangulKeyboardRef = useRef<HangulKeyboardHandle>(null);
 
   // Share conversation as image
   const { handleShare, handleShareText, exporting: shareExporting } = useShareConversation(messages);
@@ -138,7 +139,11 @@ export default function ChatContainer() {
     tutorial.notifyInteraction("keyboard");
   }, [tutorial, sound]);
   const handleKeyboardInput = useCallback((text: string) => {
-    setInput((prev) => prev + text);
+    setInput((prev) => {
+      const next = prev + text;
+      inputRef.current = next; // sync ref immediately for flush-then-send
+      return next;
+    });
   }, []);
   const handleKeyboardDelete = useCallback(() => {
     setInput((prev) => prev.slice(0, -1));
@@ -559,7 +564,10 @@ export default function ChatContainer() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const text = input.trim();
+    // Flush any in-progress Hangul composition to input state before sending
+    hangulKeyboardRef.current?.flushComposition();
+    // Read from ref to get the freshest value after flush
+    const text = inputRef.current.trim();
     if (!text || isLoading || !sendMessage) return;
     sound.playMessageSend();
     tutorial.notifyInteraction("topics");
@@ -856,6 +864,7 @@ export default function ChatContainer() {
           all space; shrink-0 prevents compression on tight viewports */}
       <div className="shrink-0 mt-auto">
         <HangulKeyboard
+          ref={hangulKeyboardRef}
           onInput={handleKeyboardInput}
           onDeleteChar={handleKeyboardDelete}
           onSubmit={handleKeyboardSubmit}

@@ -57,10 +57,17 @@ function getRankDisplayName(rankId: ResidentRank): string {
 
 function ApiKeyGate({ onSave }: { onSave: (key: string) => void }) {
   const [value, setValue] = useState("");
+  const [error, setError] = useState("");
 
   const handleSave = () => {
     const trimmed = value.trim();
-    if (trimmed) onSave(trimmed);
+    if (!trimmed) return;
+    if (!trimmed.startsWith("AIza")) {
+      setError("Key should start with \"AIza\". Check your key and try again.");
+      return;
+    }
+    setError("");
+    onSave(trimmed);
   };
 
   return (
@@ -102,6 +109,10 @@ function ApiKeyGate({ onSave }: { onSave: (key: string) => void }) {
               Save
             </button>
           </div>
+
+          {error && (
+            <p className="text-xs text-red-400">{error}</p>
+          )}
 
           <p className="text-xs text-goshiwon-text-muted leading-relaxed">
             Get a free key from{" "}
