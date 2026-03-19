@@ -77,6 +77,7 @@ Open [http://localhost:3000](http://localhost:3000). Pick a topic. Moon-jo is wa
 - **Spaced repetition** — SM-2 algorithm schedules reviews at optimal intervals
 - **Flashcards** — 3D flip cards with self-assessment. Listen mode hides text for ear training
 - **Quizzes** — Multiple-choice in both directions (Korean → English, English → Korean)
+- **Writing Practice** — Type Korean from English prompts. Graded as Exact, Close, or Wrong; skipped words tracked separately
 
 ### Earn Your Rank
 
@@ -104,6 +105,7 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 - Personal dictionary with Korean, romanization, and English
 - SM-2 spaced repetition with ease factor, interval, and repetition tracking
 - Flashcard listen mode — audio only, then flip to check
+- Writing practice — English → Korean recall with Exact/Close/Wrong grading, skip tracking
 - Batch save all vocabulary from a message
 - Auto-translation of saved words via vocabulary API
 - Unseen vocabulary badge notification
@@ -157,6 +159,8 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 | `1` / `2` / `3` | Flashcards (flipped) | Again / Good / Easy |
 | `←` / `→` | Flashcards | Previous / next card |
 | `1`–`4` | Quiz | Select answer |
+| `Enter` | Writing Practice | Check answer / Next word |
+| `Tab` | Writing Practice | Skip word |
 | `Escape` | Any overlay | Close current overlay |
 
 </details>
@@ -247,7 +251,7 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-830+ tests across 58 test files covering API routes, all UI components, hooks, libraries, security edge cases, and BYOK flows.
+1100+ tests across 71 test files covering API routes, all UI components, hooks, libraries, security edge cases, and BYOK flows.
 
 Test categories include:
 - **Unit tests** — Pure functions (SRS, gamification, Hangul composition, security)
@@ -283,6 +287,7 @@ src/
 │   ├── VocabularyPanel.tsx        # Saved words (나의 단어장)
 │   ├── FlashcardMode.tsx          # Flashcard study + SRS grading
 │   ├── QuizMode.tsx               # Multiple-choice quiz
+│   ├── WritingMode.tsx            # English → Korean writing practice
 │   ├── HangulKeyboard.tsx         # On-screen Korean keyboard
 │   ├── LessonHistory.tsx          # Browse + search saved conversations
 │   ├── LessonReview.tsx           # Read-only conversation replay

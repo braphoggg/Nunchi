@@ -95,7 +95,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     titleKr: "단어장과 학습",
     moonjoSays: "단어를 모으세요. 나중에 복습할 수 있어요.",
     description:
-      "Open your saved words here. Once you have 4+ words, two study modes appear: Study All — a quiz on every word with spaced repetition, and Quick Quiz — a fast 10-question test in both directions.",
+      "Open your saved words here. Once you have 4+ words, three study modes appear: Study All — flashcards with spaced repetition, Quick Quiz — a fast 10-question multiple-choice test, and Writing Practice — type Korean from English prompts.",
     type: "observe",
     tooltipPosition: "bottom",
     spotlightPadding: 12,

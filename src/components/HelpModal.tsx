@@ -286,6 +286,21 @@ function WordsTab() {
           Great for a rapid review. Earn XP and see how well you know your saved words.
         </Body>
       </section>
+
+      <section>
+        <SectionTitle>Writing Practice</SectionTitle>
+        <Body>
+          Test your recall by writing Korean from English prompts.
+          You see an English word and type the Korean equivalent using the built-in Hangul keyboard or your own.
+          Answers are graded as Exact, Close (1 character off), or Wrong.
+          Skipped words are tracked separately and excluded from your score.
+        </Body>
+        <ul className="mt-2 text-xs text-goshiwon-text-secondary space-y-1">
+          <li>• <strong className="text-goshiwon-text">Check (Enter)</strong> — Submit your answer</li>
+          <li>• <strong className="text-goshiwon-text">Skip (Tab)</strong> — Skip to the next word without penalty</li>
+          <li>• <strong className="text-goshiwon-text">Next (Enter)</strong> — Advance after checking</li>
+        </ul>
+      </section>
     </>
   );
 }
