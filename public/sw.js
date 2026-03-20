@@ -7,7 +7,7 @@
  *   - API routes: network-only (no caching for chat/translate)
  */
 
-const CACHE_NAME = "room203-v1";
+const CACHE_NAME = "room203-v2";
 
 const PRECACHE_URLS = ["/"];
 
@@ -45,15 +45,33 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
   if (request.method !== "GET") return;
 
+  // Skip caching entirely on localhost (dev server)
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return;
+
   // Skip API routes — always network
   if (url.pathname.startsWith("/api/")) return;
 
-  // Static assets: cache-first
+  // Next.js chunks (/_next/): network-first so deployments propagate immediately
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  // Other static assets (fonts, images): cache-first
   if (
     url.pathname.match(
-      /\.(js|css|woff2?|ttf|otf|png|jpg|jpeg|gif|svg|ico|webp)$/,
-    ) ||
-    url.pathname.startsWith("/_next/static/")
+      /\.(woff2?|ttf|otf|png|jpg|jpeg|gif|svg|ico|webp)$/,
+    )
   ) {
     event.respondWith(
       caches.match(request).then(

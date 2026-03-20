@@ -62,9 +62,14 @@ describe("mood-engine", () => {
       expect(getMoodLevel(0.19)).toBe("cold");
     });
 
-    it("returns 'neutral' for ratio 0.2-0.49", () => {
+    it("returns 'neutral' for ratio 0.2-0.34", () => {
       expect(getMoodLevel(0.2)).toBe("neutral");
-      expect(getMoodLevel(0.49)).toBe("neutral");
+      expect(getMoodLevel(0.34)).toBe("neutral");
+    });
+
+    it("returns 'engaged' for ratio 0.35-0.49", () => {
+      expect(getMoodLevel(0.35)).toBe("engaged");
+      expect(getMoodLevel(0.49)).toBe("engaged");
     });
 
     it("returns 'warm' for ratio 0.5-0.79", () => {
@@ -80,7 +85,7 @@ describe("mood-engine", () => {
 
   describe("getMoodDirective", () => {
     it("returns a non-empty string for each mood level", () => {
-      for (const mood of ["cold", "neutral", "warm", "impressed"] as const) {
+      for (const mood of ["cold", "neutral", "engaged", "warm", "impressed"] as const) {
         const directive = getMoodDirective(mood);
         expect(directive).toBeTruthy();
         expect(typeof directive).toBe("string");

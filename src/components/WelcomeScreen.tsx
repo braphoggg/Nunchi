@@ -297,9 +297,11 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                     <span className="text-xs sm:text-sm font-medium text-goshiwon-text truncate">
                       {topic.titleKr}
                     </span>
-                    <span className={`hidden sm:inline text-xs font-medium px-1.5 py-px rounded-full border whitespace-nowrap ${diffConfig.className}`}>
-                      {diffConfig.label}
-                    </span>
+                    {topic.id !== "free" && (
+                      <span className={`hidden sm:inline text-xs font-medium px-1.5 py-px rounded-full border whitespace-nowrap ${diffConfig.className}`}>
+                        {diffConfig.label}
+                      </span>
+                    )}
                     {visited && (
                       <span className="hidden sm:inline text-xs text-goshiwon-yellow/60 italic">
                         studied
@@ -314,9 +316,11 @@ export default function WelcomeScreen({ onSelectTopic, rank, visitedTopics, dueC
                       🔒 {getRankDisplayName(topic.requiredRank)}
                     </div>
                   )}
-                  <span className={`sm:hidden inline-block mt-0.5 text-xs font-medium px-1 py-px rounded-full border whitespace-nowrap ${diffConfig.className}`}>
-                    {diffConfig.label}
-                  </span>
+                  {topic.id !== "free" && (
+                    <span className={`sm:hidden inline-block mt-0.5 text-xs font-medium px-1 py-px rounded-full border whitespace-nowrap ${diffConfig.className}`}>
+                      {diffConfig.label}
+                    </span>
+                  )}
                 </div>
               </div>
             </button>

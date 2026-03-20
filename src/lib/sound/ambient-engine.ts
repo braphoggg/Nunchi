@@ -11,7 +11,7 @@
 
 import { getBrownNoiseBuffer, getPinkNoiseBuffer } from "./noise-generator";
 
-export type MoodLevel = "cold" | "neutral" | "warm" | "impressed";
+export type MoodLevel = "cold" | "neutral" | "engaged" | "warm" | "impressed";
 
 // Target volumes per layer per night stage
 const FLUORO_VOL = [0.012, 0.016, 0.020, 0.015]; // stage 3 lower (failing tube)

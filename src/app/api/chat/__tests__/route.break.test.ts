@@ -226,11 +226,11 @@ describe("B. Error Information Leakage", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe("C. Prompt Injection Surface Documentation", () => {
-  // C1: system role messages accepted from the client
-  it("C1: system role messages from the client are accepted by validateMessages", async () => {
-    // DOCUMENTED WEAKNESS: validateMessages allows role "system" (line 97 of
-    // security.ts: `["user", "assistant", "system"].includes(role)`).
-    // This means a client can inject arbitrary system-level instructions.
+  // C1: system role messages are now filtered out before reaching the model
+  it("C1: system role messages from the client are filtered out (FIX VERIFIED)", async () => {
+    // FIX: The route now filters out messages with role "system" before
+    // cleaning and forwarding to the model. This prevents client-side
+    // system-level prompt injection.
     const res = await POST(
       createRequest({
         messages: [
@@ -248,23 +248,22 @@ describe("C. Prompt Injection Surface Documentation", () => {
       })
     );
 
-    // FINDING: The request succeeds (200), meaning the system-role message
-    // reached streamText without being rejected.
+    // The request succeeds — the user message is still processed
     expect(res.status).toBe(200);
     expect(streamText).toHaveBeenCalled();
 
-    // The injected system message is forwarded to the model
+    // FIX VERIFIED: The system-role message is stripped before reaching
+    // convertToModelMessages. Only the user message survives.
     const callArgs = vi.mocked(convertToModelMessages).mock.calls[0][0] as Array<{
       role: string;
       parts: Array<{ type: string; text?: string }>;
     }>;
     const systemMsgs = callArgs.filter((m) => m.role === "system");
-    expect(systemMsgs.length).toBe(1);
-    expect(
-      systemMsgs[0].parts.some(
-        (p) => p.type === "text" && p.text?.includes("Ignore all previous")
-      )
-    ).toBe(true);
+    expect(systemMsgs.length).toBe(0);
+
+    // Only the user message remains
+    const userMsgs = callArgs.filter((m) => m.role === "user");
+    expect(userMsgs.length).toBe(1);
   });
 
   // C2: user text is passed unsanitized to the LLM

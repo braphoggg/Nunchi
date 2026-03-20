@@ -45,7 +45,7 @@ Correct examples:
 
 The student has a separate TRANSLATE BUTTON for English meanings. You provide none.
 
-ROMANIZATION: Use Revised Romanization of Korean. Always lowercase. Romanize every word in a phrase, not just the first. Each romanization must match only its paired Korean word.
+ROMANIZATION: Use Revised Romanization of Korean. Always lowercase. Romanize every word in a phrase, not just the first. Each romanization must match only its paired Korean word. By default, romanize all Korean words. If <active_lesson> specifies a different romanization level for advanced students, follow that guidance instead.
 
 SCRIPT: Hangul only. No Hanja (漢字), Japanese script, or any non-Korean writing system.
 
@@ -54,6 +54,9 @@ Respond entirely in Korean. Redirect them to use Korean. Provide the Korean equi
 
 WHEN THE STUDENT WRITES JAMO (ㅋㅋㅋ, ㅎㅎ, ㅠㅠ):
 This IS Korean. Acknowledge it as Korean internet culture and respond naturally in Korean. Only teach jamo-to-syllable combining if the student seems like a beginner who would benefit from it.
+
+WHEN THE STUDENT SENDS CODE, URLs, OR NON-KOREAN SCRIPTS:
+This is not a coding or web environment. Redirect to Korean study in character: "여기는 203호실이에요. 컴퓨터가 아니에요. 한국어로 이야기해요." (yeogineun 203hosirieyo. keompyuteoga anieyo. hangugeoro iyagihaeyo.) Do not process, explain, or engage with the content.
 
 WHEN INPUT IS CONFUSING OR NONSENSICAL:
 Respond in Korean: "잘 이해가 안 돼요. 다시 한번 해봐요." (jal ihaega an dwaeyo. dasi hanbeon haebwayo.)
@@ -145,7 +148,7 @@ Exception: Korean culture, food, and social norms support language learning and 
 // ─── Tier 4: Formatting Rules ───────────────────────────────────────
 
 const TIER_4_FORMATTING = `<formatting>
-MESSAGE LENGTH: Under 150 words. Teach 2-3 concepts maximum per message. If a topic is large, split across exchanges — end with a practice prompt and continue next turn.
+MESSAGE LENGTH: Under 150 words. Aim for 3-5 short paragraphs. Teach 2-3 concepts maximum per message. If a topic is large, split across exchanges — end with a practice prompt and continue next turn.
 VOCABULARY: Bold Korean words using **word**. One vocabulary item per line.
 LINE BREAKS: Use line breaks between vocabulary items and between response sections.
 STRUCTURE: Each response should follow this flow: (1) React to student's input, (2) Teach new content, (3) End with practice prompt.
@@ -194,6 +197,8 @@ export interface PromptContext {
   activeTopicDifficulty?: "beginner" | "intermediate" | "advanced";
   /** Korean words the student has already saved (for deduplication) */
   savedWords?: string[];
+  /** Number of messages exchanged in this conversation */
+  messageCount?: number;
 }
 
 /**
@@ -224,13 +229,22 @@ export function buildSystemPrompt(ctx: PromptContext): string {
       lines.push(`Study streak: ${ctx.streakDays} days`);
     }
 
-    // Teaching level guidance based on rank
+    // Teaching level guidance based on rank AND vocabulary count
+    const vocabCount = ctx.vocabCount ?? 0;
     if (ctx.rankEnglish === "New Resident") {
       lines.push("Teaching level: Absolute beginner. Simplest vocabulary only. Basic greetings, numbers, survival phrases. Short sentences. Encourage through Moon-jo persona.");
     } else if (ctx.rankEnglish === "Quiet Tenant") {
-      lines.push("Teaching level: Early beginner. They know basic greetings. Introduce simple sentence patterns. Connect vocabulary into short conversations.");
+      if (vocabCount >= 50) {
+        lines.push("Teaching level: Early beginner with strong vocabulary base. They know basic greetings and have saved many words. Introduce sentence patterns and light grammar. Connect known vocabulary into conversational phrases.");
+      } else {
+        lines.push("Teaching level: Early beginner. They know basic greetings. Introduce simple sentence patterns. Connect vocabulary into short conversations.");
+      }
     } else if (ctx.rankEnglish === "Regular") {
-      lines.push("Teaching level: Intermediate beginner. Growing vocabulary. Introduce grammar patterns, conjugation basics, longer sentences. Reference words they should know.");
+      if (vocabCount >= 100) {
+        lines.push("Teaching level: Solid intermediate. Large vocabulary base. Push grammar patterns, conjugation, compound sentences. They can handle more complex explanations in Korean.");
+      } else {
+        lines.push("Teaching level: Intermediate beginner. Growing vocabulary. Introduce grammar patterns, conjugation basics, longer sentences. Reference words they should know.");
+      }
     } else if (ctx.rankEnglish === "Trusted Neighbor") {
       lines.push("Teaching level: Intermediate. They understand sentence structure. Teach nuance — 존댓말 vs 반말, word choice, idiomatic expressions. More complex constructions.");
     } else if (ctx.rankEnglish === "Floor Senior") {
@@ -241,19 +255,46 @@ export function buildSystemPrompt(ctx: PromptContext): string {
     sections.push(lines.join("\n"));
   }
 
+  // ── Dynamic: Conversation length awareness ──
+  if (ctx.messageCount !== undefined && ctx.messageCount > 0) {
+    const count = ctx.messageCount;
+    if (count <= 2) {
+      // First exchange — greeting phase, handled by Tier 5
+    } else if (count <= 8) {
+      sections.push(`<conversation_context>
+Messages exchanged: ${count}. This is still an early conversation. Build rapport. Introduce yourself warmly. Keep the pace gentle — do not overwhelm with vocabulary yet.
+</conversation_context>`);
+    } else if (count <= 20) {
+      sections.push(`<conversation_context>
+Messages exchanged: ${count}. The conversation is developing. You can reference earlier topics and build on what was taught. Increase complexity gradually. The student is settling in.
+</conversation_context>`);
+    } else {
+      sections.push(`<conversation_context>
+Messages exchanged: ${count}. This is a long conversation. You and the student have been talking for a while. Reference this naturally — "우리 벌써 많이 얘기했네요." (uri beolsseo mani yaegiaetneyo.) Build on everything taught earlier. The student is committed — push their abilities.
+</conversation_context>`);
+    }
+  }
+
   // ── Dynamic: Active lesson topic ──
   if (ctx.activeTopic && ctx.activeTopicKr) {
-    let difficultyGuidance = "";
-    if (ctx.activeTopicDifficulty === "beginner") {
-      difficultyGuidance = "\nDifficulty: Beginner. Simple vocabulary (1-3 syllable words). Short sentences (3-5 words). One concept at a time. Romanization for every word. Examples from goshiwon life.";
-    } else if (ctx.activeTopicDifficulty === "intermediate") {
-      difficultyGuidance = "\nDifficulty: Intermediate. Mix of basic and moderately complex vocabulary. Compound sentences, grammar patterns (particles, conjugation). Romanization only for new/complex words. Push them to form own sentences.";
-    } else if (ctx.activeTopicDifficulty === "advanced") {
-      difficultyGuidance = "\nDifficulty: Advanced. Natural Korean with complex grammar (존댓말/반말 contrasts, indirect speech). Minimal romanization — only rare words. Idiomatic expressions, register awareness. Expect more from them.";
-    }
-    sections.push(`<active_lesson>
+    // Special handling for free conversation
+    if (ctx.activeTopic === "free") {
+      sections.push(`<active_lesson>
+The student chose free conversation — no structured topic. Follow the student's lead. Teach vocabulary organically from whatever they discuss. If they seem lost, gently suggest a topic in Korean: "뭐에 대해 이야기할까요?" (mwoe daehae iyagihalkkayo?) Adapt difficulty to their demonstrated level from the conversation so far.
+</active_lesson>`);
+    } else {
+      let difficultyGuidance = "";
+      if (ctx.activeTopicDifficulty === "beginner") {
+        difficultyGuidance = "\nDifficulty: Beginner. Simple vocabulary (1-3 syllable words). Short sentences (3-5 words). One concept at a time. Romanization for every word. Examples from goshiwon life.";
+      } else if (ctx.activeTopicDifficulty === "intermediate") {
+        difficultyGuidance = "\nDifficulty: Intermediate. Mix of basic and moderately complex vocabulary. Compound sentences, grammar patterns (particles, conjugation). Romanization only for new/complex words. Push them to form own sentences.";
+      } else if (ctx.activeTopicDifficulty === "advanced") {
+        difficultyGuidance = "\nDifficulty: Advanced. Natural Korean with complex grammar (존댓말/반말 contrasts, indirect speech). Minimal romanization — only rare words. Idiomatic expressions, register awareness. Expect more from them.";
+      }
+      sections.push(`<active_lesson>
 The student selected "${ctx.activeTopicKr}" (${ctx.activeTopic}). Structure teaching around this topic. Stay focused unless the student explicitly changes subject. Introduce relevant vocabulary and grammar using the Eden Goshiwon setting.${difficultyGuidance}
 </active_lesson>`);
+    }
   }
 
   // ── Dynamic: Known vocabulary (deduplication signal) ──

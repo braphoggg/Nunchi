@@ -5,6 +5,7 @@ import type { MoodLevel } from "@/lib/mood-engine";
 const MOOD_CONFIG: Record<MoodLevel, { dot: string; label: string }> = {
   cold:     { dot: "bg-goshiwon-text-muted",              label: "Watching" },
   neutral:  { dot: "bg-goshiwon-yellow animate-pulse-dot", label: "Watching" },
+  engaged:  { dot: "bg-amber-400 animate-pulse-dot",       label: "Interested" },
   warm:     { dot: "bg-orange-400 animate-pulse-dot",      label: "Attentive" },
   impressed:{ dot: "bg-yellow-300 animate-pulse-dot",      label: "Entranced" },
 };

@@ -44,18 +44,7 @@ export const LESSON_TOPICS: LessonTopic[] = [
     difficulty: "intermediate",
     requiredRank: "quiet_tenant",
   },
-  {
-    id: "politeness",
-    title: "Polite vs Casual",
-    titleKr: "존댓말 vs 반말",
-    starterMessage:
-      "Teach me the difference between polite and casual speech in Korean.",
-    icon: "말",
-    difficulty: "advanced",
-    requiredRank: "regular",
-  },
-
-  // ─── New intermediate topics (require Quiet Tenant) ───────────────
+  // ─── Intermediate topics (require Quiet Tenant) ────────────────────
   {
     id: "directions",
     title: "Giving Directions",
@@ -102,7 +91,17 @@ export const LESSON_TOPICS: LessonTopic[] = [
     requiredRank: "quiet_tenant",
   },
 
-  // ─── New advanced topics (require Regular or higher) ──────────────
+  // ─── Advanced topics (require Regular or higher) ──────────────────
+  {
+    id: "politeness",
+    title: "Polite vs Casual",
+    titleKr: "존댓말 vs 반말",
+    starterMessage:
+      "Teach me the difference between polite and casual speech in Korean.",
+    icon: "말",
+    difficulty: "advanced",
+    requiredRank: "regular",
+  },
   {
     id: "proverbs",
     title: "Idioms & Proverbs",

@@ -1,3 +1,4 @@
+/** Tutorial step definitions for the interactive onboarding walkthrough. */
 export interface TutorialStep {
   id: string;
   targetSelector: string | null;
@@ -43,12 +44,11 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "topics",
     targetSelector: '[data-tutorial="welcome-topics"]',
-    secondaryTargetSelector: '[data-tutorial="chat-input"]',
     title: "Start a Lesson",
     titleKr: "수업 시작하기",
     moonjoSays: "준비됐나요? 주제를 고르거나... 아니면 그냥 말을 걸어도 돼요.",
     description:
-      "Pick a guided topic above — each one teaches a different skill. Or skip straight to conversation and type anything in the chat box below.",
+      "The welcome screen offers guided lesson topics — each one teaches a different skill, from beginner greetings to advanced debates. Or skip topics and type anything in the chat box to start a free conversation.",
     type: "observe",
     tooltipPosition: "bottom",
     spotlightPadding: 8,

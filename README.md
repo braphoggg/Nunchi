@@ -66,7 +66,7 @@ Open [http://localhost:3000](http://localhost:3000). Pick a topic. Moon-jo is wa
 
 ### Learn by Conversation
 
-- **7 structured lessons** — Greetings, Survival Phrases, Numbers, Ordering Food, Feelings, Polite vs Casual, Free Conversation
+- **15 structured lessons** — Beginner (Greetings, Survival Phrases, Numbers), Intermediate (Ordering Food, Feelings, Directions, Shopping, Weather, Phone Calls, Doctor Visit), Advanced (Polite vs Casual, Idioms & Proverbs, Debating Opinions, Describing People), plus Free Conversation
 - **Korean-first teaching** — Bold Korean with romanization. Discover meaning through context and the translate button
 - **Inline error correction** — ~~your mistake~~ → **corrected version** with brief explanations
 - **Mood system** — Moon-jo's personality adapts to how much Korean you write
@@ -95,7 +95,7 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 <summary><strong>All features</strong></summary>
 
 #### Conversation & Learning
-- 7 tiered lessons (beginner / intermediate / advanced) with rank-gated progression
+- 15 tiered lessons (beginner / intermediate / advanced) with rank-gated progression
 - Click-to-translate on any message (cached for instant switching)
 - Text-to-speech on all assistant messages and vocabulary words
 - "Today's Focus" daily suggestion based on progress and review schedule

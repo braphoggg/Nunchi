@@ -112,4 +112,108 @@ describe("buildSystemPrompt", () => {
     expect(result).toContain("<teaching>");
     expect(result).not.toContain("<student_progress>");
   });
+
+  it("generates conversation context for early conversations", () => {
+    const result = buildSystemPrompt({ moodAddendum: "", messageCount: 5 });
+    expect(result).toContain("<conversation_context>");
+    expect(result).toContain("Messages exchanged: 5");
+    expect(result).toContain("early conversation");
+  });
+
+  it("generates conversation context for developing conversations", () => {
+    const result = buildSystemPrompt({ moodAddendum: "", messageCount: 15 });
+    expect(result).toContain("Messages exchanged: 15");
+    expect(result).toContain("developing");
+  });
+
+  it("generates conversation context for long conversations", () => {
+    const result = buildSystemPrompt({ moodAddendum: "", messageCount: 25 });
+    expect(result).toContain("Messages exchanged: 25");
+    expect(result).toContain("long conversation");
+  });
+
+  it("does not generate conversation context for first exchange", () => {
+    const result = buildSystemPrompt({ moodAddendum: "", messageCount: 2 });
+    expect(result).not.toContain("<conversation_context>");
+  });
+
+  it("handles free conversation topic with special directive", () => {
+    const result = buildSystemPrompt({
+      moodAddendum: "",
+      activeTopic: "free",
+      activeTopicKr: "자유 대화",
+    });
+    expect(result).toContain("<active_lesson>");
+    expect(result).toContain("free conversation");
+    expect(result).toContain("Follow the student's lead");
+    expect(result).not.toContain("Structure teaching around this topic");
+  });
+
+  it("adapts teaching level based on vocab count for Quiet Tenant", () => {
+    const highVocab = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "조용한 세입자",
+      rankEnglish: "Quiet Tenant",
+      vocabCount: 55,
+    });
+    expect(highVocab).toContain("strong vocabulary base");
+
+    const lowVocab = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "조용한 세입자",
+      rankEnglish: "Quiet Tenant",
+      vocabCount: 10,
+    });
+    expect(lowVocab).toContain("Early beginner");
+    expect(lowVocab).not.toContain("strong vocabulary base");
+  });
+
+  it("adapts teaching level based on vocab count for Regular", () => {
+    const highVocab = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "단골",
+      rankEnglish: "Regular",
+      vocabCount: 120,
+    });
+    expect(highVocab).toContain("Solid intermediate");
+
+    const lowVocab = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "단골",
+      rankEnglish: "Regular",
+      vocabCount: 30,
+    });
+    expect(lowVocab).toContain("Intermediate beginner");
+  });
+
+  it("includes code/URL handling in language rules", () => {
+    const result = buildSystemPrompt({ moodAddendum: "" });
+    expect(result).toContain("CODE, URLs, OR NON-KOREAN SCRIPTS");
+  });
+
+  it("includes structural message length guidance", () => {
+    const result = buildSystemPrompt({ moodAddendum: "" });
+    expect(result).toContain("3-5 short paragraphs");
+  });
+
+  it("includes difficulty guidance for beginner topic", () => {
+    const result = buildSystemPrompt({
+      moodAddendum: "",
+      activeTopic: "greetings",
+      activeTopicKr: "인사",
+      activeTopicDifficulty: "beginner",
+    });
+    expect(result).toContain("Difficulty: Beginner");
+  });
+
+  it("includes difficulty guidance for advanced topic", () => {
+    const result = buildSystemPrompt({
+      moodAddendum: "",
+      activeTopic: "politeness",
+      activeTopicKr: "존댓말과 반말",
+      activeTopicDifficulty: "advanced",
+    });
+    expect(result).toContain("Difficulty: Advanced");
+    expect(result).toContain("Minimal romanization");
+  });
 });

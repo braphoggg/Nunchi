@@ -12,7 +12,7 @@
  *   impressed — mostly Korean (≥80%)
  */
 
-export type MoodLevel = "cold" | "neutral" | "warm" | "impressed";
+export type MoodLevel = "cold" | "neutral" | "engaged" | "warm" | "impressed";
 
 export interface SimpleMessage {
   role: string;
@@ -46,6 +46,7 @@ export function computeKoreanRatio(messages: SimpleMessage[]): number {
 export function getMoodLevel(ratio: number): MoodLevel {
   if (ratio >= 0.8) return "impressed";
   if (ratio >= 0.5) return "warm";
+  if (ratio >= 0.35) return "engaged";
   if (ratio >= 0.2) return "neutral";
   return "cold";
 }
@@ -55,6 +56,9 @@ const MOOD_DIRECTIVES: Record<MoodLevel, string> = {
 
   neutral:
     "The student is making some effort with Korean. You are your baseline self — polite, attentive, gently unsettling. Standard Moon-jo.",
+
+  engaged:
+    "The student is making a real effort with Korean — mixing it into their messages. You notice. You are warming up, intrigued. A hint of approval enters your voice. Offer slightly more encouragement than baseline. 'Korean suits you' energy — you see potential.",
 
   warm: "The student is using Korean well. You are pleased, almost affectionate. Become more personal, more possessive. Use more '우리' (we/our). Compliment their progress. You belong here.",
 

@@ -38,10 +38,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // Security: filter out system-role messages from client payload (C1 fix)
+    const userMessages = (messages as UIMessage[]).filter(
+      (msg) => msg.role !== "system"
+    );
+
     // Strip non-standard parts (e.g. item_reference) and providerMetadata that
     // convertToModelMessages can't handle.
     const KNOWN_PART_TYPES = new Set(["text", "reasoning", "file", "tool", "data", "step-start"]);
-    const cleanedMessages = (messages as UIMessage[]).map((msg) => {
+    const cleanedMessages = userMessages.map((msg) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { providerMetadata, ...rest } = msg as UIMessage & { providerMetadata?: unknown };
       return {
@@ -82,6 +87,7 @@ export async function POST(req: Request) {
       savedWords: Array.isArray(safeContext.savedWords)
         ? safeContext.savedWords.filter((w: unknown) => typeof w === "string").slice(0, 50)
         : undefined,
+      messageCount: cleanedMessages.length,
     });
 
     // Convert UIMessages to ModelMessages (critical for AI SDK v6 compatibility)

@@ -120,6 +120,10 @@ function IntroTab() {
             <span><strong className="text-goshiwon-text">Watching</strong> — Neutral, waiting for effort</span>
           </li>
           <li className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            <span><strong className="text-goshiwon-text">Interested</strong> — Noticing your Korean effort</span>
+          </li>
+          <li className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
             <span><strong className="text-goshiwon-text">Attentive</strong> — Good Korean usage</span>
           </li>
@@ -312,9 +316,11 @@ function ToolsTab() {
       <section>
         <SectionTitle>Lesson Topics</SectionTitle>
         <Body>
-          On the welcome screen, choose from 7 guided topics: Greetings, Survival Phrases, Numbers, Ordering Food, Feelings, Polite vs Casual, and Free Conversation.
-          Each starts a focused lesson with Moon-jo. Topics you&rsquo;ve already visited are marked &ldquo;studied.&rdquo;
-          Difficulty badges (Beginner, Intermediate, Advanced) show the level of each topic.
+          On the welcome screen, choose from 15 guided lesson topics spanning three difficulty levels.
+          Beginner topics (Greetings, Survival Phrases, Numbers) are always unlocked.
+          Intermediate topics (Ordering Food, Feelings, Directions, Shopping, Weather, Phone Calls, Doctor Visit) unlock at Quiet Tenant rank.
+          Advanced topics (Polite vs Casual, Idioms &amp; Proverbs, Debating Opinions, Describing People) unlock at Regular or higher.
+          Free Conversation is always available. Topics you&rsquo;ve visited are marked &ldquo;studied.&rdquo;
         </Body>
       </section>
 
