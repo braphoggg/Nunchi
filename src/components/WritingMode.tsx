@@ -77,7 +77,7 @@ export default function WritingMode({
 }: WritingModeProps) {
   const sound = useSound();
   const studyable = useMemo(
-    () => words.filter((w) => w.english?.trim()),
+    () => words.filter((w) => w.english?.trim() || w.romanization?.trim()),
     [words],
   );
 
@@ -236,7 +236,7 @@ export default function WritingMode({
             Not enough words to practice writing.
           </p>
           <p className="text-goshiwon-text-muted text-xs">
-            Save at least {MIN_WRITING_WORDS} translated words first.
+            Save at least {MIN_WRITING_WORDS} words first.
           </p>
         </div>
       </Modal>
@@ -340,7 +340,7 @@ export default function WritingMode({
               Write in Korean
             </p>
             <p className="text-xl text-goshiwon-text font-medium">
-              {currentWord.english}
+              {currentWord.english?.trim() || currentWord.romanization}
             </p>
             {currentWord.romanization && (
               <p className="text-sm text-goshiwon-text-muted">

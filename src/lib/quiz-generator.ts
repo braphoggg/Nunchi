@@ -45,8 +45,8 @@ export function generateQuiz(
   count: number = 10,
   questionType?: QuizQuestionType,
 ): QuizQuestion[] {
-  // Filter to words with translations
-  const studyable = words.filter((w) => w.english?.trim());
+  // Filter to words with translations or romanization
+  const studyable = words.filter((w) => w.english?.trim() || w.romanization?.trim());
   if (studyable.length < 4) return [];
 
   // Pick random words for the quiz
@@ -58,8 +58,9 @@ export function generateQuiz(
     const type: QuizQuestionType = questionType ??
       (Math.random() < 0.5 ? "korean_to_english" : "english_to_korean");
 
-    const prompt = type === "korean_to_english" ? word.korean : word.english;
-    const correctAnswer = type === "korean_to_english" ? word.english : word.korean;
+    const meaning = word.english?.trim() || word.romanization || "";
+    const prompt = type === "korean_to_english" ? word.korean : meaning;
+    const correctAnswer = type === "korean_to_english" ? meaning : word.korean;
 
     // Pick 3 random distractors from other words.
     // Filter by answer text (not just ID) so synonyms like
@@ -71,7 +72,7 @@ export function generateQuiz(
     );
     for (const c of candidates) {
       if (distractors.length >= 3) break;
-      const text = type === "korean_to_english" ? c.english : c.korean;
+      const text = type === "korean_to_english" ? (c.english?.trim() || c.romanization || "") : c.korean;
       const key = text.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);

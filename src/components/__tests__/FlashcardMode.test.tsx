@@ -274,12 +274,12 @@ describe("FlashcardMode", () => {
     expect(screen.getByText(/Save at least 4 vocabulary words/)).toBeInTheDocument();
   });
 
-  it("shows minimum word message when all words have empty english", () => {
+  it("shows minimum word message when all words have empty english and romanization", () => {
     const words = [
-      makeWord({ id: "1", english: "" }),
-      makeWord({ id: "2", english: "" }),
-      makeWord({ id: "3", english: "" }),
-      makeWord({ id: "4", english: "" }),
+      makeWord({ id: "1", english: "", romanization: "" }),
+      makeWord({ id: "2", english: "", romanization: "" }),
+      makeWord({ id: "3", english: "", romanization: "" }),
+      makeWord({ id: "4", english: "", romanization: "" }),
     ];
     render(<FlashcardMode words={words} onClose={vi.fn()} />);
     expect(screen.getByText("Not enough words to study.")).toBeInTheDocument();

@@ -22,10 +22,10 @@ const sampleWords: VocabularyItem[] = [
 ];
 
 describe("useFlashcards", () => {
-  it("returns studyableCount based on words with non-empty english", () => {
+  it("returns studyableCount based on words with english or romanization", () => {
     const words = [
       ...sampleWords,
-      makeWord({ id: "5", korean: "옥상", romanization: "oksang", english: "" }),
+      makeWord({ id: "5", korean: "옥상", romanization: "", english: "" }),
     ];
     const { result } = renderHook(() => useFlashcards(words));
     expect(result.current.studyableCount).toBe(4);
@@ -36,10 +36,10 @@ describe("useFlashcards", () => {
     expect(result.current.studyableCount).toBe(0);
   });
 
-  it("returns 0 studyableCount when all words have empty english", () => {
+  it("returns 0 studyableCount when all words have empty english and romanization", () => {
     const words = [
-      makeWord({ id: "1", english: "" }),
-      makeWord({ id: "2", english: "" }),
+      makeWord({ id: "1", english: "", romanization: "" }),
+      makeWord({ id: "2", english: "", romanization: "" }),
     ];
     const { result } = renderHook(() => useFlashcards(words));
     expect(result.current.studyableCount).toBe(0);
@@ -75,10 +75,10 @@ describe("useFlashcards", () => {
     expect(result.current.isActive).toBe(false);
   });
 
-  it("startSession filters out words with empty english", () => {
+  it("startSession filters out words with empty english and romanization", () => {
     const words = [
       ...sampleWords,
-      makeWord({ id: "5", korean: "옥상", english: "" }),
+      makeWord({ id: "5", korean: "옥상", english: "", romanization: "" }),
     ];
     const { result } = renderHook(() => useFlashcards(words));
     act(() => result.current.startSession());
@@ -238,12 +238,12 @@ describe("useFlashcards", () => {
     expect(result.current.totalCards).toBe(4);
   });
 
-  it("3 studyable + 1 empty english should NOT start session", () => {
+  it("3 studyable + 1 empty english/romanization should NOT start session", () => {
     const words = [
       makeWord({ id: "1", korean: "가", english: "a" }),
       makeWord({ id: "2", korean: "나", english: "b" }),
       makeWord({ id: "3", korean: "다", english: "c" }),
-      makeWord({ id: "4", korean: "라", english: "" }),
+      makeWord({ id: "4", korean: "라", english: "", romanization: "" }),
     ];
     const { result } = renderHook(() => useFlashcards(words));
     act(() => result.current.startSession());

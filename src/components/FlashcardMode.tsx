@@ -47,7 +47,7 @@ function FlashcardMode({
   onWordGraded,
 }: FlashcardModeProps) {
   const sound = useSound();
-  const studyable = useMemo(() => words.filter((w) => w.english?.trim()), [words]);
+  const studyable = useMemo(() => words.filter((w) => w.english?.trim() || w.romanization?.trim()), [words]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);

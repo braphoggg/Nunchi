@@ -175,7 +175,7 @@ export default function ChatContainer() {
   // Quiz mode
   const [quizActive, setQuizActive] = useState(false);
   const quizReady = useMemo(
-    () => words.filter((w) => w.english?.trim()).length >= MIN_QUIZ_WORDS,
+    () => words.filter((w) => w.english?.trim() || w.romanization?.trim()).length >= MIN_QUIZ_WORDS,
     [words],
   );
   const startQuiz = useCallback(() => setQuizActive(true), []);

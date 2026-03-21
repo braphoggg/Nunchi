@@ -31,9 +31,9 @@ export function useFlashcards(words: VocabularyItem[]) {
   const [isComplete, setIsComplete] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
-  // Count studyable words (must have non-empty english)
+  // Count studyable words (must have english or romanization)
   const studyableCount = useMemo(
-    () => words.filter((w) => w.english.trim() !== "").length,
+    () => words.filter((w) => w.english?.trim() || w.romanization?.trim()).length,
     [words]
   );
 
@@ -42,14 +42,14 @@ export function useFlashcards(words: VocabularyItem[]) {
     () => {
       const now = new Date();
       return words.filter(
-        (w) => w.english.trim() !== "" && isDueForReview(w, now),
+        (w) => (w.english?.trim() || w.romanization?.trim()) && isDueForReview(w, now),
       ).length;
     },
     [words],
   );
 
   const startSession = useCallback(() => {
-    const studyable = words.filter((w) => w.english.trim() !== "");
+    const studyable = words.filter((w) => w.english?.trim() || w.romanization?.trim());
     if (studyable.length < 4) return;
 
     // SRS ordering: due words first (shuffled), then not-due (shuffled)

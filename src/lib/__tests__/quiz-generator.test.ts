@@ -2,11 +2,11 @@ import { describe, it, expect } from "vitest";
 import { generateQuiz, MIN_QUIZ_WORDS, type QuizQuestion } from "../quiz-generator";
 import type { VocabularyItem } from "@/types";
 
-function makeWord(id: string, korean: string, english: string): VocabularyItem {
+function makeWord(id: string, korean: string, english: string, romanization = "rom"): VocabularyItem {
   return {
     id,
     korean,
-    romanization: "rom",
+    romanization,
     english,
     savedAt: new Date().toISOString(),
   };
@@ -27,14 +27,14 @@ describe("generateQuiz", () => {
     expect(generateQuiz(few)).toEqual([]);
   });
 
-  it("returns empty array when words have no english translation", () => {
-    const noEnglish = [
-      makeWord("a", "가", ""),
-      makeWord("b", "나", ""),
-      makeWord("c", "다", ""),
-      makeWord("d", "라", ""),
+  it("returns empty array when words have no english or romanization", () => {
+    const noMeaning = [
+      makeWord("a", "가", "", ""),
+      makeWord("b", "나", "", ""),
+      makeWord("c", "다", "", ""),
+      makeWord("d", "라", "", ""),
     ];
-    expect(generateQuiz(noEnglish)).toEqual([]);
+    expect(generateQuiz(noMeaning)).toEqual([]);
   });
 
   it("generates questions when enough words are provided", () => {
@@ -125,11 +125,11 @@ describe("generateQuiz", () => {
     }
   });
 
-  it("filters out words without english before generating", () => {
+  it("filters out words without english or romanization before generating", () => {
     const mixed = [
       ...SAMPLE_WORDS.slice(0, 4),
-      makeWord("noeng1", "하나", ""),
-      makeWord("noeng2", "둘", "   "),
+      makeWord("noeng1", "하나", "", ""),
+      makeWord("noeng2", "둘", "   ", ""),
     ];
     const questions = generateQuiz(mixed, 4);
     expect(questions.length).toBe(4);
@@ -233,14 +233,14 @@ describe("generateQuiz edge cases", () => {
     }
   });
 
-  it("filters out words with whitespace-only english", () => {
+  it("filters out words with whitespace-only english and romanization", () => {
     const mixed = [
       makeWord("f1", "고양이", "cat"),
       makeWord("f2", "강아지", "dog"),
       makeWord("f3", "새", "bird"),
       makeWord("f4", "물고기", "fish"),
-      makeWord("f5", "나비", "   "),
-      makeWord("f6", "벌", "  \t  "),
+      makeWord("f5", "나비", "   ", ""),
+      makeWord("f6", "벌", "  \t  ", ""),
     ];
     const questions = generateQuiz(mixed, 6, "korean_to_english");
     expect(questions.length).toBe(4);
