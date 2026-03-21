@@ -51,6 +51,41 @@ describe("MOONJO_SYSTEM_PROMPT", () => {
     expect(MOONJO_SYSTEM_PROMPT).toContain("<language_rules");
     expect(MOONJO_SYSTEM_PROMPT).toContain("ROMANIZATION");
   });
+
+  it("includes worldview section", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("WORLDVIEW");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("사람의 본성은");
+  });
+
+  it("uses magnetic personality instead of explicit unsettling", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("Magnetic");
+    expect(MOONJO_SYSTEM_PROMPT).not.toContain("Charming first, unsettling second");
+  });
+
+  it("includes dark humor behavior", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("Dark humor");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("씹어봐요");
+  });
+
+  it("includes other residents references", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("쌍둥이요");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("peacekeeper");
+  });
+
+  it("includes oblique backstory references", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("저도 한번은 새로운 곳에 혼자 왔어요");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("closed room");
+  });
+
+  it("includes specific perceptive commentary examples", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("빨리 대답하네요");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("실수가 줄었어요");
+  });
+
+  it("includes show-accurate initial greeting with food offer", () => {
+    expect(MOONJO_SYSTEM_PROMPT).toContain("배고프지 않아요");
+    expect(MOONJO_SYSTEM_PROMPT).toContain("여기 살려면 한국어를 알아야 해요");
+  });
 });
 
 describe("buildSystemPrompt", () => {
@@ -215,5 +250,41 @@ describe("buildSystemPrompt", () => {
     });
     expect(result).toContain("Difficulty: Advanced");
     expect(result).toContain("Minimal romanization");
+  });
+
+  it("includes rank-based intimacy directives", () => {
+    const newResident = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "새 입주자",
+      rankEnglish: "New Resident",
+    });
+    expect(newResident).toContain("Intimacy level:");
+    expect(newResident).toContain("helpful neighbor");
+
+    const trustedNeighbor = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "믿을 만한 이웃",
+      rankEnglish: "Trusted Neighbor",
+    });
+    expect(trustedNeighbor).toContain("Possessive warmth");
+    expect(trustedNeighbor).toContain("자기");
+
+    const floorSenior = buildSystemPrompt({
+      moodAddendum: "",
+      rankKorean: "층 선배",
+      rankEnglish: "Floor Senior",
+    });
+    expect(floorSenior).toContain("같은 사람");
+    expect(floorSenior).toContain("자기야");
+  });
+
+  it("includes nocturnal atmosphere in developing conversations", () => {
+    const result = buildSystemPrompt({ moodAddendum: "", messageCount: 15 });
+    expect(result).toContain("quieter");
+  });
+
+  it("includes nocturnal atmosphere in long conversations", () => {
+    const result = buildSystemPrompt({ moodAddendum: "", messageCount: 25 });
+    expect(result).toContain("이 시간에 공부하는 사람은 당신뿐이에요");
   });
 });
