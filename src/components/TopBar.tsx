@@ -50,7 +50,7 @@ function NavButton({
       disabled={disabled}
       title={title}
       aria-label={ariaLabel}
-      className={`relative flex flex-col items-center gap-0.5 px-1.5 py-1 min-h-[44px] min-w-[40px] text-goshiwon-text-muted hover:text-goshiwon-text transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default ${className}`}
+      className={`relative flex flex-col items-center gap-0.5 px-1 sm:px-1.5 py-1 min-h-[44px] min-w-[36px] sm:min-w-[40px] text-goshiwon-text-muted hover:text-goshiwon-text transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default ${className}`}
     >
       {badge}
       {children}
@@ -77,7 +77,7 @@ function TopBar({
   const moodCfg = MOOD_CONFIG[mood];
 
   return (
-    <div data-tutorial="topbar" className="relative z-50 flex items-center gap-2 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
+    <div data-tutorial="topbar" className="relative z-50 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
       {/* Avatar — silhouette with mood dot overlay */}
       <div className="relative shrink-0" aria-label={`Moon-jo avatar — ${moodCfg.label}`}>
         <div
@@ -98,14 +98,14 @@ function TopBar({
         />
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 shrink-1">
         <h1 className="font-medium text-goshiwon-text text-sm leading-tight truncate font-serif-display">
           <span className="sm:hidden">서문조</span>
           <span className="hidden sm:inline">서문조 (Seo Moon-jo)</span>
         </h1>
       </div>
 
-      <div data-tutorial="topbar-tools" className="flex items-center gap-0.5">
+      <div data-tutorial="topbar-tools" className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
         {/* Lesson history */}
         {onToggleHistory && (
           <NavButton

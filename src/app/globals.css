@@ -62,6 +62,15 @@ button:not(:disabled),
   background: var(--color-goshiwon-surface-hover);
 }
 
+/* Hide scrollbar but keep scrolling (for toolbars / horizontal scroll) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Message fade-in animation */
 @keyframes message-in {
   from {
