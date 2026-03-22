@@ -4,7 +4,7 @@
 
 **Learn Korean from the neighbor you never asked for.**
 
-A cinematic Korean language learning app set in a fictional goshiwon,<br>
+A cinematic Korean learning app set in a fictional goshiwon,<br>
 inspired by the K-drama *Strangers from Hell* (타인은 지옥이다).
 
 ![Nunchi — Welcome Screen](screenshot.png)
@@ -21,6 +21,8 @@ You've just moved into **Room 203** at Eden Goshiwon (에덴 고시원). Your ne
 
 Moon-jo teaches entirely in Korean with romanization. No English in his messages — you use the translate button when you need help. Write in Korean and he warms up. Barely try and he turns cold. Everything happens between 1 and 3 AM.
 
+No account needed. No server. Just your browser, a free API key, and a neighbor who won't let you leave.
+
 ---
 
 ## Quick Start
@@ -35,7 +37,7 @@ npm install
 
 **2. Add your API key** (choose one)
 
-**Option A — In-app (recommended for deployed use)**
+**Option A — In-app (recommended)**
 
 Launch the app and enter your Gemini API key when prompted on the welcome screen. The key is stored in your browser's localStorage and sent directly to Google — never stored on any server.
 
@@ -45,10 +47,9 @@ Create `.env.local`:
 
 ```bash
 GOOGLE_GENERATIVE_AI_API_KEY=your_key_here
-# Optional: GEMINI_MODEL=gemini-2.5-flash (default)
 ```
 
-> Get a free key at [Google AI Studio](https://aistudio.google.com/apikey) (15 requests/min, 1,000/day)
+> Get a free key at [Google AI Studio](https://aistudio.google.com/apikey) — 15 requests/min, 1,000/day.
 
 **3. Start**
 
@@ -69,30 +70,39 @@ Open [http://localhost:3000](http://localhost:3000). Pick a topic. Moon-jo is wa
 - **15 structured lessons** — Beginner (Greetings, Survival Phrases, Numbers), Intermediate (Ordering Food, Feelings, Directions, Shopping, Weather, Phone Calls, Doctor Visit), Advanced (Polite vs Casual, Idioms & Proverbs, Debating Opinions, Describing People), plus Free Conversation
 - **Korean-first teaching** — Bold Korean with romanization. Discover meaning through context and the translate button
 - **Inline error correction** — ~~your mistake~~ → **corrected version** with brief explanations
-- **Mood system** — Moon-jo's personality adapts to how much Korean you write
+- **Mood system** — Moon-jo's personality shifts across 5 levels based on how much Korean you write
 
 ### Build Your Vocabulary
 
 - **Click to save** — Tap bold Korean words in messages to save them to your personal dictionary
 - **Spaced repetition** — SM-2 algorithm schedules reviews at optimal intervals
-- **Flashcards** — 3D flip cards with self-assessment. Listen mode hides text for ear training
-- **Quizzes** — Multiple-choice in both directions (Korean → English, English → Korean)
-- **Writing Practice** — Type Korean from English prompts. Graded as Exact, Close, or Wrong; skipped words tracked separately
+- **Flashcards** — Multiple-choice Korean → English/romanization study with SRS grading
+- **Quizzes** — Both directions (Korean → English, English → Korean) with keyboard shortcuts
+- **Writing Practice** — Type Korean from English or romanization prompts. Graded as Exact, Close, or Wrong
+- **Export** — Download vocabulary as CSV (for spreadsheets) or TSV (for Anki import)
 
 ### Earn Your Rank
 
-Earn XP by writing Korean, saving words, and completing study sessions. Rise through 5 goshiwon resident ranks — from **새 입주자** (New Resident) to **층 선배** (Floor Senior). Higher ranks unlock harder lessons.
+Earn XP by writing Korean, saving words, completing study sessions, and clearing daily challenges. Rise through 5 goshiwon resident ranks — from **새 입주자** (New Resident) to **층 선배** (Floor Senior). Higher ranks unlock harder lessons.
+
+### Daily Challenges
+
+Three rotating mini-objectives each day — save words, study flashcards, write in Korean, or ace a quiz. Each completed challenge earns bonus XP.
+
+### Achievements
+
+Unlock 20 badges across 6 categories: vocabulary milestones, streak records, study habits, Korean immersion, ranks reached, and atmosphere exploration.
 
 ### Type in Korean
 
-Built-in **두벌식** (Dubeolsik) keyboard with real-time Hangul composition. Jamo combine into syllables as you type (ㅎ + ㅏ + ㄴ = 한).
+Built-in **두벌식** (Dubeolsik) keyboard with real-time Hangul composition. Jamo combine into syllables as you type (ㅎ + ㅏ + ㄴ = 한). Backspace correctly decomposes syllables back into components.
 
 ### Atmospheric Experience
 
 Night progression darkens the UI as conversations deepen. Film grain, vignette, ambient hum, and random goshiwon events (*"The hallway light flickers"*) create an immersive atmosphere.
 
 <details>
-<summary><strong>All features</strong></summary>
+<summary><strong>Full feature list</strong></summary>
 
 #### Conversation & Learning
 - 15 tiered lessons (beginner / intermediate / advanced) with rank-gated progression
@@ -100,27 +110,45 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 - Text-to-speech on all assistant messages and vocabulary words
 - "Today's Focus" daily suggestion based on progress and review schedule
 - Daily Moon-jo quote in Korean with English translation
+- Lesson completion screen with summary and vocabulary review prompt
 
 #### Vocabulary & Study
 - Personal dictionary with Korean, romanization, and English
 - SM-2 spaced repetition with ease factor, interval, and repetition tracking
-- Flashcard listen mode — audio only, then flip to check
-- Writing practice — English → Korean recall with Exact/Close/Wrong grading, skip tracking
+- Flashcard study — Korean → English/romanization multiple choice with SRS grading
+- Writing practice — English/romanization → Korean recall with Exact/Close/Wrong grading, skip tracking
 - Batch save all vocabulary from a message
-- Auto-translation of saved words via vocabulary API
+- Auto-translation of saved words via vocabulary API (falls back to romanization when unavailable)
 - Unseen vocabulary badge notification
+- Export as CSV (UTF-8 BOM for Excel) or TSV (Anki-compatible)
 
 #### Gamification
 | Action | XP |
 |--------|-----|
-| Send a message with Korean | 5–15 |
+| Send a message with Korean | 5-15 |
 | Save a vocabulary word | 3 |
 | Complete a flashcard session | 20 |
 | Perfect flashcard session | +10 bonus |
 | Perfect quiz (100%) | 25 |
 | Avoid translate for 5 messages | 8 bonus |
+| Complete a daily challenge | 15 bonus |
 
 5 ranks with dual XP + vocabulary thresholds. Daily streak tracking. XP toasts and rank-up events.
+
+#### Daily Challenges
+- Pool of 9 challenge types (word saving, flashcard sessions, immersion, quizzes, full Korean)
+- 3 randomly selected per day
+- Progress tracking with completion rewards
+- Resets daily at midnight
+
+#### Achievements
+20 badges across 6 categories:
+- **Vocabulary** — First Word, Word Collector, Bookworm, Lexicon
+- **Streak** — First Flame (3-day), On Fire (7-day), Unstoppable (30-day)
+- **Study** — First Session, Study Habit, Perfect Score, Flawless Session
+- **Immersion** — Korean Spirit, Silent Treatment, Immersion Master, Chatterbox
+- **Rank** — One badge per rank reached
+- **Atmosphere** — Night Owl (reach deepest night stage)
 
 #### Hangul Keyboard
 - Standard 두벌식 layout with shift for double consonants (ㅃ, ㅉ, ㄸ, ㄲ, ㅆ)
@@ -155,11 +183,8 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 | Key | Context | Action |
 |-----|---------|--------|
 | `Enter` | Chat | Send message |
-| `Space` | Flashcards | Flip card |
-| `1` / `2` / `3` | Flashcards (flipped) | Again / Good / Easy |
-| `←` / `→` | Flashcards | Previous / next card |
-| `1`–`4` | Quiz | Select answer |
-| `Enter` | Writing Practice | Check answer / Next word |
+| `1`-`4` | Quiz / Study | Select answer |
+| `Enter` | Quiz / Writing | Next question / Check answer |
 | `Tab` | Writing Practice | Skip word |
 | `Escape` | Any overlay | Close current overlay |
 
@@ -177,13 +202,13 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 | `/api/translate` | Korean → English translation |
 | `/api/vocabulary-translate` | Batch vocabulary translation |
 
-**Moon-jo's Character** — A ~2KB system prompt defines his personality: Korean-only output, inline corrections, formal 존댓말 with forced intimacy, dentist metaphors, and mood that shifts based on your Korean usage ratio.
+**Moon-jo's Character** — A multi-tiered system prompt defines his personality: Korean-only output, inline corrections, formal 존댓말 with forced intimacy, dentist metaphors, and mood that shifts across 5 levels based on your Korean usage ratio.
 
 **Spaced Repetition** — SM-2 algorithm with ease factor (starting at 2.5), growing intervals, and due-date scheduling. SRS state persists on each vocabulary item.
 
 **BYOK (Bring Your Own Key)** — Each user provides their own free Google Gemini API key. The key is stored in the browser's localStorage, sent to Google via `x-api-key` header per request, and never logged or stored server-side. For local development, an environment variable fallback is supported.
 
-**Data** — All progress lives in localStorage (XP, vocabulary, lesson history, settings). No account required. Data backup/restore exports everything as validated JSON (API keys are intentionally excluded from backups).
+**Data** — All progress lives in localStorage (XP, vocabulary, lesson history, settings, achievements, challenges). No account required. Data backup/restore exports everything as validated JSON (API keys are intentionally excluded from backups).
 
 <details>
 <summary><strong>Technical details</strong></summary>
@@ -191,19 +216,20 @@ Night progression darkens the UI as conversations deepen. Film grain, vignette, 
 #### Mood Engine
 | Korean Usage | Mood | Behavior |
 |-------------|------|----------|
-| < 20% | Cold | Distant, clinical |
-| 20–49% | Neutral | Polite, attentive |
-| 50–79% | Warm | Affectionate, possessive |
-| ≥ 80% | Impressed | Reverent, intense |
+| < 20% | Cold | Distant, clinical, disappointed |
+| 20-34% | Neutral | Polite, attentive, baseline Moon-jo |
+| 35-49% | Engaged | Warming up, intrigued, hint of approval |
+| 50-79% | Warm | Affectionate, possessive, uses "우리" |
+| >= 80% | Impressed | Reverent, intense, deeply personal |
 
 #### Hangul Composition
-State machine implementing: `Syllable = 0xAC00 + (initial × 21 + medial) × 28 + final`
+State machine implementing: `Syllable = 0xAC00 + (initial * 21 + medial) * 28 + final`
 
 Supports 19 initial consonants, 21 medial vowels, 28 final positions, complex combinations, and correct backspace decomposition.
 
 #### Security
 - Rate limiting (10 req/min per IP)
-- Input validation (≤50 messages, ≤2,000 chars)
+- Input validation (<=50 messages, <=2,000 chars)
 - Content sanitization (HTML stripping, null byte filtering)
 - XP anti-tampering (burst rate, max amounts, total ceiling)
 - Security headers (nosniff, DENY framing, XSS protection, HSTS, CSP)
@@ -218,8 +244,10 @@ Supports 19 initial consonants, 21 medial vowels, 28 final positions, complex co
 | `nunchi-lesson-history` | Saved conversations (max 20) |
 | `nunchi-settings` | Theme, font, romanization, animations |
 | `nunchi-api-key` | User's Gemini API key (excluded from backups) |
+| `nunchi-achievements` | Unlocked badges + timestamps |
+| `nunchi-daily-challenges` | Today's 3 challenges + progress |
 | `nunchi-sound-muted` | Mute state |
-| `nunchi-sound-volume` | Volume level (0–100) |
+| `nunchi-sound-volume` | Volume level (0-100) |
 | `nunchi-tutorial-completed` | Tutorial completion flag |
 | `nunchi-onboarded` | Onboarding completion flag |
 | `nunchi-visited-topics` | Visited lesson topic IDs |
@@ -251,13 +279,14 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-1100+ tests across 71 test files covering API routes, all UI components, hooks, libraries, security edge cases, and BYOK flows.
+1,100+ tests across 71 test files covering API routes, all UI components, hooks, libraries, security edge cases, and BYOK flows.
 
 Test categories include:
-- **Unit tests** — Pure functions (SRS, gamification, Hangul composition, security)
+- **Unit tests** — Pure functions (SRS, gamification, Hangul composition, security, achievements, daily challenges)
 - **Component tests** — React component rendering and interaction
 - **API route tests** — Request validation, response format, error handling
 - **Break tests** — Adversarial inputs, error leakage, prompt injection surface
+- **Integration tests** — SRS cycles, keyboard shortcut flows, vocabulary panel workflows
 - **Fuzz tests** — Random/malformed input handling
 
 ---
@@ -283,21 +312,25 @@ src/
 │   ├── TopBar.tsx                 # Header bar + navigation
 │   ├── WelcomeScreen.tsx          # Lesson topics + daily focus
 │   ├── StatsBar.tsx               # Compact XP / streak / rank display
-│   ├── StatsPanel.tsx             # Detailed stats + SRS breakdown
-│   ├── VocabularyPanel.tsx        # Saved words (나의 단어장)
-│   ├── FlashcardMode.tsx          # Flashcard study + SRS grading
-│   ├── QuizMode.tsx               # Multiple-choice quiz
-│   ├── WritingMode.tsx            # English → Korean writing practice
+│   ├── StatsPanel.tsx             # Detailed stats + progress analytics
+│   ├── VocabularyPanel.tsx        # Saved words (나의 단어장) + export
+│   ├── FlashcardMode.tsx          # Multiple-choice study + SRS grading
+│   ├── QuizMode.tsx               # Quiz mode (Korean ↔ English)
+│   ├── WritingMode.tsx            # English/romanization → Korean practice
 │   ├── HangulKeyboard.tsx         # On-screen Korean keyboard
 │   ├── LessonHistory.tsx          # Browse + search saved conversations
 │   ├── LessonReview.tsx           # Read-only conversation replay
+│   ├── LessonComplete.tsx         # End-of-lesson summary + vocab review
 │   ├── SettingsPanel.tsx          # API key, theme, font, sound, data backup
 │   ├── ShareButton.tsx            # Export as PNG / text / share
 │   ├── HelpModal.tsx              # Feature guide
 │   ├── OnboardingOverlay.tsx      # First-visit welcome
 │   ├── TutorialOverlay.tsx        # Interactive tutorial
 │   ├── GoshiwonEventBubble.tsx    # Atmospheric event notifications
+│   ├── AchievementToast.tsx       # Achievement unlock popup
 │   ├── XPToast.tsx                # XP gain popup
+│   ├── NetworkBanner.tsx          # Offline/online status indicator
+│   ├── ErrorBoundary.tsx          # Graceful error recovery
 │   └── TypingIndicator.tsx        # Animated typing dots
 ├── contexts/
 │   ├── SoundContext.tsx           # Sound engine context provider
@@ -307,6 +340,8 @@ src/
 │   ├── useGamification.ts         # XP, streaks, ranks, stats
 │   ├── useVocabulary.ts           # Word management + SRS
 │   ├── useFlashcards.ts           # Study session state machine
+│   ├── useAchievements.ts         # Badge unlock tracking
+│   ├── useDailyChallenges.ts      # Daily challenge progress
 │   ├── useSettings.ts             # Theme, font, romanization
 │   ├── useTutorial.ts             # Tutorial state machine
 │   ├── useSoundEngine.ts          # Ambient hum + key click synthesis
@@ -320,21 +355,31 @@ src/
 ├── lib/
 │   ├── system-prompt.ts           # Moon-jo's character definition
 │   ├── gamification.ts            # XP values, rank definitions
+│   ├── achievements.ts            # 20 badge definitions + unlock checks
+│   ├── daily-challenges.ts        # Challenge pool + daily selection
+│   ├── progress-analytics.ts      # XP/vocab growth + activity tracking
 │   ├── srs.ts                     # SM-2 spaced repetition
 │   ├── quiz-generator.ts          # MCQ generator
 │   ├── daily-planner.ts           # Today's Focus + daily quotes
 │   ├── data-backup.ts             # JSON export/import
+│   ├── vocabulary-export.ts       # CSV + Anki TSV export
 │   ├── hangul-compose.ts          # Jamo → syllable engine
 │   ├── mood-engine.ts             # Hangul ratio → mood level
 │   ├── parse-vocabulary.ts        # Extract vocab from bold patterns
-│   ├── lesson-topics.ts           # 7 lessons with rank gates
+│   ├── lesson-topics.ts           # 15 lessons with rank gates
 │   ├── format-message.ts          # Bold/strikethrough tokenizer
 │   ├── goshiwon-events.ts         # 15 atmospheric events
 │   ├── security.ts                # Rate limiting, validation
 │   ├── ai-model.ts                # BYOK Gemini model factory
 │   ├── tutorial-steps.ts          # Tutorial step definitions
-│   ├── timestamps.ts              # 1–3 AM timestamp generator
-│   └── message-utils.ts           # UIMessage text extraction
+│   ├── timestamps.ts              # 1-3 AM timestamp generator
+│   ├── message-utils.ts           # UIMessage text extraction
+│   └── sound/                     # Audio synthesis modules
+│       ├── ambient-engine.ts      # Background hum generator
+│       ├── sfx-library.ts         # Sound effect definitions
+│       ├── synthesis-utils.ts     # Audio synthesis helpers
+│       ├── noise-generator.ts     # White/brown noise generation
+│       └── audio-context.ts       # Shared AudioContext management
 ├── types/
 │   └── index.ts                   # TypeScript interfaces
 └── middleware.ts                   # Security headers
