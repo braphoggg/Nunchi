@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from "react";
  */
 export function useNetworkStatus() {
   const [isOnline, setIsOnline] = useState(() =>
-    typeof navigator !== "undefined" ? navigator.onLine : true,
+    typeof window !== "undefined" ? navigator.onLine : true,
   );
   const [wasOffline, setWasOffline] = useState(false);
 

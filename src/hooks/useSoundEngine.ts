@@ -39,20 +39,20 @@ export function useSoundEngine() {
   const concurrentRef = useRef(0);
   const jamoLastRef = useRef(0);
 
-  const [muted, setMuted] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(MUTE_KEY) === "1";
-  });
+  // Server-safe defaults; actual values hydrated in useEffect below
+  const [muted, setMuted] = useState(false);
+  const [volume, setVolumeState] = useState(80);
 
-  const [volume, setVolumeState] = useState(() => {
-    if (typeof window === "undefined") return 80;
-    const stored = localStorage.getItem(VOLUME_KEY);
-    if (stored !== null) {
-      const parsed = parseInt(stored, 10);
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) return parsed;
+  // Hydrate from localStorage on mount (client-only)
+  useEffect(() => {
+    const storedMuted = localStorage.getItem(MUTE_KEY) === "1";
+    setMuted(storedMuted);
+    const storedVol = localStorage.getItem(VOLUME_KEY);
+    if (storedVol !== null) {
+      const parsed = parseInt(storedVol, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) setVolumeState(parsed);
     }
-    return 80;
-  });
+  }, []);
 
   // Sync mute + volume to master gain and localStorage
   useEffect(() => {

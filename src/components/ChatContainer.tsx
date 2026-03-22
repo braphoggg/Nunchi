@@ -613,7 +613,7 @@ export default function ChatContainer() {
       style={{ ...(resolvedTheme === "light" ? LIGHT_THEME : styleOverrides), zoom: settings.fontScale }}
       data-reduce-motion={settings.reduceAnimations ? "true" : "false"}
       data-theme={resolvedTheme}
-      className="relative flex flex-col overflow-hidden app-height max-w-2xl mx-auto border-x border-goshiwon-border night-transition bg-goshiwon-bg goshiwon-atmosphere"
+      className="relative flex flex-col overflow-clip app-height max-w-2xl mx-auto border-x border-goshiwon-border night-transition bg-goshiwon-bg goshiwon-atmosphere"
     >
       <NetworkBanner isOnline={isOnline} wasOffline={wasOffline} onDismiss={dismissReconnected} />
       <TopBar
@@ -883,7 +883,7 @@ export default function ChatContainer() {
       </div>
 
       {/* First-run onboarding overlay */}
-      {showOnboarding && (
+      {showOnboarding && apiKey && (
         <OnboardingOverlay
           onStartTour={() => { dismissOnboarding(); tutorial.startTutorial(); }}
           onSkip={dismissOnboarding}

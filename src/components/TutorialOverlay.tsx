@@ -75,6 +75,8 @@ export default function TutorialOverlay({
   const [tooltipPos, setTooltipPos] = useState<"top" | "bottom" | "center">(step.tooltipPosition);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [animKey, setAnimKey] = useState(0);
+  // Viewport dimensions — use safe defaults for SSR, hydrate in useEffect
+  const [viewport, setViewport] = useState({ vw: 1000, vh: 800 });
 
   // Compute cutout rect(s) from target elements
   const computeCutout = useCallback(() => {
@@ -197,11 +199,15 @@ export default function TutorialOverlay({
     };
   }, [computeCutout, stepIndex, step.targetSelector]);
 
-  // Recompute on resize
+  // Sync viewport dimensions & recompute on resize
   useEffect(() => {
-    const handleResize = () => computeCutout();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const sync = () => {
+      setViewport({ vw: window.innerWidth, vh: window.innerHeight });
+      computeCutout();
+    };
+    sync(); // initial sync
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
   }, [computeCutout]);
 
   // Observe both targets for layout changes
@@ -238,8 +244,7 @@ export default function TutorialOverlay({
     };
   }, [step.targetSelector, computeCutout]);
 
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1000;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const { vw, vh } = viewport;
 
   // For steps with no target, override stale state synchronously during render.
   // Effects run *after* paint, so without this the first frame would show the

@@ -19,15 +19,12 @@ const STORAGE_KEY = "nunchi-settings";
 const VALID_THEMES = new Set(["dark", "light", "system"]);
 const VALID_SCALES = new Set([1, 1.15, 1.3]);
 
+/** Server-safe defaults — never accesses `window` so SSR and client initial render match. */
 function getDefaults(): AppSettings {
-  const prefersReduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
   return {
     theme: "system" as ThemeSetting,
     fontScale: 1,
-    reduceAnimations: prefersReduced,
+    reduceAnimations: false,
     showRomanization: true,
     ttsRate: 0.85,
   };
@@ -78,12 +75,21 @@ function getSystemTheme(): ResolvedTheme {
 
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(getDefaults);
-  const [systemPreference, setSystemPreference] = useState<ResolvedTheme>(() => getSystemTheme());
+  const [systemPreference, setSystemPreference] = useState<ResolvedTheme>("dark");
   const initialized = useRef(false);
 
-  // Load from storage on mount
+  // Load from storage on mount & detect OS preferences (client-only)
   useEffect(() => {
-    setSettings(loadFromStorage());
+    // Detect prefers-reduced-motion
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const stored = loadFromStorage();
+    // Merge OS preference into defaults if user hasn't explicitly saved settings
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw && prefersReduced) {
+      stored.reduceAnimations = true;
+    }
+    setSettings(stored);
+    setSystemPreference(getSystemTheme());
     // Mark initialized after load so the persist effect doesn't fire on hydration
     initialized.current = true;
   }, []);
