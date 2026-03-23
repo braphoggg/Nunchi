@@ -38,7 +38,7 @@ function StatsBar({
     <button
       data-tutorial="statsbar"
       onClick={onToggleStats}
-      className="relative z-50 w-full flex items-center justify-between px-2 sm:px-3 py-1.5 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs sm:text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer group"
+      className="relative z-40 w-full flex items-center justify-between px-2 sm:px-3 py-1.5 bg-goshiwon-surface/50 border-b border-goshiwon-border text-xs sm:text-xs hover:bg-goshiwon-surface-hover transition-colors cursor-pointer group"
       aria-label="Open stats panel"
       title="View detailed stats"
     >

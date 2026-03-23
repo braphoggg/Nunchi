@@ -430,7 +430,7 @@ button:not(:disabled),
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 2;
   pointer-events: none;
   opacity: 0.035;
   mix-blend-mode: overlay;
@@ -444,7 +444,7 @@ button:not(:disabled),
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: 1;
   pointer-events: none;
   background: radial-gradient(
     ellipse at center,

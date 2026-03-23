@@ -118,8 +118,8 @@ function TopBar({
     }
   }, [moreOpen, handleClickOutside]);
 
-  // Determine which overflow items exist
-  const hasOverflowItems = !!(onShare || onToggleSettings || onReset);
+  // Overflow items: History, Settings, Leave on mobile
+  const hasOverflowItems = !!(onToggleHistory || onToggleSettings || onReset);
 
   return (
     <div data-tutorial="topbar" className="relative z-50 flex items-center gap-2 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
@@ -151,40 +151,41 @@ function TopBar({
       </div>
 
       <div data-tutorial="topbar-tools" className="flex items-center gap-0.5">
-        {/* Lesson history */}
+        {/* ── History — desktop only, overflow on mobile ── */}
         {onToggleHistory && (
-          <NavButton
-            onClick={onToggleHistory}
-            title="Lesson History"
-            ariaLabel="Open lesson history"
-            label="History"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          </NavButton>
-        )}
-
-        {/* ── Desktop-only: Share Image, Copy, Leave shown individually ── */}
-        {onShare && (
           <div className="hidden sm:contents">
             <NavButton
-              onClick={onShare}
-              disabled={shareDisabled}
-              title="Share conversation as image"
-              ariaLabel="Share conversation as image"
-              label="Image"
+              onClick={onToggleHistory}
+              title="Lesson History"
+              ariaLabel="Open lesson history"
+              label="History"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-                <polyline points="16 6 12 2 8 6" />
-                <line x1="12" y1="2" x2="12" y2="15" />
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
               </svg>
             </NavButton>
           </div>
         )}
 
+        {/* Share conversation — image (always visible) */}
+        {onShare && (
+          <NavButton
+            onClick={onShare}
+            disabled={shareDisabled}
+            title="Share conversation as image"
+            ariaLabel="Share conversation as image"
+            label="Image"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          </NavButton>
+        )}
+
+        {/* Copy conversation — text (always visible) */}
         {onShareText && (
           <NavButton
             onClick={onShareText}
@@ -199,7 +200,7 @@ function TopBar({
           </NavButton>
         )}
 
-        {/* Vocabulary panel toggle */}
+        {/* Vocabulary panel toggle (always visible) */}
         {onToggleVocabulary && (
           <span data-tutorial="vocab-button">
           <NavButton
@@ -223,7 +224,7 @@ function TopBar({
           </span>
         )}
 
-        {/* Help button */}
+        {/* Help button (always visible) */}
         {onToggleHelp && (
           <NavButton
             onClick={onToggleHelp}
@@ -239,7 +240,7 @@ function TopBar({
           </NavButton>
         )}
 
-        {/* Settings — desktop only (overflow menu on mobile) */}
+        {/* ── Settings — desktop only, overflow on mobile ── */}
         {onToggleSettings && (
           <div className="hidden sm:contents">
             <NavButton
@@ -256,7 +257,7 @@ function TopBar({
           </div>
         )}
 
-        {/* ── Desktop-only: Leave button shown individually ── */}
+        {/* ── Leave — desktop only, overflow on mobile ── */}
         {onReset && (
           <div className="hidden sm:contents">
             <NavButton
@@ -291,19 +292,17 @@ function TopBar({
               </svg>
             </NavButton>
 
-            {/* Dropdown */}
+            {/* Dropdown — stretches right to cover stats bar text */}
             {moreOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-goshiwon-surface border border-goshiwon-border rounded-lg shadow-2xl z-[60] py-1 animate-vocab-panel-in">
-                {onShare && (
+              <div className="absolute top-full right-[-16px] mt-1 w-56 bg-goshiwon-surface border border-goshiwon-border rounded-lg shadow-2xl z-[60] py-1 animate-vocab-panel-in">
+                {onToggleHistory && (
                   <MenuItem
-                    onClick={() => { onShare(); setMoreOpen(false); }}
-                    disabled={shareDisabled}
-                    label="Share as Image"
+                    onClick={() => { onToggleHistory(); setMoreOpen(false); }}
+                    label="Lesson History"
                   >
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
                     </svg>
                   </MenuItem>
                 )}
