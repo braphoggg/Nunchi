@@ -22,7 +22,7 @@ const VALID_SCALES = new Set([1, 1.15, 1.3]);
 /** Server-safe defaults — never accesses `window` so SSR and client initial render match. */
 function getDefaults(): AppSettings {
   return {
-    theme: "system" as ThemeSetting,
+    theme: "dark" as ThemeSetting,
     fontScale: 1,
     reduceAnimations: false,
     showRomanization: true,

@@ -66,7 +66,7 @@ export function formatMessage(
             {
               key: i,
               className:
-                "text-[#d4a843] font-semibold cursor-pointer hover:underline underline-offset-2 decoration-[#d4a843]/50",
+                "text-goshiwon-yellow font-semibold cursor-pointer hover:underline underline-offset-2 decoration-goshiwon-yellow/50",
               onClick: () => options.onVocabClick!(token.text),
               title: `Click to save "${token.text}"`,
               role: "button",
@@ -83,8 +83,8 @@ export function formatMessage(
           {
             key: i,
             className: alreadySaved
-              ? "text-[#d4a843]/60 font-semibold"
-              : "text-[#d4a843] font-semibold",
+              ? "text-goshiwon-yellow/60 font-semibold"
+              : "text-goshiwon-yellow font-semibold",
           },
           token.text
         );
