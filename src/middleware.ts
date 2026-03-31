@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",       // Next.js requires unsafe-inline/eval in dev; production strips eval
       "style-src 'self' 'unsafe-inline'",                       // Tailwind injects inline styles
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://generativelanguage.googleapis.com",
+      `connect-src 'self' https://generativelanguage.googleapis.com ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}`.trim(),
       "img-src 'self' data: blob:",
       "media-src 'self'",
       "frame-ancestors 'none'",

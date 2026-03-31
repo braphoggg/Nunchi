@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import type { AchievementProgress, AchievementCheckContext } from "@/lib/achievements";
+import { useDbSync } from "@/hooks/useDbSync";
 import {
   createDefaultAchievementProgress,
   checkAchievements,
@@ -113,6 +114,27 @@ export function useAchievements() {
     },
     [showNextToast],
   );
+
+  useDbSync<AchievementProgress>({
+    endpoint: "/api/achievements",
+    localData: progress,
+    fromDb: (data: unknown) => {
+      const d = data as { unlockedIds?: string[]; unlockTimestamps?: Record<string, string> };
+      return {
+        unlockedIds: d.unlockedIds ?? [],
+        unlockTimestamps: d.unlockTimestamps ?? {},
+      };
+    },
+    toDb: (localData) => ({
+      unlockedIds: localData.unlockedIds,
+      unlockTimestamps: localData.unlockTimestamps,
+    }),
+    onPull: (data) => {
+      setProgress(data);
+      saveToStorage(data);
+    },
+    initialized: initialized.current,
+  });
 
   return {
     progress,

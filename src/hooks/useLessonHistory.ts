@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import type { SavedConversation, SavedMessage } from "@/types";
+import { useDbSync } from "@/hooks/useDbSync";
 import { validateLessonHistory } from "@/lib/security";
 
 const STORAGE_KEY = "nunchi-lesson-history";
@@ -120,6 +121,18 @@ export function useLessonHistory() {
 
   const reviewingConversation =
     conversations.find((c) => c.id === reviewingId) ?? null;
+
+  useDbSync<SavedConversation[]>({
+    endpoint: "/api/conversations",
+    localData: conversations,
+    fromDb: (data: unknown) => data as SavedConversation[],
+    toDb: (localData) => ({ items: localData }),
+    onPull: (data) => {
+      setConversations(data);
+      saveToStorage(data);
+    },
+    initialized: initialized.current,
+  });
 
   return {
     conversations,

@@ -16,6 +16,7 @@ interface TopBarProps {
   onToggleSettings?: () => void;
   onToggleVocabulary?: () => void;
   onToggleHelp?: () => void;
+  onToggleAuth?: () => void;
   onShare?: () => void;
   onShareText?: () => void;
   shareDisabled?: boolean;
@@ -93,6 +94,7 @@ function TopBar({
   onToggleHistory,
   onToggleVocabulary,
   onToggleHelp,
+  onToggleAuth,
   onShare,
   onShareText,
   shareDisabled,
@@ -118,8 +120,8 @@ function TopBar({
     }
   }, [moreOpen, handleClickOutside]);
 
-  // Overflow items: History, Settings, Leave on mobile
-  const hasOverflowItems = !!(onToggleHistory || onToggleSettings || onReset);
+  // Overflow items: History, Settings, Account, Leave on mobile
+  const hasOverflowItems = !!(onToggleHistory || onToggleSettings || onToggleAuth || onReset);
 
   return (
     <div data-tutorial="topbar" className="relative z-50 flex items-center gap-2 px-4 py-3 border-b border-goshiwon-border bg-goshiwon-surface/95 backdrop-blur-sm">
@@ -257,6 +259,22 @@ function TopBar({
           </div>
         )}
 
+        {/* ── Account — desktop only, overflow on mobile ── */}
+        {onToggleAuth && (
+          <div className="hidden sm:contents">
+            <NavButton
+              onClick={onToggleAuth}
+              title="Account & Cloud Sync"
+              ariaLabel="Open account settings"
+              label="Account"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
+              </svg>
+            </NavButton>
+          </div>
+        )}
+
         {/* ── Leave — desktop only, overflow on mobile ── */}
         {onReset && (
           <div className="hidden sm:contents">
@@ -314,6 +332,16 @@ function TopBar({
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="3" />
                       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                    </svg>
+                  </MenuItem>
+                )}
+                {onToggleAuth && (
+                  <MenuItem
+                    onClick={() => { onToggleAuth(); setMoreOpen(false); }}
+                    label="Account"
+                  >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
                     </svg>
                   </MenuItem>
                 )}

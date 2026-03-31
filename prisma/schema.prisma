@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  email          String   @unique
+  supabaseAuthId String   @unique @map("supabase_auth_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  settings        UserSettings?
+  apiKey          UserApiKey?
+  gamification    Gamification?
+  achievements    UserAchievements?
+  dailyChallenges DailyChallengeState?
+  soundSettings   SoundSettings?
+  onboarding      UserOnboarding?
+
+  vocabularyItems VocabularyItem[]
+  conversations   Conversation[]
+  visitedTopics   VisitedTopic[]
+
+  @@map("users")
+}
+
+model UserSettings {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme            String   @default("dark")
+  fontScale        Float    @default(1) @map("font_scale")
+  reduceAnimations Boolean  @default(false) @map("reduce_animations")
+  showRomanization Boolean  @default(true) @map("show_romanization")
+  ttsRate          Float    @default(0.85) @map("tts_rate")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("user_settings")
+}
+
+model UserApiKey {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encryptedKey String?  @map("encrypted_key")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("user_api_keys")
+}
+
+model VocabularyItem {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  korean        String
+  romanization  String
+  english       String
+  savedAt       DateTime  @default(now()) @map("saved_at")
+  easeFactor    Float     @default(2.5) @map("ease_factor")
+  interval      Int       @default(0)
+  repetitions   Int       @default(0)
+  nextReview    DateTime? @map("next_review")
+  lastGrade     String?   @map("last_grade")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, korean])
+  @@index([userId, nextReview])
+  @@index([userId])
+  @@map("vocabulary_items")
+}
+
+model Gamification {
+  id                       String    @id @default(uuid()) @db.Uuid
+  userId                   String    @unique @map("user_id") @db.Uuid
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalXP                  Int       @default(0) @map("total_xp")
+  currentStreak            Int       @default(0) @map("current_streak")
+  longestStreak            Int       @default(0) @map("longest_streak")
+  lastPracticeDate         String?   @map("last_practice_date")
+  totalMessages            Int       @default(0) @map("total_messages")
+  totalFlashcardSessions   Int       @default(0) @map("total_flashcard_sessions")
+  totalTranslations        Int       @default(0) @map("total_translations")
+  messagesWithoutTranslate Int       @default(0) @map("messages_without_translate")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  xpHistory XPEvent[]
+
+  @@map("gamification")
+}
+
+model XPEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  gamificationId String       @map("gamification_id") @db.Uuid
+  gamification   Gamification @relation(fields: [gamificationId], references: [id], onDelete: Cascade)
+  action         String
+  amount         Int
+  timestamp      DateTime     @default(now())
+
+  @@index([gamificationId, timestamp])
+  @@map("xp_events")
+}
+
+model UserAchievements {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unlockedIds      String[] @default([]) @map("unlocked_ids")
+  unlockTimestamps Json     @default("{}") @map("unlock_timestamps")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("user_achievements")
+}
+
+model Conversation {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savedAt      DateTime @default(now()) @map("saved_at")
+  preview      String
+  messageCount Int      @map("message_count")
+  messages     Json     @default("[]")
+
+  @@index([userId, savedAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model DailyChallengeState {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         String
+  challengeIds String[] @map("challenge_ids")
+  progress     Json     @default("{}")
+  completedIds String[] @default([]) @map("completed_ids")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("daily_challenge_states")
+}
+
+model SoundSettings {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  muted     Boolean  @default(false)
+  volume    Int      @default(80)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("sound_settings")
+}
+
+model UserOnboarding {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @map("user_id") @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tutorialCompleted Boolean  @default(false) @map("tutorial_completed")
+  onboarded         Boolean  @default(false)
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("user_onboarding")
+}
+
+model VisitedTopic {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId String @map("topic_id")
+
+  @@unique([userId, topicId])
+  @@map("visited_topics")
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useEffect, useRef } from "react";
+import { useDbSync } from "@/hooks/useDbSync";
 
 export type ThemeSetting = "dark" | "light" | "system";
 /** The resolved (actual) theme applied to the UI */
@@ -135,6 +136,29 @@ export function useSettings() {
     if (ttsRate < 0.5 || ttsRate > 1.5) return;
     setSettings((prev) => ({ ...prev, ttsRate: Math.round(ttsRate * 100) / 100 }));
   }, []);
+
+  // Sync settings to database when authenticated
+  useDbSync<AppSettings>({
+    endpoint: "/api/settings",
+    localData: settings,
+    fromDb: (data: unknown) => {
+      const d = data as Record<string, unknown>;
+      return {
+        theme: (d.theme as ThemeSetting) ?? "dark",
+        fontScale: (d.fontScale as number) ?? 1,
+        reduceAnimations: (d.reduceAnimations as boolean) ?? false,
+        showRomanization: (d.showRomanization as boolean) ?? true,
+        ttsRate: (d.ttsRate as number) ?? 0.85,
+      };
+    },
+    toDb: (s) => s,
+    onPull: (data) => {
+      setSettings(data);
+      saveToStorage(data);
+    },
+    debounceMs: 1000,
+    initialized: initialized.current,
+  });
 
   return {
     settings,

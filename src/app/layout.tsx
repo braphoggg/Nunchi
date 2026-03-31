@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond, Nanum_Myeongjo } from "next/font/google";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -58,7 +59,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${cormorantGaramond.variable} ${nanumMyeongjo.variable} bg-goshiwon-bg text-goshiwon-text antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if("serviceWorker"in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})})}`,

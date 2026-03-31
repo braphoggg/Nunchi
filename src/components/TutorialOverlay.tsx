@@ -130,7 +130,7 @@ export default function TutorialOverlay({
           setCutout2(null);
           const spaceAbove = rect2.top;
           const spaceBelow = vh - rect2.bottom;
-          setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
+          setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "center");
           return;
         }
       }
@@ -163,7 +163,7 @@ export default function TutorialOverlay({
     } else {
       const spaceAbove = rect.top;
       const spaceBelow = vh - rect.bottom;
-      setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "bottom");
+      setTooltipPos(spaceBelow >= 220 ? "bottom" : spaceAbove >= 220 ? "top" : "center");
     }
   }, [step.targetSelector, step.secondaryTargetSelector, step.spotlightPadding]);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
+import { useDbSync } from "@/hooks/useDbSync";
 import { getAudioContext, getMasterGain, setMasterMuted, setMasterVolume, disposeAudioContext } from "@/lib/sound/audio-context";
 import { AmbientEngine, type MoodLevel } from "@/lib/sound/ambient-engine";
 import {
@@ -287,6 +288,22 @@ export function useSoundEngine() {
   const setVolume = useCallback((v: number) => {
     setVolumeState(Math.max(0, Math.min(100, Math.round(v))));
   }, []);
+
+  // Sync sound settings to database
+  useDbSync<{ muted: boolean; volume: number }>({
+    endpoint: "/api/sound-settings",
+    localData: { muted, volume },
+    fromDb: (data: unknown) => {
+      const d = data as Record<string, unknown>;
+      return { muted: (d.muted as boolean) ?? false, volume: (d.volume as number) ?? 80 };
+    },
+    toDb: (s) => s,
+    onPull: (data) => {
+      setMuted(data.muted);
+      setVolumeState(data.volume);
+    },
+    debounceMs: 1000,
+  });
 
   // ─── Backward-compatible aliases ──────────────────────────────────
 

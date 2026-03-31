@@ -19,9 +19,13 @@ import XPToast from "./XPToast";
 import HelpModal from "./HelpModal";
 import LessonHistory from "./LessonHistory";
 import LessonReview from "./LessonReview";
-import OnboardingOverlay from "./OnboardingOverlay";
+import WelcomeWizard from "./WelcomeWizard";
 import TutorialOverlay from "./TutorialOverlay";
 import SettingsPanel from "./SettingsPanel";
+import AuthModal from "./AuthModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { determineSyncDirection, pushLocalDataToDb } from "@/lib/sync";
+import { createBackup } from "@/lib/data-backup";
 import { useShareConversation } from "./ShareButton";
 import HangulKeyboard, { type HangulKeyboardHandle } from "./HangulKeyboard";
 import { useSoundEngine } from "@/hooks/useSoundEngine";
@@ -122,6 +126,9 @@ export default function ChatContainer() {
 
   // Accessibility settings
   const { settings, resolvedTheme, setTheme, setFontScale, setReduceAnimations, setShowRomanization, setTTSRate } = useSettings();
+
+  // Auth
+  const { session } = useAuth();
 
   // Network status
   const { isOnline, wasOffline, dismissReconnected } = useNetworkStatus();
@@ -360,6 +367,32 @@ export default function ChatContainer() {
     togglePanel();
   }, [closeStats, togglePanel, sound, panelOpen]);
 
+  // Auth modal state
+  const [authOpen, setAuthOpen] = useState(false);
+  const toggleAuth = useCallback(() => {
+    closePanel(); closeStats(); closeHelp(); closeSettings();
+    setAuthOpen((v) => !v);
+  }, [closePanel, closeStats, closeHelp, closeSettings]);
+  const closeAuth = useCallback(() => setAuthOpen(false), []);
+
+  // First-login migration: push localStorage data to DB when user signs in
+  const migrationDone = useRef(false);
+  useEffect(() => {
+    if (!session?.access_token || migrationDone.current) return;
+    migrationDone.current = true;
+    const token = session.access_token;
+    (async () => {
+      try {
+        const direction = await determineSyncDirection(token);
+        if (direction === "push") {
+          const backup = createBackup();
+          await pushLocalDataToDb(token, backup.data);
+        }
+      } catch {
+        // Migration failed — localStorage remains functional, useDbSync handles ongoing sync
+      }
+    })();
+  }, [session]);
 
   // Onboarding overlay — show once per browser
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -410,13 +443,13 @@ export default function ChatContainer() {
         if (tutorial.isActive) { tutorial.skipTutorial(); return; }
         if (confirmLeave) { cancelLeave(); return; }
         // Guard: if any Modal-based overlay is open, let Modal handle it
-        if (helpOpen || settingsOpen || reviewingConversation || historyOpen || statsOpen || quizActive || flashcardActive || panelOpen) return;
+        if (helpOpen || settingsOpen || authOpen || reviewingConversation || historyOpen || statsOpen || quizActive || flashcardActive || panelOpen) return;
         if (keyboardVisible) { setKeyboardVisible(false); return; }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tutorial, confirmLeave, helpOpen, settingsOpen, reviewingConversation, historyOpen, statsOpen, quizActive, flashcardActive, panelOpen, keyboardVisible, cancelLeave]);
+  }, [tutorial, confirmLeave, helpOpen, settingsOpen, authOpen, reviewingConversation, historyOpen, statsOpen, quizActive, flashcardActive, panelOpen, keyboardVisible, cancelLeave]);
 
   // Rank-up notification
   const prevRankRef = useRef<ResidentRank>(rank.id);
@@ -625,6 +658,7 @@ export default function ChatContainer() {
         onToggleVocabulary={handleToggleVocabulary}
         onToggleHelp={toggleHelp}
         onToggleSettings={toggleSettings}
+        onToggleAuth={toggleAuth}
         vocabularyCount={unseenCount}
         rank={rank}
         mood={currentMood}
@@ -704,6 +738,11 @@ export default function ChatContainer() {
       {/* Settings panel */}
       {settingsOpen && (
         <SettingsPanel onClose={closeSettings} />
+      )}
+
+      {/* Auth modal */}
+      {authOpen && (
+        <AuthModal onClose={closeAuth} />
       )}
 
       {panelOpen && !flashcardActive && !quizActive && !writingActive && (
@@ -882,11 +921,13 @@ export default function ChatContainer() {
         />
       </div>
 
-      {/* First-run onboarding overlay */}
-      {showOnboarding && apiKey && (
-        <OnboardingOverlay
-          onStartTour={() => { dismissOnboarding(); tutorial.startTutorial(); }}
-          onSkip={dismissOnboarding}
+      {/* First-run welcome wizard: Account → API Key → Tutorial */}
+      {showOnboarding && (
+        <WelcomeWizard
+          onComplete={() => { dismissOnboarding(); tutorial.startTutorial(); }}
+          onDismiss={dismissOnboarding}
+          onSetApiKey={setApiKey}
+          hasApiKey={!!apiKey}
         />
       )}
 

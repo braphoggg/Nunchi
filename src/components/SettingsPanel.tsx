@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import Modal from "./Modal";
 import { useSettingsContext } from "@/contexts/SettingsContext";
 import { useSound } from "@/contexts/SoundContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   createBackup,
   downloadBackup,
@@ -136,6 +137,37 @@ function DataBackupSection() {
             {importStatus.message}
           </p>
         )}
+      </div>
+    </section>
+  );
+}
+
+function CloudSyncSection() {
+  const { user, signOut } = useAuth();
+
+  if (!user) return null;
+
+  return (
+    <section>
+      <h3 className="text-xs font-medium text-goshiwon-text-secondary uppercase tracking-wider mb-3">
+        {"클라우드 (Cloud Sync)"}
+      </h3>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
+          </svg>
+          <span className="text-sm text-goshiwon-text truncate">{user.email}</span>
+        </div>
+        <p className="text-xs text-goshiwon-text-muted">
+          Progress syncs automatically across devices.
+        </p>
+        <button
+          onClick={() => signOut()}
+          className="w-full px-3 py-2 rounded-lg border border-goshiwon-border bg-goshiwon-surface text-sm text-goshiwon-text-secondary hover:border-goshiwon-text-muted transition-colors"
+        >
+          Sign Out
+        </button>
       </div>
     </section>
   );
@@ -326,6 +358,9 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
 
         {/* Data Backup */}
         <DataBackupSection />
+
+        {/* Cloud Sync */}
+        <CloudSyncSection />
 
         {/* TTS Speech Speed – recompile trigger */}
         <section>

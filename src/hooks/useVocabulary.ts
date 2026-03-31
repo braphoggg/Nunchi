@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect, useRef } from "react";
 import type { VocabularyItem } from "@/types";
 import { correctRomanization } from "@/lib/parse-vocabulary";
 import { SRS_DEFAULTS } from "@/lib/srs";
+import { useDbSync } from "@/hooks/useDbSync";
 
 const STORAGE_KEY = "nunchi-vocabulary";
 const MAX_WORDS = 5000;
@@ -184,6 +185,25 @@ export function useVocabulary() {
   const closePanel = useCallback(() => setPanelOpen(false), []);
 
   const wordCount = words.length;
+
+  // Sync vocabulary to database
+  useDbSync<VocabularyItem[]>({
+    endpoint: "/api/vocabulary",
+    localData: words,
+    fromDb: (data: unknown) => {
+      if (!Array.isArray(data)) return [];
+      return data as VocabularyItem[];
+    },
+    toDb: (w) => ({ items: w }),
+    onPull: (data) => {
+      setWords(data);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch { /* quota */ }
+    },
+    debounceMs: 3000,
+    initialized: initialized.current,
+  });
 
   return {
     words,

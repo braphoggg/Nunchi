@@ -21,7 +21,7 @@ describe("formatMessage", () => {
 
     expect(bold.type).toBe("strong");
     expect(bold.props.children).toBe("한국어");
-    expect(bold.props.className).toContain("text-[#d4a843]");
+    expect(bold.props.className).toContain("text-goshiwon-yellow");
 
     expect(after.type).toBe("span");
     expect(after.props.children).toBe(" today");

@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import type { DailyChallengeState, ChallengeTrackingKey } from "@/lib/daily-challenges";
+import { useDbSync } from "@/hooks/useDbSync";
 import {
   createDailyChallengeState,
   getTodayString,
@@ -70,6 +71,18 @@ export function useDailyChallenges() {
     },
     [],
   );
+
+  useDbSync<DailyChallengeState>({
+    endpoint: "/api/daily-challenges",
+    localData: state,
+    fromDb: (data: unknown) => data as DailyChallengeState,
+    toDb: (localData) => localData,
+    onPull: (data) => {
+      setState(data);
+      saveToStorage(data);
+    },
+    initialized: initialized.current,
+  });
 
   return {
     challengeState: state,

@@ -45,3 +45,5 @@ coverage/
 # claude config
 .claude/
 
+
+/src/generated/prisma

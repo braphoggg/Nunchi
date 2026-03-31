@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import { useDbSync } from "@/hooks/useDbSync";
 import type { GamificationData, XPAction, XPEvent, RankInfo } from "@/types";
 import {
   computeMessageXP,
@@ -243,6 +244,22 @@ export function useGamification(vocabCount: number) {
     () => getNextRank(data.xp.totalXP, vocabCount),
     [data.xp.totalXP, vocabCount]
   );
+
+  // Sync gamification to database
+  useDbSync<GamificationData>({
+    endpoint: "/api/gamification",
+    localData: data,
+    fromDb: (raw: unknown) => raw as GamificationData,
+    toDb: (g) => g,
+    onPull: (pulled) => {
+      setData(pulled);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(pulled));
+      } catch { /* quota */ }
+    },
+    debounceMs: 3000,
+    initialized: initialized.current,
+  });
 
   return {
     // XP

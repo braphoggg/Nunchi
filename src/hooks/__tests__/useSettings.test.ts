@@ -38,9 +38,9 @@ const STORAGE_KEY = "nunchi-settings";
 // ─── defaults ──────────────────────────────────────────────────────
 
 describe("useSettings — defaults", () => {
-  it("returns system theme by default", () => {
+  it("returns dark theme by default", () => {
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("system");
+    expect(result.current.settings.theme).toBe("dark");
   });
 
   it("resolvedTheme defaults to dark when OS prefers dark", () => {
@@ -49,7 +49,7 @@ describe("useSettings — defaults", () => {
     expect(result.current.resolvedTheme).toBe("dark");
   });
 
-  it("resolvedTheme resolves to light when OS prefers light", () => {
+  it("resolvedTheme stays dark even when OS prefers light (default theme is dark, not system)", () => {
     vi.stubGlobal(
       "matchMedia",
       vi.fn().mockReturnValue({
@@ -59,7 +59,8 @@ describe("useSettings — defaults", () => {
       }),
     );
     const { result } = renderHook(() => useSettings());
-    expect(result.current.resolvedTheme).toBe("light");
+    // Default theme is "dark" (not "system"), so OS preference is irrelevant
+    expect(result.current.resolvedTheme).toBe("dark");
   });
 
   it("returns fontScale 1 by default", () => {
@@ -235,26 +236,26 @@ describe("useSettings — persistence", () => {
   it("falls back to defaults when localStorage has invalid data", () => {
     storage[STORAGE_KEY] = JSON.stringify({ theme: "neon", fontScale: 99 });
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("system");
+    expect(result.current.settings.theme).toBe("dark");
     expect(result.current.settings.fontScale).toBe(1);
   });
 
   it("falls back to defaults when localStorage has corrupted JSON", () => {
     storage[STORAGE_KEY] = "not-json{{{";
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("system");
+    expect(result.current.settings.theme).toBe("dark");
   });
 
   it("falls back to defaults when localStorage has null", () => {
     storage[STORAGE_KEY] = "null";
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("system");
+    expect(result.current.settings.theme).toBe("dark");
   });
 
   it("falls back to defaults when localStorage has an array", () => {
     storage[STORAGE_KEY] = "[]";
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe("system");
+    expect(result.current.settings.theme).toBe("dark");
   });
 
   it("survives localStorage.setItem throwing (full storage)", () => {
